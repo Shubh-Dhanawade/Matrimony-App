@@ -12,6 +12,9 @@ import ProfileViewScreen from '../screens/dashboard/ProfileViewScreen';
 import CustomHeader from '../components/CustomHeader';
 import api from '../services/api';
 import { COLORS } from '../utils/constants';
+import AdminDashboard from '../screens/dashboard/AdminDashboard';
+import ManageProfiles from '../screens/dashboard/ManageProfiles';
+import ManageUsers from '../screens/dashboard/ManageUsers';
 
 const Stack = createNativeStackNavigator();
 
@@ -19,7 +22,11 @@ const AuthStack = () => (
   <Stack.Navigator 
     screenOptions={{ 
       header: ({ options, route }) => (
-        <CustomHeader title={options.title || route.name} showBack={route.name !== 'Login'} />
+        <CustomHeader 
+          title={options.title || route.name} 
+          showBack={route.name !== 'Login'} 
+          onBackPress={options.onBackPress}
+        />
       )
     }}
   >
@@ -28,11 +35,33 @@ const AuthStack = () => (
   </Stack.Navigator>
 );
 
+const AdminStack = () => (
+  <Stack.Navigator 
+    screenOptions={{ 
+      header: ({ options, route }) => (
+        <CustomHeader 
+          title={options.title || route.name} 
+          showBack={route.name !== 'AdminDashboard'} 
+          onBackPress={options.onBackPress}
+        />
+      )
+    }}
+  >
+    <Stack.Screen name="AdminDashboard" component={AdminDashboard} options={{ title: 'Admin Overview' }} />
+    <Stack.Screen name="ManageProfiles" component={ManageProfiles} options={{ title: 'Manage Profiles' }} />
+    <Stack.Screen name="ManageUsers" component={ManageUsers} options={{ title: 'Manage Users' }} />
+  </Stack.Navigator>
+);
+
 const MainStack = () => (
   <Stack.Navigator 
     screenOptions={{ 
       header: ({ options, route }) => (
-        <CustomHeader title={options.title || route.name} showBack={route.name !== 'Dashboard'} />
+        <CustomHeader 
+          title={options.title || route.name} 
+          showBack={route.name !== 'Dashboard'} 
+          onBackPress={options.onBackPress}
+        />
       )
     }}
   >
@@ -43,15 +72,16 @@ const MainStack = () => (
 );
 
 const AppNavigator = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const [profileLoading, setProfileLoading] = React.useState(false);
   const [hasProfile, setHasProfile] = React.useState(true);
 
   React.useEffect(() => {
-    if (isAuthenticated) {
+    // Only check profile for regular users
+    if (isAuthenticated && user?.role !== 'admin') {
       checkProfile();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
   const checkProfile = async () => {
     setProfileLoading(true);
@@ -73,15 +103,23 @@ const AppNavigator = () => {
     );
   }
 
+  const isAdmin = user?.role === 'admin';
+
   return (
     <NavigationContainer>
       {!isAuthenticated ? (
         <AuthStack />
+      ) : isAdmin ? (
+        <AdminStack />
       ) : !hasProfile ? (
         <Stack.Navigator 
           screenOptions={{ 
             header: ({ options, route }) => (
-              <CustomHeader title={options.title || route.name} showBack={false} />
+              <CustomHeader 
+                title={options.title || route.name} 
+                showBack={true} 
+                onBackPress={options.onBackPress}
+              />
             )
           }}
         >

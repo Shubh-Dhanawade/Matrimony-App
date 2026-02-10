@@ -14,25 +14,30 @@ export const AuthProvider = ({ children }) => {
 
   const loadStorageData = async () => {
     try {
+      console.log('[AUTH_CONTEXT] Loading storage data...');
       const storedToken = await AsyncStorage.getItem('token');
       const storedUser = await AsyncStorage.getItem('user');
+      console.log(`[AUTH_CONTEXT] Token in storage: ${storedToken ? 'FOUND' : 'MISSING'}`);
 
       if (storedToken && storedUser) {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
+        console.log('[AUTH_CONTEXT] State synchronized with storage');
       }
     } catch (e) {
-      console.error(e);
+      console.error('[AUTH_CONTEXT] Load error:', e);
     } finally {
       setLoading(false);
     }
   };
 
   const login = async (newToken, userData) => {
+    console.log('[AUTH_CONTEXT] Login called, saving token...');
     setToken(newToken);
     setUser(userData);
     await AsyncStorage.setItem('token', newToken);
     await AsyncStorage.setItem('user', JSON.stringify(userData));
+    console.log('[AUTH_CONTEXT] Token and User saved to AsyncStorage');
   };
 
   const logout = async () => {
