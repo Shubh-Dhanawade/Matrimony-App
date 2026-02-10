@@ -6,10 +6,10 @@ const User = {
     return rows[0];
   },
 
-  create: async (mobileNumber, hashedPassword) => {
+  create: async (mobileNumber, hashedPassword, role = 'user') => {
     const [result] = await db.execute(
-      'INSERT INTO users (mobile_number, password) VALUES (?, ?)',
-      [mobileNumber, hashedPassword]
+      'INSERT INTO users (mobile_number, password, role) VALUES (?, ?, ?)',
+      [mobileNumber, hashedPassword, role]
     );
     return result.insertId;
   },

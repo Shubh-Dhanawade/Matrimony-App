@@ -25,7 +25,7 @@ const Invitation = {
 
   getReceived: async (userId) => {
     const [rows] = await db.execute(
-      'SELECT i.*, p.full_name FROM invitations i JOIN profiles p ON i.sender_id = p.user_id WHERE i.receiver_id = ?',
+      "SELECT i.*, COALESCE(p.full_name, 'User') as full_name FROM invitations i LEFT JOIN profiles p ON i.sender_id = p.user_id WHERE i.receiver_id = ?",
       [userId]
     );
     return rows;
@@ -33,7 +33,7 @@ const Invitation = {
 
   getSent: async (userId) => {
     const [rows] = await db.execute(
-      'SELECT i.*, p.full_name FROM invitations i JOIN profiles p ON i.receiver_id = p.user_id WHERE i.sender_id = ?',
+      "SELECT i.*, COALESCE(p.full_name, 'User') as full_name FROM invitations i LEFT JOIN profiles p ON i.receiver_id = p.user_id WHERE i.sender_id = ?",
       [userId]
     );
     return rows;

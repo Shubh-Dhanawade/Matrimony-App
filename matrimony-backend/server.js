@@ -7,10 +7,17 @@ dotenv.config();
 const app = express();
 const apiRoutes = require('./src/routes/api');
 
+const path = require('path');
+
 // Middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api', apiRoutes);

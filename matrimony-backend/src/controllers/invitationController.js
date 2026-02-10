@@ -15,6 +15,12 @@ const invitationController = {
         return res.status(400).json({ message: 'You cannot send invitation to yourself' });
       }
 
+      // Check if sender is blocked
+      const sender = await User.findById(senderId);
+      if (sender && sender.is_blocked) {
+        return res.status(403).json({ message: 'Action forbidden. Your account is blocked.' });
+      }
+
       // Check if receiver exists
       const receiver = await User.findById(receiverId);
       if (!receiver) {
@@ -47,10 +53,13 @@ const invitationController = {
   getInvitations: async (req, res) => {
     try {
       const userId = req.user.id;
+      console.log(`Fetching invitations for user: ${userId}`);
       const sent = await Invitation.getSent(userId);
       const received = await Invitation.getReceived(userId);
+      console.log(`Found ${sent.length} sent and ${received.length} received invitations`);
       res.json({ sent, received });
     } catch (error) {
+      console.error('Error in getInvitations:', error);
       res.status(500).json({ message: error.message });
     }
   }

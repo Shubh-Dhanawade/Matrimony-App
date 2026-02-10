@@ -14,6 +14,7 @@ const LoginScreen = ({ navigation }) => {
   const { login } = useAuth();
 
   const handleLogin = async () => {
+    console.log('Attempting login with:', { mobileNumber, password });
     if (!mobileNumber || !password) {
       Alert.alert('Error', 'Please fill all fields');
       return;
@@ -22,9 +23,28 @@ const LoginScreen = ({ navigation }) => {
     setLoading(true);
     try {
       const response = await api.post('/auth/login', { mobileNumber, password });
-      await login(response.data.token, response.data.user);
+      console.log('Login success response:', response.data);
+      const { token, user } = response.data;
+      
+      await login(token, user);
+
+      // Role-based navigation reset
+      if (user.role === 'admin') {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'AdminDashboard' }],
+        });
+      } else {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Dashboard' }],
+        });
+      }
+      
     } catch (error) {
+      console.log('Login error response:', error.response?.data);
       Alert.alert('Login Failed', error.response?.data?.message || 'Check your credentials');
+      
     } finally {
       setLoading(false);
     }

@@ -3,11 +3,13 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, SPACING, FONT_SIZES } from '../utils/constants';
 
-const CustomHeader = ({ title, showBack = true }) => {
+const CustomHeader = ({ title, showBack = true, onBackPress }) => {
   const navigation = useNavigation();
 
   const handleBack = () => {
-    if (navigation.canGoBack()) {
+    if (onBackPress) {
+      onBackPress();
+    } else if (navigation.canGoBack()) {
       navigation.goBack();
     }
   };
@@ -15,9 +17,9 @@ const CustomHeader = ({ title, showBack = true }) => {
   return (
     <View style={styles.headerContainer}>
       <View style={styles.leftContainer}>
-        {showBack && navigation.canGoBack() && (
+        {(showBack && (navigation.canGoBack() || onBackPress)) && (
           <TouchableOpacity onPress={handleBack} style={styles.backButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Text style={styles.backArrow}>←</Text>
+             <Text style={styles.backArrow}>← Back</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -45,7 +47,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   leftContainer: {
-    width: 40,
+    width: 70,
     justifyContent: 'center',
   },
   titleContainer: {
@@ -54,7 +56,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rightContainer: {
-    width: 40,
+    width: 70,
   },
   headerTitle: {
     color: COLORS.surface,
@@ -66,7 +68,7 @@ const styles = StyleSheet.create({
   },
   backArrow: {
     color: COLORS.surface,
-    fontSize: 24,
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });

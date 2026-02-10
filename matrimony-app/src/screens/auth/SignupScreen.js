@@ -43,16 +43,18 @@ const SignupScreen = ({ navigation }) => {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Join Matrimony</Text>
         <CustomInput
-          label="Mobile Number"
+          label="Mobile Number *"
           placeholder="Enter mobile number"
           keyboardType="phone-pad"
+          required 
           value={mobileNumber}
           onChangeText={(e)=>setMobileNumber(e)}
         />
         <CustomInput
-          label="Password"
+          label="Password *"
           placeholder="Create password"
           secureTextEntry
+          required
           value={password}
           onChangeText={(e)=>setPassword(e)}
         />
@@ -62,9 +64,9 @@ const SignupScreen = ({ navigation }) => {
         <Text style={styles.link} onPress={() => navigation.navigate('Login')}>
           Already have an account? Login
         </Text>
-         <Text style={styles.link} >
+         {/* <Text style={styles.link} >
           {mobileNumber} , {password}
-        </Text>
+        </Text> */}
       </ScrollView>
     </SafeAreaView>
   );
