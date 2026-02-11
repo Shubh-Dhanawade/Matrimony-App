@@ -3,37 +3,19 @@ const db = require('../config/db');
 const adminController = {
   getDashboardStats: async (req, res) => {
     try {
-      // Get total users
-      const [userRows] = await db.execute('SELECT COUNT(*) as count FROM users');
-      const totalUsers = userRows[0].count;
+      const query = `
+        SELECT 
+          (SELECT COUNT(*) FROM users WHERE role != 'admin') as totalUsers,
+          (SELECT COUNT(*) FROM profiles) as totalProfiles,
+          (SELECT COUNT(*) FROM profiles WHERE status = 'Pending') as pendingProfiles,
+          (SELECT COUNT(*) FROM profiles WHERE status = 'Approved') as approvedProfiles,
+          (SELECT COUNT(*) FROM profiles WHERE status = 'Rejected') as rejectedProfiles
+      `;
 
-      // Get total profiles
-      const [profileRows] = await db.execute('SELECT COUNT(*) as count FROM profiles');
-      const totalProfiles = profileRows[0].count;
+      const [rows] = await db.execute(query);
+      const stats = rows[0];
 
-      // Check if status column exists in profiles table
-      const [columns] = await db.execute("SHOW COLUMNS FROM invitations LIKE 'status'");
-
-      let pendingProfiles = 0;
-      let approvedProfiles = 0;
-
-      if (columns.length > 0) {
-        // Query for statuses only if the column exists
-        const [pendingRows] = await db.execute("SELECT COUNT(*) as count FROM invitations WHERE status = 'Pending'");
-        pendingProfiles = pendingRows[0].count;
-
-        // Correct ENUM value is 'Approved', not 'Accepted'
-        const [approvedRows] = await db.execute("SELECT COUNT(*) as count FROM invitations WHERE status = 'Accepted'");
-        approvedProfiles = approvedRows[0].count;
-      }
-
-      res.json({
-        totalUsers,
-        totalProfiles,
-        pendingProfiles,
-        approvedProfiles,
-        _debug: { hasStatusColumn: columns.length > 0 }
-      });
+      res.json(stats);
     } catch (error) {
       console.error('getDashboardStats Error:', error);
       res.status(500).json({
@@ -85,6 +67,43 @@ const adminController = {
     }
   },
 
+
+  deleteUser: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // 1. Check if user is trying to delete an admin
+      const [userRows] = await db.execute('SELECT role FROM users WHERE id = ?', [id]);
+
+      if (userRows.length === 0) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      if (userRows[0].role === 'admin') {
+        return res.status(403).json({ message: 'Cannot delete an administrator account' });
+      }
+
+      // 2. Delete the user (cascading will handle profiles and invitations)
+      const [result] = await db.execute('DELETE FROM users WHERE id = ?', [id]);
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.json({
+        message: 'User and all related data deleted permanently',
+        deletedId: id
+      });
+
+    } catch (error) {
+      console.error('deleteUser Error:', error);
+      res.status(500).json({
+        message: 'Failed to delete user',
+        error: error.message
+      });
+    }
+  },
+
   getAllUsers: async (req, res) => {
     try {
       const { search = '' } = req.query;
@@ -123,8 +142,6 @@ const adminController = {
     }
   },
 
-
-
   toggleBlockUser: async (req, res) => {
     try {
       const { id } = req.params;
@@ -142,60 +159,6 @@ const adminController = {
       res.json({ message: `User ${is_blocked ? 'blocked' : 'unblocked'} successfully` });
     } catch (error) {
       res.status(500).json({ message: error.message });
-    }
-  },
-  updateProfileStatus: async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { status } = req.body;
-
-      await db.execute(
-        'UPDATE profiles SET status = ? WHERE id = ?',
-        [status, id]
-      );
-
-      res.json({ message: 'Profile status updated successfully' });
-
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: error.message });
-    }
-  },
-
-
-  deleteUser: async (req, res) => {
-    try {
-      const { id } = req.params;
-
-      // 1. Check if user is trying to delete an admin
-      const [userRows] = await db.execute('SELECT role FROM users WHERE id = ?', [id]);
-
-      if (userRows.length === 0) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-
-      if (userRows[0].role === 'admin') {
-        return res.status(403).json({ message: 'Cannot delete an administrator account' });
-      }
-
-      // 2. Delete the user (cascading will handle profiles and invitations)
-      const [result] = await db.execute('DELETE FROM users WHERE id = ?', [id]);
-
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-
-      res.json({
-        message: 'User and all related data deleted permanently',
-        deletedId: id
-      });
-
-    } catch (error) {
-      console.error('deleteUser Error:', error);
-      res.status(500).json({
-        message: 'Failed to delete user',
-        error: error.message
-      });
     }
   }
 };

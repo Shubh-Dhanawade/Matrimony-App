@@ -13,7 +13,7 @@ const AdminDashboard = ({ navigation }) => {
   const fetchStats = async () => {
     try {
       const response = await api.get('/admin/stats');
-
+      console.log('DASHBOARD STATS RESPONSE:', response.data);
       setStats(response.data);
     } catch (error) {
       console.error('Fetch stats error:', error.response?.data || error.message);
@@ -61,8 +61,9 @@ const AdminDashboard = ({ navigation }) => {
       <View style={styles.statsGrid}>
         <StatCard title="Total Users" value={stats?.totalUsers || 0} color="#3498db" />
         <StatCard title="Total Profiles" value={stats?.totalProfiles || 0} color="#9b59b6" />
-        <StatCard title="Pending Profiles" value={stats?.pendingProfiles || 0} color="#e67e22" />
-        <StatCard title="Approved Profiles" value={stats?.approvedProfiles || 0} color="#2ecc71" />
+        <StatCard title="Pending" value={stats?.pendingProfiles || 0} color="#e67e22" />
+        <StatCard title="Approved" value={stats?.approvedProfiles || 0} color="#2ecc71" />
+        <StatCard title="Rejected" value={stats?.rejectedProfiles || 0} color="#e74c3c" />
       </View>
 
       <View style={styles.managementSection}>
