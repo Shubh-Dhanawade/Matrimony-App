@@ -26,7 +26,7 @@ export const FONT_SIZES = {
   xxl: 32
 };
 
-export const API_BASE_URL = 'http://192.168.0.176:5472/api'; // Standard Android Emulator IP for localhost
+export const API_BASE_URL = 'http://192.168.1.103:5472/api'; // Standard Android Emulator IP for localhost
 
 export const MARITAL_STATUS_OPTIONS = [
   'Single',

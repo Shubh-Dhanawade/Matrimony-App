@@ -85,9 +85,11 @@ const adminController = {
     }
   },
 
-  getAllUsers: async (req, res) => {
-    try {
-      const [rows] = await db.execute(`
+ getAllUsers: async (req, res) => {
+  try {
+    const { search = '' } = req.query;
+
+    let query = `
       SELECT 
         u.id,
         u.mobile_number,
@@ -100,15 +102,27 @@ const adminController = {
       FROM users u
       LEFT JOIN profiles p ON u.id = p.user_id
       WHERE u.role != 'admin'
-      ORDER BY u.created_at DESC
-    `);
+    `;
 
-      res.json(rows);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: error.message });
+    let params = [];
+
+    if (search) {
+      query += ` AND (u.mobile_number LIKE ? OR p.full_name LIKE ?)`;
+      params.push(`%${search}%`, `%${search}%`);
     }
-  },
+
+    query += ` ORDER BY u.created_at DESC`;
+
+    const [rows] = await db.execute(query, params);
+
+    res.json(rows);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
+},
+
 
 
   toggleBlockUser: async (req, res) => {
