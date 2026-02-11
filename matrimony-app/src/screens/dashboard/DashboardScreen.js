@@ -22,25 +22,31 @@ const DashboardScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState('Profiles'); // Profiles, Invitations
   
   const [filters, setFilters] = useState({
-    ageMin: '', ageMax: '', caste: '', qualification: '', incomeMin: '', birthplace: ''
+    ageMin: '', ageMax: '', caste: '', qualification: '', monthly_income: '', birthplace: ''
   });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [pRes, sRes, iRes, mRes] = await Promise.all([
-        api.get('/profiles', { params: filters }),
-        api.get('/profiles/suggested'),
-        api.get('/invitations'),
-        api.get('/profiles/me')
-      ]);
+      console.log('[DASHBOARD] Fetching data for user dashboard...');
+      
+      const requests = [
+        api.get('/profiles', { params: filters }).catch(err => { console.error('Error fetching /profiles:', err.response?.data || err.message); throw err; }),
+        api.get('/profiles/suggested').catch(err => { console.error('Error fetching /suggested:', err.response?.data || err.message); throw err; }),
+        api.get('/invitations').catch(err => { console.error('Error fetching /invitations:', err.response?.data || err.message); throw err; }),
+        api.get('/profiles/me').catch(err => { console.error('Error fetching /profiles/me:', err.response?.data || err.message); throw err; })
+      ];
+
+      const [pRes, sRes, iRes, mRes] = await Promise.all(requests);
+      
       setProfiles(pRes.data);
       setSuggested(sRes.data);
       setInvitations(iRes.data);
-      setMyProfile(mRes.data.profile); // Update this to handle { profile, hasProfile }
+      setMyProfile(mRes.data.profile);
+      console.log('[DASHBOARD] Data fetch completed successfully');
     } catch (error) {
       console.error('Fetch error:', error);
-      Alert.alert('Error', 'Failed to fetch dashboard data');
+      Alert.alert('Error', 'Failed to fetch dashboard data (Status: 500 in backend). Check your backend terminal logs for the exact SQL error.');
     } finally {
       setLoading(false);
     }
@@ -134,7 +140,7 @@ const DashboardScreen = ({ navigation }) => {
     </Modal>
   );
 
-  const renderUserSummary = () => myProfile && (
+   const renderUserSummary = () => myProfile && (
     <TouchableOpacity 
       style={styles.summaryCard} 
       onPress={() => navigation.navigate('ProfileView')}
@@ -224,8 +230,8 @@ const DashboardScreen = ({ navigation }) => {
         <View style={styles.headerTop}>
           <Text style={styles.headerTitle}>Matrimony</Text>
           <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-            <Text style={styles.logoutBtnText}>Logout</Text>
-          </TouchableOpacity>
+              <Text style={styles.logoutBtnText}>Logout</Text>
+            </TouchableOpacity>
         </View>
         
         {/* Tabs */}
@@ -274,7 +280,7 @@ const DashboardScreen = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+export const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.background },
   header: { backgroundColor: COLORS.surface, paddingHorizontal: SPACING.md, paddingTop: SPACING.sm, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md },

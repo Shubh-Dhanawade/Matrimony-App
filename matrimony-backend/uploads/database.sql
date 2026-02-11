@@ -35,7 +35,7 @@ CREATE TABLE profiles (
   expectations TEXT,
   avatar_url TEXT,
   other_comments TEXT,
-  status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Approved',
+  status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 

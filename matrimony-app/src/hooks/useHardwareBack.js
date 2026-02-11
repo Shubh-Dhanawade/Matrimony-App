@@ -9,7 +9,7 @@ const useHardwareBack = () => {
   useEffect(() => {
     const backAction = () => {
       // Screens where we don't want to go back (to prevent accidental exit)
-      if (route.name === 'Dashboard' || route.name === 'Login') {
+      if (route.name === 'Dashboard' || route.name === 'Login' || route.name === 'AdminDashboard') {
         Alert.alert('Exit App', 'Are you sure you want to exit the app?', [
           { text: 'Cancel', onPress: () => null, style: 'cancel' },
           { text: 'YES', onPress: () => BackHandler.exitApp() }
