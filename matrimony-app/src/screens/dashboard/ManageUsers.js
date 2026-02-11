@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, 
 import api from '../../services/api';
 import { COLORS, SPACING, FONT_SIZES } from '../../utils/constants';
 
+
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +30,7 @@ const ManageUsers = () => {
     const action = user.is_blocked ? 'unblock' : 'block';
     Alert.alert(
       'Confirm Action',
-      `Are you sure you want to ${action} ${user.mobile_number}?`,
+      `Are you sure you want to ${action} ${user.full_name}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         { 
@@ -57,7 +58,7 @@ const ManageUsers = () => {
   const renderUserItem = ({ item }) => (
     <View style={styles.userCard}>
       <View style={styles.userInfo}>
-        <Text style={styles.mobileNumber}>{item.mobile_number}</Text>
+        <Text style={styles.mobileNumber}>{item.full_name}</Text>
         <Text style={styles.roleText}>{item.role}</Text>
       </View>
       <TouchableOpacity 
