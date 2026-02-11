@@ -28,12 +28,19 @@ const ManageProfiles = () => {
   const handleUpdateStatus = async (id, status) => {
     try {
       await api.patch(`/admin/profiles/${id}/status`, { status });
+
       Alert.alert('Success', `Profile ${status}`);
-      fetchProfiles(); // Refresh list
+      fetchProfiles();
+
     } catch (error) {
-      Alert.alert('Error', 'Failed to update status');
+      console.log("BACKEND ERROR:", error.response?.data);
+      Alert.alert(
+        'Error',
+        error.response?.data?.message || 'Failed to update status'
+      );
     }
   };
+
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -42,36 +49,57 @@ const ManageProfiles = () => {
 
   const renderProfileItem = ({ item }) => (
     <View style={styles.profileCard}>
+
+      {/* HEADER */}
       <View style={styles.profileHeader}>
-        <View>
-          <Text style={styles.profileName}>{item.full_name}</Text>
-          <Text style={styles.profileDetail}>{item.mobile_number} | {item.gender}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.profileName}>
+            {item.full_name || 'No Name'}
+          </Text>
+
+          <Text style={styles.profileDetail}>
+            📱 {item.mobile_number}
+          </Text>
+
+          <Text style={styles.profileDetail}>
+            {item.gender || 'Not Specified'}
+          </Text>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-          <Text style={styles.statusText}>{item.status}</Text>
+
+        <View style={[
+          styles.statusBadge,
+          { backgroundColor: getStatusColor(item.status) }
+        ]}>
+          <Text style={styles.statusText}>
+            {item.status || 'Pending'}
+          </Text>
         </View>
       </View>
 
+      {/* ACTION BUTTONS */}
       <View style={styles.actionRow}>
         {item.status !== 'Approved' && (
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.approveBtn]} 
+          <TouchableOpacity
+            style={[styles.actionButton, styles.approveBtn]}
             onPress={() => handleUpdateStatus(item.id, 'Approved')}
           >
             <Text style={styles.btnText}>Approve</Text>
           </TouchableOpacity>
         )}
+
         {item.status !== 'Rejected' && (
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.rejectBtn]} 
+          <TouchableOpacity
+            style={[styles.actionButton, styles.rejectBtn]}
             onPress={() => handleUpdateStatus(item.id, 'Rejected')}
           >
             <Text style={styles.btnText}>Reject</Text>
           </TouchableOpacity>
         )}
       </View>
+
     </View>
   );
+
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -118,7 +146,68 @@ const styles = StyleSheet.create({
   approveBtn: { backgroundColor: '#2ecc71' },
   rejectBtn: { backgroundColor: '#e74c3c' },
   btnText: { color: '#fff', fontWeight: 'bold', fontSize: FONT_SIZES.sm },
-  emptyText: { textAlign: 'center', marginTop: SPACING.xl, color: COLORS.textSecondary }
+  emptyText: { textAlign: 'center', marginTop: SPACING.xl, color: COLORS.textSecondary },
+  profileCard: {
+    backgroundColor: '#fff',
+    padding: SPACING.md,
+    borderRadius: 12,
+    marginBottom: SPACING.md,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 }
+  },
+
+  profileHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start'
+  },
+
+  profileName: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: 'bold',
+    color: COLORS.textPrimary
+  },
+
+  profileDetail: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    marginTop: 4
+  },
+
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: 'flex-start'
+  },
+
+  statusText: {
+    color: '#fff',
+    fontSize: FONT_SIZES.xs,
+    fontWeight: 'bold'
+  },
+
+  actionRow: {
+    flexDirection: 'row',
+    marginTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: SPACING.sm,
+    justifyContent: 'space-between'
+  },
+
+  actionButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 5
+  },
+
+
 });
 
 export default ManageProfiles;

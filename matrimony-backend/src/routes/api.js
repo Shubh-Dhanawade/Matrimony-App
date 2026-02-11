@@ -32,5 +32,6 @@ router.get('/admin/profiles', auth, admin, adminController.getAllProfiles);
 router.patch('/admin/profiles/:id/status', auth, admin, adminController.updateProfileStatus);
 router.get('/admin/users', auth, admin, adminController.getAllUsers);
 router.patch('/admin/users/:id/block', auth, admin, adminController.toggleBlockUser);
+router.delete('/admin/users/:id', auth, admin, adminController.deleteUser);
 
 module.exports = router;

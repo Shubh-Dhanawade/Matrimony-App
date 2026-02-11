@@ -85,11 +85,11 @@ const adminController = {
     }
   },
 
- getAllUsers: async (req, res) => {
-  try {
-    const { search = '' } = req.query;
+  getAllUsers: async (req, res) => {
+    try {
+      const { search = '' } = req.query;
 
-    let query = `
+      let query = `
       SELECT 
         u.id,
         u.mobile_number,
@@ -104,24 +104,24 @@ const adminController = {
       WHERE u.role != 'admin'
     `;
 
-    let params = [];
+      let params = [];
 
-    if (search) {
-      query += ` AND (u.mobile_number LIKE ? OR p.full_name LIKE ?)`;
-      params.push(`%${search}%`, `%${search}%`);
+      if (search) {
+        query += ` AND (u.mobile_number LIKE ? OR p.full_name LIKE ?)`;
+        params.push(`%${search}%`, `%${search}%`);
+      }
+
+      query += ` ORDER BY u.created_at DESC`;
+
+      const [rows] = await db.execute(query, params);
+
+      res.json(rows);
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: error.message });
     }
-
-    query += ` ORDER BY u.created_at DESC`;
-
-    const [rows] = await db.execute(query, params);
-
-    res.json(rows);
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: error.message });
-  }
-},
+  },
 
 
 
@@ -142,6 +142,60 @@ const adminController = {
       res.json({ message: `User ${is_blocked ? 'blocked' : 'unblocked'} successfully` });
     } catch (error) {
       res.status(500).json({ message: error.message });
+    }
+  },
+  updateProfileStatus: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      await db.execute(
+        'UPDATE profiles SET status = ? WHERE id = ?',
+        [status, id]
+      );
+
+      res.json({ message: 'Profile status updated successfully' });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: error.message });
+    }
+  },
+
+
+  deleteUser: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // 1. Check if user is trying to delete an admin
+      const [userRows] = await db.execute('SELECT role FROM users WHERE id = ?', [id]);
+
+      if (userRows.length === 0) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      if (userRows[0].role === 'admin') {
+        return res.status(403).json({ message: 'Cannot delete an administrator account' });
+      }
+
+      // 2. Delete the user (cascading will handle profiles and invitations)
+      const [result] = await db.execute('DELETE FROM users WHERE id = ?', [id]);
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.json({
+        message: 'User and all related data deleted permanently',
+        deletedId: id
+      });
+
+    } catch (error) {
+      console.error('deleteUser Error:', error);
+      res.status(500).json({
+        message: 'Failed to delete user',
+        error: error.message
+      });
     }
   }
 };

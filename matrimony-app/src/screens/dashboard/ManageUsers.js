@@ -66,6 +66,30 @@ const ManageUsers = () => {
     );
   };
 
+  const handleDeleteUser = (user) => {
+    Alert.alert(
+      'Permanent Delete',
+      `Are you sure you want to permanently delete ${user.mobile_number}? This action is irreversible and will delete their profile and all invitations.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'DELETE',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.delete(`/admin/users/${user.id}`);
+              Alert.alert('Success', 'User deleted permanently');
+              fetchUsers();
+            } catch (error) {
+              const errorMsg = error.response?.data?.message || 'Failed to delete user';
+              Alert.alert('Error', errorMsg);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchUsers();
@@ -88,17 +112,26 @@ const ManageUsers = () => {
         </Text>
       </View>
 
-      <TouchableOpacity
-        style={[
-          styles.actionBtn,
-          item.is_blocked ? styles.unblockBtn : styles.blockBtn
-        ]}
-        onPress={() => handleToggleBlock(item)}
-      >
-        <Text style={styles.btnText}>
-          {item.is_blocked ? 'Unblock' : 'Block'}
-        </Text>
-      </TouchableOpacity>
+      <View style={styles.actionGroup}>
+        <TouchableOpacity
+          style={[
+            styles.actionBtn,
+            item.is_blocked ? styles.unblockBtn : styles.blockBtn
+          ]}
+          onPress={() => handleToggleBlock(item)}
+        >
+          <Text style={styles.btnText}>
+            {item.is_blocked ? 'Deactive' : 'Active'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionBtn, styles.deleteBtn]}
+          onPress={() => handleDeleteUser(item)}
+        >
+          <Text style={styles.btnText}>Delete</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -192,11 +225,18 @@ const styles = StyleSheet.create({
     borderRadius: 6
   },
 
-  blockBtn: { backgroundColor: '#e74c3c' },
+  blockBtn: { backgroundColor: '#e74c3c', marginBottom: 6 },
 
-  unblockBtn: { backgroundColor: '#2ecc71' },
+  unblockBtn: { backgroundColor: '#2ecc71', marginBottom: 6 },
 
-  btnText: { color: '#fff', fontWeight: 'bold' },
+  deleteBtn: { backgroundColor: '#34495e' },
+
+  actionGroup: {
+    marginLeft: SPACING.sm,
+    alignItems: 'stretch'
+  },
+
+  btnText: { color: '#fff', fontWeight: 'bold', textAlign: 'center' },
 
   emptyText: {
     textAlign: 'center',
