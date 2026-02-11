@@ -87,12 +87,29 @@ const adminController = {
 
   getAllUsers: async (req, res) => {
     try {
-      const [rows] = await db.execute('SELECT id, mobile_number, role, created_at FROM users WHERE role != "admin"');
+      const [rows] = await db.execute(`
+      SELECT 
+        u.id,
+        u.mobile_number,
+        u.role,
+        u.is_blocked,
+        u.created_at,
+        p.full_name,
+        p.address,
+        p.birthplace
+      FROM users u
+      LEFT JOIN profiles p ON u.id = p.user_id
+      WHERE u.role != 'admin'
+      ORDER BY u.created_at DESC
+    `);
+
       res.json(rows);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ message: error.message });
     }
   },
+
 
   toggleBlockUser: async (req, res) => {
     try {
