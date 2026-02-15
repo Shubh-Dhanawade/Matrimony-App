@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, SPACING, FONT_SIZES } from '../utils/constants';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const CustomHeader = ({ title, showBack = true, onBackPress }) => {
   const navigation = useNavigation();
@@ -19,7 +20,7 @@ const CustomHeader = ({ title, showBack = true, onBackPress }) => {
       <View style={styles.leftContainer}>
         {(showBack && (navigation.canGoBack() || onBackPress)) && (
           <TouchableOpacity onPress={handleBack} style={styles.backButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-             <Text style={styles.backArrow}>← Back</Text>
+            <Icon name="arrow-back" size={24} color={COLORS.surface} />
           </TouchableOpacity>
         )}
       </View>

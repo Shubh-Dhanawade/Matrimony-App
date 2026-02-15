@@ -19,6 +19,7 @@ router.put('/profiles', auth, profileController.updateProfile);
 router.get('/profiles', auth, profileController.getProfiles);
 router.get('/profiles/suggested', auth, profileController.getSuggestedMatches);
 router.get('/profiles/me', auth, profileController.getMyProfile);
+router.get('/profiles/:id', auth, profileController.getProfileById);
 router.post('/upload/profile-image', auth, upload.single('image'), profileController.uploadImage);
 
 // Invitation Routes
@@ -32,5 +33,6 @@ router.get('/admin/profiles', auth, admin, adminController.getAllProfiles);
 router.patch('/admin/profiles/:id/status', auth, admin, adminController.updateProfileStatus);
 router.get('/admin/users', auth, admin, adminController.getAllUsers);
 router.patch('/admin/users/:id/block', auth, admin, adminController.toggleBlockUser);
+router.delete('/admin/users/:id', auth, admin, adminController.deleteUser);
 
 module.exports = router;
