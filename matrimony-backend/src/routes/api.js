@@ -19,6 +19,7 @@ router.put('/profiles', auth, profileController.updateProfile);
 router.get('/profiles', auth, profileController.getProfiles);
 router.get('/profiles/suggested', auth, profileController.getSuggestedMatches);
 router.get('/profiles/me', auth, profileController.getMyProfile);
+router.get('/profiles/:id', auth, profileController.getProfileById);
 router.post('/upload/profile-image', auth, upload.single('image'), profileController.uploadImage);
 
 // Invitation Routes

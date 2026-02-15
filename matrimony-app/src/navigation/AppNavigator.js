@@ -19,12 +19,12 @@ import ManageUsers from '../screens/dashboard/ManageUsers';
 const Stack = createNativeStackNavigator();
 
 const AuthStack = () => (
-  <Stack.Navigator 
-    screenOptions={{ 
+  <Stack.Navigator
+    screenOptions={{
       header: ({ options, route }) => (
-        <CustomHeader 
-          title={options.title || route.name} 
-          showBack={route.name !== 'Login'} 
+        <CustomHeader
+          title={options.title || route.name}
+          showBack={route.name !== 'Login'}
           onBackPress={options.onBackPress}
         />
       )
@@ -36,12 +36,12 @@ const AuthStack = () => (
 );
 
 const AdminStack = () => (
-  <Stack.Navigator 
-    screenOptions={{ 
+  <Stack.Navigator
+    screenOptions={{
       header: ({ options, route }) => (
-        <CustomHeader 
-          title={options.title || route.name} 
-          showBack={route.name !== 'AdminDashboard'} 
+        <CustomHeader
+          title={options.title || route.name}
+          showBack={route.name !== 'AdminDashboard'}
           onBackPress={options.onBackPress}
         />
       )
@@ -54,12 +54,12 @@ const AdminStack = () => (
 );
 
 const MainStack = () => (
-  <Stack.Navigator 
-    screenOptions={{ 
+  <Stack.Navigator
+    screenOptions={{
       header: ({ options, route }) => (
-        <CustomHeader 
-          title={options.title || route.name} 
-          showBack={route.name !== 'Dashboard'} 
+        <CustomHeader
+          title={options.title || route.name}
+          showBack={route.name !== 'Dashboard'}
           onBackPress={options.onBackPress}
         />
       )
@@ -72,30 +72,9 @@ const MainStack = () => (
 );
 
 const AppNavigator = () => {
-  const { user, isAuthenticated, loading } = useAuth();
-  const [profileLoading, setProfileLoading] = React.useState(false);
-  const [hasProfile, setHasProfile] = React.useState(true);
+  const { user, isAuthenticated, loading, hasProfile } = useAuth();
 
-  React.useEffect(() => {
-    // Only check profile for regular users
-    if (isAuthenticated && user?.role !== 'admin') {
-      checkProfile();
-    }
-  }, [isAuthenticated, user]);
-
-  const checkProfile = async () => {
-    setProfileLoading(true);
-    try {
-      const response = await api.get('/profiles/me');
-      setHasProfile(response.data.hasProfile);
-    } catch (error) {
-      console.error('Profile check error:', error);
-    } finally {
-      setProfileLoading(false);
-    }
-  };
-
-  if (loading || profileLoading) {
+  if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color={COLORS.primary} />
@@ -112,12 +91,12 @@ const AppNavigator = () => {
       ) : isAdmin ? (
         <AdminStack />
       ) : !hasProfile ? (
-        <Stack.Navigator 
-          screenOptions={{ 
+        <Stack.Navigator
+          screenOptions={{
             header: ({ options, route }) => (
-              <CustomHeader 
-                title={options.title || route.name} 
-                showBack={true} 
+              <CustomHeader
+                title={options.title || route.name}
+                showBack={true}
                 onBackPress={options.onBackPress}
               />
             )

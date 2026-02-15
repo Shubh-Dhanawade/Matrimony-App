@@ -6,18 +6,21 @@ import CustomButton from '../../components/CustomButton';
 import CustomPicker from '../../components/CustomPicker';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { COLORS, SPACING, FONT_SIZES, MARITAL_STATUS_OPTIONS, GENDER_OPTIONS, PROFILE_FOR_OPTIONS } from '../../utils/constants';
+import { COLORS, SPACING, FONT_SIZES, MARITAL_STATUS_OPTIONS, GENDER_OPTIONS, PROFILE_FOR_OPTIONS, TERMS_AND_CONDITIONS, PRIVACY_POLICY } from '../../utils/constants';
+import { getProfileImageUri } from '../../utils/imageUtils';
 import useHardwareBack from '../../hooks/useHardwareBack';
 import { useEffect, useRef, useState } from 'react';
+import TermsModal from '../../components/TermsModal';
+import ConsentSection from '../../components/ConsentSection';
 
 const RegistrationScreen = ({ navigation, route }) => {
-  const { logout } = useAuth();
+  const { logout, checkProfileStatus } = useAuth();
   useHardwareBack();
   const isEdit = route.params?.isEdit || false;
   const [formData, setFormData] = useState({
     full_name: '',
     father_name: '',
-    mother_maiden_name: '', 
+    mother_maiden_name: '',
     dob: '',
     gender: '',
     marital_status: '',
@@ -40,6 +43,21 @@ const RegistrationScreen = ({ navigation, route }) => {
   const [initialData, setInitialData] = useState(null);
   const [pickedImage, setPickedImage] = useState(null);
   const isSaved = useRef(false);
+
+  // Consent State
+  const [consents, setConsents] = useState({
+    ageConfirmed: false,
+    termsAccepted: false,
+    privacyAccepted: false,
+    infoAccurate: false,
+    displayConsent: false,
+  });
+
+  // Modal State
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalData, setModalData] = useState({ title: '', content: '' });
+
+  const isConsentValid = Object.values(consents).every(val => val === true);
 
   useEffect(() => {
     if (!initialData && !isEdit) {
@@ -79,7 +97,7 @@ const RegistrationScreen = ({ navigation, route }) => {
     const unsubscribe = navigation.addListener('beforeRemove', (e) => {
       const hasChanges = initialData && JSON.stringify(formData) !== JSON.stringify(initialData);
       const hasPickedImage = !!pickedImage;
-      
+
       if ((!hasChanges && !hasPickedImage) || isSaved.current) {
         return;
       }
@@ -90,7 +108,7 @@ const RegistrationScreen = ({ navigation, route }) => {
         'Unsaved Changes',
         'Are you sure you want to go back? Unsaved changes will be lost.',
         [
-          { text: 'Stay', style: 'cancel', onPress: () => {} },
+          { text: 'Stay', style: 'cancel', onPress: () => { } },
           {
             text: 'Discard',
             style: 'destructive',
@@ -133,7 +151,7 @@ const RegistrationScreen = ({ navigation, route }) => {
         }
       }
     } catch (error) {
-       Alert.alert('Error', 'Failed to fetch profile data');
+      Alert.alert('Error', 'Failed to fetch profile data');
     } finally {
       setFetching(false);
     }
@@ -190,7 +208,7 @@ const RegistrationScreen = ({ navigation, route }) => {
     const formData = new FormData();
     const uri = pickedImage.uri;
     const fileType = uri.substring(uri.lastIndexOf('.') + 1);
-    
+
     formData.append('image', {
       uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
       name: `photo.${fileType}`,
@@ -244,13 +262,13 @@ const RegistrationScreen = ({ navigation, route }) => {
         finalAvatarUrl = await uploadProfileImage();
       }
 
-      const payload = { 
+      const payload = {
         ...formData,
         avatar_url: finalAvatarUrl,
         monthly_income: formData.monthly_income ? parseInt(formData.monthly_income, 10) : 0,
         profile_for: formData.profile_for === 'Other' ? formData.other_profile_for : formData.profile_for
       };
-      
+
       // Remove other_profile_for from payload as it's UI state
       delete payload.other_profile_for;
 
@@ -261,7 +279,16 @@ const RegistrationScreen = ({ navigation, route }) => {
       }
       isSaved.current = true;
       Alert.alert('Success', `Profile ${isEdit ? 'updated' : 'created'} successfully`, [
-        { text: 'OK', onPress: () => navigation.replace('Dashboard') }
+        {
+          text: 'OK',
+          onPress: async () => {
+            if (!isEdit) {
+              await checkProfileStatus();
+            } else {
+              navigation.goBack();
+            }
+          }
+        }
       ]);
     } catch (error) {
       Alert.alert('Error', error.response?.data?.message || 'Failed to save profile');
@@ -272,6 +299,20 @@ const RegistrationScreen = ({ navigation, route }) => {
 
   const updateField = (field, value) => setFormData({ ...formData, [field]: value });
 
+  const toggleConsent = (field) => {
+    setConsents(prev => ({ ...prev, [field]: !prev[field] }));
+  };
+
+  const openTerms = () => {
+    setModalData({ title: 'Terms & Conditions', content: TERMS_AND_CONDITIONS });
+    setModalVisible(true);
+  };
+
+  const openPrivacy = () => {
+    setModalData({ title: 'Privacy Policy', content: PRIVACY_POLICY });
+    setModalVisible(true);
+  };
+
 
   if (fetching) {
     return <View style={styles.centered}><Text>Loading profile...</Text></View>;
@@ -280,49 +321,49 @@ const RegistrationScreen = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <TouchableOpacity onPress={handleGoBack} style={styles.inlineBack}>
+        {/* <TouchableOpacity onPress={handleGoBack} style={styles.inlineBack}>
           <Text style={styles.inlineBackText}>← Back</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         <Text style={styles.mainTitle}>{isEdit ? 'Edit Your Profile' : 'Create Your Profile'}</Text>
 
         <Text style={styles.sectionTitle}>Basic Information</Text>
-       
+
 
         <Text style={styles.sectionTitle}>Personal Details</Text>
         <CustomInput label="Full Name *" value={formData.full_name} onChangeText={(v) => updateField('full_name', v)} />
         <CustomInput label="Father's Name" value={formData.father_name} onChangeText={(v) => updateField('father_name', v)} />
         <CustomInput label="Mother's Maiden Name" value={formData.mother_maiden_name} onChangeText={(v) => updateField('mother_maiden_name', v)} />
         <CustomInput label="Date of Birth (YYYY-MM-DD) *" value={formData.dob} onChangeText={(v) => updateField('dob', v)} placeholder="1995-10-25" />
-        
-        <CustomPicker 
-          label="Gender *" 
-          value={formData.gender} 
-          options={GENDER_OPTIONS} 
-          placeholder="Select Gender" 
-          onSelect={(v) => updateField('gender', v)} 
+
+        <CustomPicker
+          label="Gender *"
+          value={formData.gender}
+          options={GENDER_OPTIONS}
+          placeholder="Select Gender"
+          onSelect={(v) => updateField('gender', v)}
         />
 
-        <CustomPicker 
-          label="Marital Status *" 
-          value={formData.marital_status} 
-          options={MARITAL_STATUS_OPTIONS} 
-          placeholder="Select Marital Status" 
-          onSelect={(v) => updateField('marital_status', v)} 
+        <CustomPicker
+          label="Marital Status *"
+          value={formData.marital_status}
+          options={MARITAL_STATUS_OPTIONS}
+          placeholder="Select Marital Status"
+          onSelect={(v) => updateField('marital_status', v)}
         />
 
-        <CustomPicker 
-          label="Creating Profile For *" 
-          value={formData.profile_for} 
-          options={PROFILE_FOR_OPTIONS} 
-          placeholder="Select Profile For" 
-          onSelect={(v) => updateField('profile_for', v)} 
+        <CustomPicker
+          label="Creating Profile For *"
+          value={formData.profile_for}
+          options={PROFILE_FOR_OPTIONS}
+          placeholder="Select Profile For"
+          onSelect={(v) => updateField('profile_for', v)}
         />
-        
+
         {formData.profile_for === 'Other' && (
-          <CustomInput 
-            label="Specify Relation *" 
-            value={formData.other_profile_for} 
-            onChangeText={(v) => updateField('other_profile_for', v)} 
+          <CustomInput
+            label="Specify Relation *"
+            value={formData.other_profile_for}
+            onChangeText={(v) => updateField('other_profile_for', v)}
             placeholder="e.g. Friend, Cousin"
           />
         )}
@@ -343,7 +384,7 @@ const RegistrationScreen = ({ navigation, route }) => {
 
         <Text style={styles.sectionTitle}>Expectations & Photo</Text>
         <CustomInput label="Partner Expectations" value={formData.expectations} onChangeText={(v) => updateField('expectations', v)} multiline numberOfLines={3} />
-        
+
         <View style={styles.photoSection}>
           <Text style={styles.label}>Profile Photo</Text>
           <View style={styles.photoButtons}>
@@ -354,12 +395,12 @@ const RegistrationScreen = ({ navigation, route }) => {
               <Text style={styles.photoButtonText}>From Gallery</Text>
             </TouchableOpacity>
           </View>
-          
+
           {(pickedImage || formData.avatar_url) ? (
             <View style={styles.previewContainer}>
-              <Image 
-                source={{ uri: pickedImage ? pickedImage.uri : formData.avatar_url }} 
-                style={styles.photoPreview} 
+              <Image
+                source={{ uri: pickedImage ? pickedImage.uri : getProfileImageUri(formData.avatar_url) }}
+                style={styles.photoPreview}
               />
               <TouchableOpacity onPress={() => { setPickedImage(null); updateField('avatar_url', ''); }}>
                 <Text style={styles.removeText}>Remove</Text>
@@ -372,8 +413,28 @@ const RegistrationScreen = ({ navigation, route }) => {
           )}
         </View>
 
-        <CustomButton title={isEdit ? "Update Profile" : "Save Profile"} onPress={handleSave} loading={loading} style={styles.button} />
+        <ConsentSection
+          consents={consents}
+          onToggle={toggleConsent}
+          onOpenTerms={openTerms}
+          onOpenPrivacy={openPrivacy}
+        />
+
+        <CustomButton
+          title={isEdit ? "Update Profile" : "Save Profile"}
+          onPress={handleSave}
+          loading={loading}
+          disabled={!isConsentValid}
+          style={[styles.button, !isConsentValid && styles.disabledButton]}
+        />
       </ScrollView>
+
+      <TermsModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        title={modalData.title}
+        content={modalData.content}
+      />
     </SafeAreaView>
   );
 };
@@ -396,7 +457,11 @@ const styles = StyleSheet.create({
   previewContainer: { alignItems: 'center', marginTop: SPACING.sm },
   removeText: { color: COLORS.error, marginTop: SPACING.xs, fontWeight: 'bold' },
   photoPlaceholder: { height: 120, width: 120, backgroundColor: COLORS.border, borderRadius: 60, alignSelf: 'center', justifyContent: 'center', alignItems: 'center', marginTop: SPACING.sm },
-  placeholderText: { color: COLORS.textSecondary, fontSize: 10 }
+  placeholderText: { color: COLORS.textSecondary, fontSize: 10 },
+  disabledButton: {
+    backgroundColor: '#CCCCCC',
+    opacity: 0.6,
+  }
 });
 
 export default RegistrationScreen;

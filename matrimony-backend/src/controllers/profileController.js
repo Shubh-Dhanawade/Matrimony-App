@@ -5,7 +5,7 @@ const profileController = {
     try {
       const userId = req.user.id;
       const data = { ...req.body };
-      
+
       // Handle monthly_income numeric conversion
       if (data.monthly_income !== undefined) {
         if (data.monthly_income === '' || data.monthly_income === null) {
@@ -31,11 +31,11 @@ const profileController = {
       await Profile.create(profileData);
       res.status(201).json({ message: 'Profile created successfully' });
       console.log(profileData);
-      
+
     } catch (error) {
       res.status(500).json({ message: error.message });
       console.log(error);
-      
+
     }
   },
 
@@ -102,22 +102,31 @@ const profileController = {
       res.status(500).json({ message: error.message });
     }
   },
-  
+
+  getProfileById: async (req, res) => {
+    try {
+      const { id } = req.params;
+      console.log(`Fetching profile for user ID: ${id}`);
+      const profile = await Profile.findByUserId(id);
+      if (!profile) {
+        return res.status(404).json({ message: 'Profile not found' });
+      }
+      res.json({ profile });
+    } catch (error) {
+      console.error('Error in getProfileById:', error);
+      res.status(500).json({ message: error.message });
+    }
+  },
+
   uploadImage: async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
       }
 
-      // Generate the full URL for the uploaded file
-      // In production, this would be a cloud storage URL
-      const host = req.get('host');
-      const protocol = req.protocol;
-      const imageUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
-
-      res.status(200).json({ 
+      res.status(200).json({
         message: 'Image uploaded successfully',
-        imageUrl: imageUrl,
+        imageUrl: `uploads/${req.file.filename}`, // Return relative path
         filename: req.file.filename
       });
     } catch (error) {

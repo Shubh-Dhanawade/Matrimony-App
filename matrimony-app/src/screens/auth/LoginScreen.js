@@ -25,26 +25,16 @@ const LoginScreen = ({ navigation }) => {
       const response = await api.post('/auth/login', { mobileNumber, password });
       console.log('Login success response:', response.data);
       const { token, user } = response.data;
-      
+
       await login(token, user);
 
-      // Role-based navigation reset
-      if (user.role === 'admin') {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'AdminDashboard' }],
-        });
-      } else {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Dashboard' }],
-        });
-      }
-      
+      // No manual navigation needed!
+      // AppNavigator will see isAuthenticated=true and switch the stack.
+
     } catch (error) {
       console.log('Login error response:', error.response?.data);
       Alert.alert('Login Failed', error.response?.data?.message || 'Check your credentials');
-      
+
     } finally {
       setLoading(false);
     }
@@ -68,7 +58,7 @@ const LoginScreen = ({ navigation }) => {
           value={password}
           onChangeText={setPassword}
         />
-        <CustomButton title="Login" onPress={()=>{
+        <CustomButton title="Login" onPress={() => {
           handleLogin(mobileNumber, password)
         }} loading={loading} />
         <Text style={styles.link} onPress={() => navigation.navigate('Signup')}>
