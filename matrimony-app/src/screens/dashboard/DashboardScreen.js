@@ -1,15 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, Image, TouchableOpacity,
-  ActivityIndicator, ScrollView, Alert, Modal, TextInput
+  ActivityIndicator, ScrollView, Alert, Modal, TextInput, Dimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, SPACING, FONT_SIZES, MARITAL_STATUS_OPTIONS } from '../../utils/constants';
 import { getProfileImageUri } from '../../utils/imageUtils';
+import Swiper from 'react-native-deck-swiper';
 import ProfileCard from '../../components/ProfileCard';
 import useHardwareBack from '../../hooks/useHardwareBack';
+
+const { height } = Dimensions.get('window');
 
 const DashboardScreen = ({ navigation }) => {
   useHardwareBack();
@@ -17,10 +21,8 @@ const DashboardScreen = ({ navigation }) => {
   const [myProfile, setMyProfile] = useState(null);
   const [profiles, setProfiles] = useState([]);
   const [suggested, setSuggested] = useState([]);
-  const [invitations, setInvitations] = useState({ sent: [], received: [] });
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
-  const [activeTab, setActiveTab] = useState('Profiles'); // Profiles, Invitations
 
   const [filters, setFilters] = useState({
     ageMin: '', ageMax: '', caste: '', qualification: '', monthly_income: '', birthplace: ''
@@ -32,17 +34,15 @@ const DashboardScreen = ({ navigation }) => {
       console.log('[DASHBOARD] Fetching data for user dashboard...');
 
       const requests = [
-        api.get('/profiles', { params: filters }).catch(err => { console.error('Error fetching /profiles:', err.response?.data || err.message); throw err; }),
-        api.get('/profiles/suggested').catch(err => { console.error('Error fetching /suggested:', err.response?.data || err.message); throw err; }),
-        api.get('/invitations').catch(err => { console.error('Error fetching /invitations:', err.response?.data || err.message); throw err; }),
-        api.get('/profiles/me').catch(err => { console.error('Error fetching /profiles/me:', err.response?.data || err.message); throw err; })
+        api.get('/profiles', { params: filters }),
+        api.get('/profiles/suggested'),
+        api.get('/profiles/me')
       ];
 
-      const [pRes, sRes, iRes, mRes] = await Promise.all(requests);
+      const [pRes, sRes, mRes] = await Promise.all(requests);
 
       setProfiles(pRes.data);
       setSuggested(sRes.data);
-      setInvitations(iRes.data);
       setMyProfile(mRes.data.profile);
       console.log('[DASHBOARD] Data fetch completed successfully');
     } catch (error) {
@@ -53,9 +53,28 @@ const DashboardScreen = ({ navigation }) => {
     }
   }, [filters]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [fetchData])
+  );
+
+  const handleSwipedLeft = (index) => {
+    const profile = profiles[index];
+    if (profile) {
+      api.post('/profiles/ignore', { receiverId: profile.user_id })
+        .catch(err => console.error('Ignore error:', err));
+    }
+  };
+
+  const handleSwipedRight = (index) => {
+    const profile = profiles[index];
+    if (profile) {
+      api.post('/profiles/interest', { receiverId: profile.user_id })
+        .then(() => Alert.alert('Interested', `Interest sent to ${profile.full_name}`))
+        .catch(err => console.error('Interest error:', err));
+    }
+  };
 
   const handleSendInvitation = async (receiverUserId) => {
     try {
@@ -160,116 +179,19 @@ const DashboardScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
 
+  // Placeholder for suggested profiles if needed
   const renderSuggested = () => suggested.length > 0 && (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Suggested Profiles</Text>
+      <Text style={styles.sectionTitle}>Quick Picks</Text>
       <FlatList
         horizontal
         showsHorizontalScrollIndicator={false}
         data={suggested}
         keyExtractor={(item) => `suggested-${item.user_id}`}
         renderItem={({ item }) => (
-          <ProfileCard profile={item} onInvite={handleSendInvitation} isSuggested />
+          <ProfileCard profile={item} isSuggested />
         )}
       />
-    </View>
-  );
-
-  const renderInvitationCard = (item, isReceived = false) => {
-    const isPending = item.status === 'Pending';
-    const isAccepted = item.status === 'Accepted';
-    const isRejected = item.status === 'Rejected';
-
-    return (
-      <View key={item.id} style={styles.invCard}>
-        <View style={styles.invHeader}>
-          <Image
-            source={{ uri: getProfileImageUri(item.avatar_url) }}
-            style={styles.invAvatar}
-          />
-          <View style={styles.invInfo}>
-            <Text style={styles.invName}>{item.full_name}</Text>
-            <Text style={styles.invMeta}>
-              {item.age ? `${item.age} yrs | ` : ''}{item.marital_status || 'Member'}
-            </Text>
-          </View>
-          {isReceived && isPending && (
-            <View style={styles.pendingBadge}>
-              <Text style={styles.pendingBadgeText}>New</Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.invBody}>
-          {isReceived && isPending ? (
-            <View style={styles.actionRow}>
-              <TouchableOpacity
-                style={[styles.modernBtn, styles.acceptBtn]}
-                onPress={() => handleUpdateInvitation(item.id, 'Accepted')}
-              >
-                <Text style={styles.btnText}>Accept</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modernBtn, styles.rejectBtn]}
-                onPress={() => handleUpdateInvitation(item.id, 'Rejected')}
-              >
-                <Text style={[styles.btnText, { color: COLORS.error }]}>Reject</Text>
-              </TouchableOpacity>
-            </View>
-          ) : isAccepted ? (
-            <View style={styles.statusContainer}>
-              <View style={styles.matchBadge}>
-                <Text style={styles.matchBadgeText}>🎉 It's a Match!</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.viewProfileBtn}
-                onPress={() => navigation.navigate('ProfileView', { userId: item.other_user_id })}
-              >
-                <Text style={styles.viewProfileText}>View Profile</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.statusContainer}>
-              <Text style={[styles.statusText, isRejected && { color: COLORS.error }]}>
-                {isRejected ? '❌ Invitation Rejected' : `Status: ${item.status}`}
-              </Text>
-            </View>
-          )}
-        </View>
-      </View>
-    );
-  };
-
-  const renderInvitations = () => (
-    <View style={styles.container}>
-      <View style={styles.invSectionHeader}>
-        <Text style={styles.subTitle}>Received Invitations</Text>
-        {invitations.received.length > 0 && (
-          <View style={styles.countBadge}>
-            <Text style={styles.countText}>{invitations.received.length}</Text>
-          </View>
-        )}
-      </View>
-
-      {invitations.received.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No invitations received yet</Text>
-        </View>
-      ) : (
-        invitations.received.map(item => renderInvitationCard(item, true))
-      )}
-
-      <View style={[styles.invSectionHeader, { marginTop: SPACING.xl }]}>
-        <Text style={styles.subTitle}>Sent Invitations</Text>
-      </View>
-
-      {invitations.sent.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>You haven't sent any invitations</Text>
-        </View>
-      ) : (
-        invitations.sent.map(item => renderInvitationCard(item, false))
-      )}
     </View>
   );
 
@@ -281,57 +203,53 @@ const DashboardScreen = ({ navigation }) => {
     <SafeAreaView style={styles.root}>
       {renderFilterModal()}
 
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Text style={styles.headerTitle}>Matrimony</Text>
-          <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-            <Text style={styles.logoutBtnText}>Logout</Text>
-          </TouchableOpacity>
+      <View style={{ flex: 1 }}>
+        <View style={styles.swiperContainer}>
+          {profiles.length > 0 ? (
+            <Swiper
+              cards={profiles}
+              renderCard={(card) => (
+                <ProfileCard
+                  profile={card}
+                  isSubscribed={card.is_subscribed === 1}
+                  onUpgrade={() => navigation.navigate('Upgrade')}
+                />
+              )}
+              onSwipedLeft={handleSwipedLeft}
+              onSwipedRight={handleSwipedRight}
+              cardIndex={0}
+              backgroundColor={'transparent'}
+              stackSize={3}
+              overlap={10}
+              infinite={false}
+              overlayLabels={{
+                left: {
+                  title: 'IGNORED',
+                  style: {
+                    label: { backgroundColor: 'red', color: 'white', fontSize: 24 },
+                    wrapper: { flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'flex-start', marginTop: 30, marginLeft: -30 }
+                  }
+                },
+                right: {
+                  title: 'INTERESTED',
+                  style: {
+                    label: { backgroundColor: 'green', color: 'white', fontSize: 24 },
+                    wrapper: { flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start', marginTop: 30, marginLeft: 30 }
+                  }
+                }
+              }}
+            />
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No more profiles to show!</Text>
+            </View>
+          )}
         </View>
 
-        {/* Tabs */}
-        <View style={styles.tabs}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'Profiles' && styles.activeTab]}
-            onPress={() => setActiveTab('Profiles')}
-          >
-            <Text style={[styles.tabText, activeTab === 'Profiles' && styles.activeTabText]}>Find Match</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'Invitations' && styles.activeTab]}
-            onPress={() => setActiveTab('Invitations')}
-          >
-            <Text style={[styles.tabText, activeTab === 'Invitations' && styles.activeTabText]}>Invitations</Text>
-          </TouchableOpacity>
+        <View style={{ marginTop: 20 }}>
+          {renderSuggested()}
         </View>
       </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {activeTab === 'Profiles' ? (
-          <>
-            {renderUserSummary()}
-            {renderSuggested()}
-
-            <View style={[styles.row, styles.listHeader]}>
-              <Text style={styles.sectionTitle}>Latest Profiles</Text>
-              <TouchableOpacity onPress={() => setShowFilters(true)}>
-                <Text style={styles.filterLink}>Filter</Text>
-              </TouchableOpacity>
-            </View>
-
-            {profiles.length === 0 ? (
-              <Text style={styles.emptyMessage}>No profiles found. Try adjusting filters.</Text>
-            ) : (
-              profiles.map(item => (
-                <ProfileCard key={`profile-${item.user_id}`} profile={item} onInvite={handleSendInvitation} />
-              ))
-            )}
-          </>
-        ) : (
-          renderInvitations()
-        )}
-      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -396,10 +314,10 @@ export const styles = StyleSheet.create({
   btnText: { color: COLORS.surface, fontWeight: 'bold', fontSize: FONT_SIZES.sm },
 
   statusContainer: { alignItems: 'center', paddingVertical: 4 },
-  matchBadge: { backgroundColor: '#E8F5E9', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginBottom: SPACING.sm },
-  matchBadgeText: { color: COLORS.success, fontWeight: 'bold', fontSize: FONT_SIZES.sm },
+  matchBadge: { backgroundColor: '#FCE4EC', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginBottom: SPACING.sm },
+  matchBadgeText: { color: COLORS.primary, fontWeight: 'bold', fontSize: FONT_SIZES.sm },
   viewProfileBtn: { paddingVertical: 4 },
-  viewProfileText: { color: COLORS.primary, fontWeight: 'bold', fontSize: FONT_SIZES.sm, textDecorationLine: 'underline' },
+  viewProfileText: { color: 'black', fontWeight: 'bold', fontSize: FONT_SIZES.sm, textDecorationLine: 'underline' },
   statusText: { fontSize: FONT_SIZES.sm, fontWeight: '600', color: COLORS.textSecondary },
 
   emptyContainer: { padding: SPACING.xl, alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.02)', borderRadius: 12 },
@@ -418,7 +336,11 @@ export const styles = StyleSheet.create({
 
   loader: { flex: 1, justifyContent: 'center' },
   emptyMessage: { textAlign: 'center', marginTop: 30, color: COLORS.textSecondary, fontStyle: 'italic' },
-  emptyText: { color: COLORS.textSecondary, fontStyle: 'italic' }
+  emptyText: { color: COLORS.textSecondary, fontStyle: 'italic' },
+  swiperContainer: {
+    height: height * 0.78,
+    marginTop: 0,
+  }
 });
 
 export default DashboardScreen;

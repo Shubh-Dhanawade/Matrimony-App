@@ -14,12 +14,11 @@ export const getProfileImageUri = (path) => {
         return `${IMAGE_BASE_URL}/uploads/userprofile.png`;
     }
 
-    if (path.startsWith('http')) {
-        return path;
-    }
+    let uri = path.startsWith('http') ? path : `${IMAGE_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 
-    // Ensure we don't have double slashes if IMAGE_BASE_URL ends with / and path starts with /
-    const relativePath = path.startsWith('/') ? path : `/${path}`;
+    // Add timestamp to bust cache
+    const timestamp = new Date().getTime();
+    uri += uri.includes('?') ? `&t=${timestamp}` : `?t=${timestamp}`;
 
-    return `${IMAGE_BASE_URL}${relativePath}`;
+    return uri;
 };

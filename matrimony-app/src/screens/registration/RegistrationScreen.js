@@ -12,9 +12,10 @@ import useHardwareBack from '../../hooks/useHardwareBack';
 import { useEffect, useRef, useState } from 'react';
 import TermsModal from '../../components/TermsModal';
 import ConsentSection from '../../components/ConsentSection';
+import { formatDateToISO } from '../../utils/dateUtils';
 
 const RegistrationScreen = ({ navigation, route }) => {
-  const { logout, checkProfileStatus } = useAuth();
+  const { logout, checkProfileStatus, updateUser } = useAuth();
   useHardwareBack();
   const isEdit = route.params?.isEdit || false;
   const [formData, setFormData] = useState({
@@ -43,6 +44,7 @@ const RegistrationScreen = ({ navigation, route }) => {
   const [initialData, setInitialData] = useState(null);
   const [pickedImage, setPickedImage] = useState(null);
   const isSaved = useRef(false);
+
 
   // Consent State
   const [consents, setConsents] = useState({
@@ -136,6 +138,7 @@ const RegistrationScreen = ({ navigation, route }) => {
         if (profile.profile_for && !PROFILE_FOR_OPTIONS.includes(profile.profile_for)) {
           const newData = {
             ...profile,
+            dob: formatDateToISO(profile.dob),
             profile_for: 'Other',
             other_profile_for: profile.profile_for
           };
@@ -144,6 +147,7 @@ const RegistrationScreen = ({ navigation, route }) => {
         } else {
           const newData = {
             ...profile,
+            dob: formatDateToISO(profile.dob),
             other_profile_for: ''
           };
           setFormData(newData);
@@ -272,11 +276,18 @@ const RegistrationScreen = ({ navigation, route }) => {
       // Remove other_profile_for from payload as it's UI state
       delete payload.other_profile_for;
 
+      let updatedProfileRes;
       if (isEdit) {
-        await api.put('/profiles', payload);
+        updatedProfileRes = await api.put('/profiles', payload);
       } else {
-        await api.post('/profiles', payload);
+        updatedProfileRes = await api.post('/profiles', payload);
       }
+
+      // Update local auth context with new profile data (especially avatar_url)
+      if (updatedProfileRes?.data?.profile) {
+        await updateUser(updatedProfileRes.data.profile);
+      }
+
       isSaved.current = true;
       Alert.alert('Success', `Profile ${isEdit ? 'updated' : 'created'} successfully`, [
         {

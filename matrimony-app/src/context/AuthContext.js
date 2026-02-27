@@ -72,6 +72,43 @@ export const AuthProvider = ({ children }) => {
     await AsyncStorage.removeItem('user');
   };
 
+  const updateUser = async (updatedData) => {
+    try {
+      const newUser = { ...user, ...updatedData };
+      setUser(newUser);
+      await AsyncStorage.setItem('user', JSON.stringify(newUser));
+      console.log('[AUTH_CONTEXT] User updated locally');
+    } catch (e) {
+      console.error('[AUTH_CONTEXT] Update user error:', e);
+    }
+  };
+
+  const refreshUser = async () => {
+    try {
+      const api = (await import('../services/api')).default;
+
+      // Get latest user info
+      const authRes = await api.get('/auth/me');
+      // Get latest profile info (especially avatar_url)
+      const profileRes = await api.get('/profiles/me');
+
+      if (authRes.data.user) {
+        let userData = authRes.data.user;
+
+        // Merge profile info if exists
+        if (profileRes.data.profile) {
+          userData = { ...userData, ...profileRes.data.profile };
+        }
+
+        setUser(userData);
+        await AsyncStorage.setItem('user', JSON.stringify(userData));
+        console.log('[AUTH_CONTEXT] User and Profile refreshed');
+      }
+    } catch (error) {
+      console.error('[AUTH_CONTEXT] Refresh error:', error);
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -81,7 +118,9 @@ export const AuthProvider = ({ children }) => {
       hasProfile,
       checkProfileStatus,
       login,
-      logout
+      logout,
+      refreshUser,
+      updateUser
     }}>
       {children}
     </AuthContext.Provider>
