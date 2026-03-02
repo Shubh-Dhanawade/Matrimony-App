@@ -4,8 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import api from '../../services/api';
 import { COLORS, SPACING, FONT_SIZES } from '../../utils/constants';
 import { getProfileImageUri } from '../../utils/imageUtils';
+import { useTranslation } from 'react-i18next';
 
 const InvitationsScreen = ({ navigation }) => {
+    const { t } = useTranslation();
     const [invitations, setInvitations] = useState({ sent: [], received: [] });
     const [loading, setLoading] = useState(true);
 
@@ -27,10 +29,10 @@ const InvitationsScreen = ({ navigation }) => {
     const handleUpdateInvitation = async (invitationId, status) => {
         try {
             await api.put('/invitations', { invitationId, status });
-            Alert.alert('Success', `Invitation ${status.toLowerCase()}!`);
+            Alert.alert(t('success'), t('invitation_status_updated', { status: t(status.toLowerCase()) })); // key missing but fallback ok
             fetchInvitations();
         } catch (error) {
-            Alert.alert('Error', 'Failed to update invitation');
+            Alert.alert(t('error'), t('action_failed'));
         }
     };
 
@@ -61,25 +63,25 @@ const InvitationsScreen = ({ navigation }) => {
                                 style={[styles.modernBtn, styles.acceptBtn]}
                                 onPress={() => handleUpdateInvitation(item.id, 'Accepted')}
                             >
-                                <Text style={styles.btnText}>Accept</Text>
+                                <Text style={styles.btnText}>{t('accept')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.modernBtn, styles.rejectBtn]}
                                 onPress={() => handleUpdateInvitation(item.id, 'Rejected')}
                             >
-                                <Text style={[styles.btnText, { color: COLORS.error }]}>Reject</Text>
+                                <Text style={[styles.btnText, { color: COLORS.error }]}>{t('reject')}</Text>
                             </TouchableOpacity>
                         </View>
                     ) : isAccepted ? (
                         <View style={styles.statusContainer}>
                             <View style={styles.matchBadge}>
-                                <Text style={styles.matchBadgeText}>🎉 It's a Match!</Text>
+                                <Text style={styles.matchBadgeText}>{t('match_success')}</Text>
                             </View>
                         </View>
                     ) : (
                         <View style={styles.statusContainer}>
                             <Text style={[styles.statusText, isRejected && { color: COLORS.error }]}>
-                                {isRejected ? '❌ Invitation Rejected' : `Status: ${item.status}`}
+                                {isRejected ? t('invitation_rejected') : t('invitation_status', { status: item.status })}
                             </Text>
                         </View>
                     )}
@@ -99,19 +101,19 @@ const InvitationsScreen = ({ navigation }) => {
     return (
         <SafeAreaView style={styles.root}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                <Text style={styles.title}>Received Invitations</Text>
+                <Text style={styles.title}>{t('received_invitations')}</Text>
                 {invitations.received.length === 0 ? (
                     <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>No invitations received yet</Text>
+                        <Text style={styles.emptyText}>{t('no_invitations_received')}</Text>
                     </View>
                 ) : (
                     invitations.received.map(item => renderInvitationCard(item, true))
                 )}
 
-                <Text style={[styles.title, { marginTop: SPACING.xl }]}>Sent Invitations</Text>
+                <Text style={[styles.title, { marginTop: SPACING.xl }]}>{t('sent_invitations')}</Text>
                 {invitations.sent.length === 0 ? (
                     <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>You haven't sent any invitations</Text>
+                        <Text style={styles.emptyText}>{t('no_invitations_sent')}</Text>
                     </View>
                 ) : (
                     invitations.sent.map(item => renderInvitationCard(item, false))

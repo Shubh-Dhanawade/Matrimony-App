@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import api from '../../services/api';
 import { COLORS, SPACING, FONT_SIZES } from '../../utils/constants';
 import ProfileCard from '../../components/ProfileCard';
@@ -20,6 +21,7 @@ import { useAuth } from '../../context/AuthContext';
 const { height } = Dimensions.get('window');
 
 const ProfilesFeedScreen = ({ navigation }) => {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const [profiles, setProfiles] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -43,12 +45,12 @@ const ProfilesFeedScreen = ({ navigation }) => {
             console.log('[FEED] Fetch successful');
         } catch (error) {
             console.error('[FEED] Fetch error detail:', error.response?.data || error.message);
-            Alert.alert('Error', 'Failed to fetch profiles. Please try again later.');
+            Alert.alert(t('error'), t('error_fetch_profiles'));
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         fetchProfiles();
@@ -63,21 +65,21 @@ const ProfilesFeedScreen = ({ navigation }) => {
                     break;
                 case 'shortlist':
                     await api.post('/profiles/interest', { receiverId: profile.user_id });
-                    Alert.alert('Shortlisted', `${profile.full_name} has been added to your shortlist.`);
+                    Alert.alert(t('shortlisted_title'), t('shortlisted_msg', { name: profile.full_name }));
                     break;
                 case 'interested':
                     await api.post('/profiles/interest', { receiverId: profile.user_id });
-                    Alert.alert('Interested', `Interest sent to ${profile.full_name}`);
+                    Alert.alert(t('interested_title'), t('interested_msg', { name: profile.full_name }));
                     break;
                 case 'chat':
-                    Alert.alert('Chat', `Initiating chat with ${profile.full_name}...`);
+                    Alert.alert(t('chat_title'), t('chat_msg', { name: profile.full_name }));
                     break;
                 default:
                     break;
             }
         } catch (error) {
             console.error(`[FEED] Action ${type} error:`, error);
-            Alert.alert('Error', 'Action failed. Please try again.');
+            Alert.alert(t('error'), t('action_failed'));
         }
     };
 
@@ -88,7 +90,7 @@ const ProfilesFeedScreen = ({ navigation }) => {
             onUpgrade={() => navigation.navigate('Upgrade')}
             onAction={handleAction}
         />
-    ), [isSubscribed, navigation]);
+    ), [isSubscribed, navigation, t]); // t is needed for handleAction dependence indirectly
 
     const keyExtractor = useCallback((item) => `profile-${item.user_id}`, []);
 
@@ -96,7 +98,7 @@ const ProfilesFeedScreen = ({ navigation }) => {
         return (
             <View style={styles.centerContainer}>
                 <ActivityIndicator size="large" color={COLORS.primary} />
-                <Text style={styles.loadingText}>Finding best matches for you...</Text>
+                <Text style={styles.loadingText}>{t('finding_matches')}</Text>
             </View>
         );
     }
@@ -106,8 +108,8 @@ const ProfilesFeedScreen = ({ navigation }) => {
             <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Find Matches</Text>
-                <Text style={styles.headerSubtitle}>Discover your perfect partner</Text>
+                <Text style={styles.headerTitle}>{t('find_matches_title')}</Text>
+                <Text style={styles.headerSubtitle}>{t('find_matches_subtitle')}</Text>
             </View>
 
             <FlatList
@@ -129,8 +131,8 @@ const ProfilesFeedScreen = ({ navigation }) => {
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
                         <MaterialCommunityIcons name="account-search-outline" size={80} color={COLORS.textSecondary} />
-                        <Text style={styles.emptyTitle}>No More Profiles</Text>
-                        <Text style={styles.emptySubtitle}>Try changing your filters or check back later!</Text>
+                        <Text style={styles.emptyTitle}>{t('no_more_profiles')}</Text>
+                        <Text style={styles.emptySubtitle}>{t('no_more_profiles_desc')}</Text>
                     </View>
                 }
                 initialNumToRender={3}

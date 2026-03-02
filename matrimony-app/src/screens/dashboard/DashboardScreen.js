@@ -12,10 +12,12 @@ import { getProfileImageUri } from '../../utils/imageUtils';
 import Swiper from 'react-native-deck-swiper';
 import ProfileCard from '../../components/ProfileCard';
 import useHardwareBack from '../../hooks/useHardwareBack';
+import { useTranslation } from 'react-i18next';
 
 const { height } = Dimensions.get('window');
 
 const DashboardScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   useHardwareBack();
   const { logout } = useAuth();
   const [myProfile, setMyProfile] = useState(null);
@@ -47,7 +49,7 @@ const DashboardScreen = ({ navigation }) => {
       console.log('[DASHBOARD] Data fetch completed successfully');
     } catch (error) {
       console.error('Fetch error:', error);
-      Alert.alert('Error', 'Failed to fetch dashboard data (Status: 500 in backend). Check your backend terminal logs for the exact SQL error.');
+      Alert.alert(t('error'), t('error_fetch_profiles'));
     } finally {
       setLoading(false);
     }
@@ -71,7 +73,7 @@ const DashboardScreen = ({ navigation }) => {
     const profile = profiles[index];
     if (profile) {
       api.post('/profiles/interest', { receiverId: profile.user_id })
-        .then(() => Alert.alert('Interested', `Interest sent to ${profile.full_name}`))
+        .then(() => Alert.alert(t('interested_title'), t('interested_msg', { name: profile.full_name })))
         .catch(err => console.error('Interest error:', err));
     }
   };
@@ -81,10 +83,10 @@ const DashboardScreen = ({ navigation }) => {
       await api.post('/invitations', {
         receiverId: receiverUserId
       });
-      Alert.alert('Success', 'Invitation sent successfully!');
+      Alert.alert(t('success'), t('invitation_sent_success')); // Need key
       fetchData();
     } catch (error) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to send invitation');
+      Alert.alert(t('error'), error.response?.data?.message || t('action_failed'));
     }
   };
 
@@ -103,43 +105,43 @@ const DashboardScreen = ({ navigation }) => {
     <Modal visible={showFilters} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Filter Profiles</Text>
+          <Text style={styles.modalTitle}>{t('filter_profiles')}</Text>
           <ScrollView>
-            <Text style={styles.label}>Age Range</Text>
+            <Text style={styles.label}>{t('age_range')}</Text>
             <View style={styles.row}>
               <TextInput
                 style={[styles.input, { flex: 1, marginRight: 8 }]}
-                placeholder="Min"
+                placeholder={t('min')}
                 keyboardType="numeric"
                 value={filters.ageMin}
                 onChangeText={(v) => setFilters({ ...filters, ageMin: v })}
               />
               <TextInput
                 style={[styles.input, { flex: 1 }]}
-                placeholder="Max"
+                placeholder={t('max')}
                 keyboardType="numeric"
                 value={filters.ageMax}
                 onChangeText={(v) => setFilters({ ...filters, ageMax: v })}
               />
             </View>
-            <Text style={styles.label}>Caste</Text>
+            <Text style={styles.label}>{t('caste')}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter Caste"
+              placeholder={t('enter_caste')}
               value={filters.caste}
               onChangeText={(v) => setFilters({ ...filters, caste: v })}
             />
-            <Text style={styles.label}>Qualification</Text>
+            <Text style={styles.label}>{t('qualification')}</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g. BE, MBBS"
+              placeholder={t('qualification_placeholder')}
               value={filters.qualification}
               onChangeText={(v) => setFilters({ ...filters, qualification: v })}
             />
-            <Text style={styles.label}>Min Monthly Income</Text>
+            <Text style={styles.label}>{t('min_income')}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Amount"
+              placeholder={t('amount')}
               keyboardType="numeric"
               value={filters.incomeMin}
               onChangeText={(v) => setFilters({ ...filters, incomeMin: v })}
@@ -149,10 +151,10 @@ const DashboardScreen = ({ navigation }) => {
             <TouchableOpacity style={styles.clearBtn} onPress={() => setFilters({
               ageMin: '', ageMax: '', caste: '', qualification: '', incomeMin: '', birthplace: ''
             })}>
-              <Text style={styles.clearBtnText}>Clear All</Text>
+              <Text style={styles.clearBtnText}>{t('clear_all')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.applyBtn} onPress={() => setShowFilters(false)}>
-              <Text style={styles.applyBtnText}>Apply</Text>
+              <Text style={styles.applyBtnText}>{t('apply')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -174,7 +176,7 @@ const DashboardScreen = ({ navigation }) => {
         style={styles.editBtn}
         onPress={() => navigation.navigate('Registration', { isEdit: true })}
       >
-        <Text style={styles.editBtnText}>Edit</Text>
+        <Text style={styles.editBtnText}>{t('edit')}</Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -182,7 +184,7 @@ const DashboardScreen = ({ navigation }) => {
   // Placeholder for suggested profiles if needed
   const renderSuggested = () => suggested.length > 0 && (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Quick Picks</Text>
+      <Text style={styles.sectionTitle}>{t('quick_picks')}</Text>
       <FlatList
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -224,14 +226,14 @@ const DashboardScreen = ({ navigation }) => {
               infinite={false}
               overlayLabels={{
                 left: {
-                  title: 'IGNORED',
+                  title: t('ignored') || 'IGNORED',
                   style: {
                     label: { backgroundColor: 'red', color: 'white', fontSize: 24 },
                     wrapper: { flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'flex-start', marginTop: 30, marginLeft: -30 }
                   }
                 },
                 right: {
-                  title: 'INTERESTED',
+                  title: t('interested') || 'INTERESTED',
                   style: {
                     label: { backgroundColor: 'green', color: 'white', fontSize: 24 },
                     wrapper: { flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start', marginTop: 30, marginLeft: 30 }
@@ -241,7 +243,7 @@ const DashboardScreen = ({ navigation }) => {
             />
           ) : (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No more profiles to show!</Text>
+              <Text style={styles.emptyText}>{t('no_more_profiles_show')}</Text>
             </View>
           )}
         </View>

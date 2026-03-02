@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, Image, Pla
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
 import CustomPicker from '../../components/CustomPicker';
@@ -17,6 +18,7 @@ import ConsentSection from '../../components/ConsentSection';
 import { formatDateToISO } from '../../utils/dateUtils';
 
 const RegistrationScreen = ({ navigation, route }) => {
+  const { t } = useTranslation();
   const { logout, checkProfileStatus, updateUser } = useAuth();
   useHardwareBack();
   const isEdit = route.params?.isEdit || false;
@@ -86,11 +88,11 @@ const RegistrationScreen = ({ navigation, route }) => {
         // If it's the Create Profile screen and it's the first screen, 
         // going "back" logic should Logout to return to Login screen.
         Alert.alert(
-          'Exit Registration',
-          'Do you want to log out and return to the login screen?',
+          t('logout'),
+          t('logout_message'),
           [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Logout', style: 'destructive', onPress: () => logout() }
+            { text: t('cancel'), style: 'cancel' },
+            { text: t('logout'), style: 'destructive', onPress: () => logout() }
           ]
         );
       }
@@ -115,12 +117,12 @@ const RegistrationScreen = ({ navigation, route }) => {
       e.preventDefault();
 
       Alert.alert(
-        'Unsaved Changes',
-        'Are you sure you want to go back? Unsaved changes will be lost.',
+        t('unsaved_changes'),
+        t('unsaved_changes_msg'),
         [
-          { text: 'Stay', style: 'cancel', onPress: () => { } },
+          { text: t('stay'), style: 'cancel', onPress: () => { } },
           {
-            text: 'Discard',
+            text: t('discard'),
             style: 'destructive',
             onPress: () => navigation.dispatch(e.data.action),
           },
@@ -129,7 +131,7 @@ const RegistrationScreen = ({ navigation, route }) => {
     });
 
     return unsubscribe;
-  }, [navigation, formData, initialData]);
+  }, [navigation, formData, initialData, t]);
 
   useEffect(() => {
     if (isEdit) {
@@ -182,7 +184,7 @@ const RegistrationScreen = ({ navigation, route }) => {
 
     const maxNew = 5 - existingPhotos.length;
     if (maxNew <= 0) {
-      Alert.alert('Limit Reached', 'You can upload a maximum of 5 photos.');
+      Alert.alert(t('error'), t('profile_photos_limit', { count: 5 }));
       return;
     }
 
@@ -222,7 +224,7 @@ const RegistrationScreen = ({ navigation, route }) => {
       }
     } catch (error) {
       console.error('[MULTI_PHOTO] Picker error:', error);
-      Alert.alert('Error', 'Failed to open image picker. Please try again.');
+      Alert.alert(t('error'), t('action_failed'));
     }
   };
 
@@ -242,27 +244,27 @@ const RegistrationScreen = ({ navigation, route }) => {
       await uploadProfilePhotos(formData);
       setSelectedMultipleImages([]);
       await fetchExistingPhotos();
-      Alert.alert('Success', 'Photos uploaded successfully!');
+      Alert.alert(t('success'), t('profile_save_success', { action: t('updated') }));
     } catch (error) {
-      const msg = error.response?.data?.message || 'Upload failed. Please try again.';
-      Alert.alert('Upload Failed', msg);
+      const msg = error.response?.data?.message || t('action_failed');
+      Alert.alert(t('error'), msg);
     } finally {
       setUploadingPhotos(false);
     }
   };
 
   const removeExistingPhoto = (photoId) => {
-    Alert.alert('Delete Photo', 'Are you sure you want to delete this photo?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('delete_photo_title'), t('delete_photo_msg'), [
+      { text: t('cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('remove'),
         style: 'destructive',
         onPress: async () => {
           try {
             await deleteProfilePhoto(photoId);
             await fetchExistingPhotos();
           } catch (err) {
-            Alert.alert('Error', 'Failed to delete photo.');
+            Alert.alert(t('error'), t('action_failed'));
           }
         },
       },
@@ -299,7 +301,7 @@ const RegistrationScreen = ({ navigation, route }) => {
         }
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to fetch profile data');
+      Alert.alert(t('error'), t('action_failed'));
     } finally {
       setFetching(false);
     }
@@ -378,27 +380,27 @@ const RegistrationScreen = ({ navigation, route }) => {
 
   const handleSave = async () => {
     if (!formData.profile_for) {
-      Alert.alert('Error', 'Please select who you are creating this profile for');
+      Alert.alert(t('error'), t('profile_for'));
       return;
     }
 
     if (formData.profile_for === 'Other' && !formData.other_profile_for.trim()) {
-      Alert.alert('Error', 'Please specify the relation');
+      Alert.alert(t('error'), t('specify_relation'));
       return;
     }
 
     if (!formData.full_name || !formData.dob) {
-      Alert.alert('Error', 'Full name and Date of Birth are required');
+      Alert.alert(t('error'), `${t('full_name')} & ${t('dob')} are required`);
       return;
     }
 
     if (!formData.gender) {
-      Alert.alert('Error', 'Please select Gender');
+      Alert.alert(t('error'), t('gender'));
       return;
     }
 
     if (!formData.marital_status) {
-      Alert.alert('Error', 'Please select Marital Status');
+      Alert.alert(t('error'), t('marital_status'));
       return;
     }
 
@@ -433,7 +435,7 @@ const RegistrationScreen = ({ navigation, route }) => {
       }
 
       isSaved.current = true;
-      Alert.alert('Success', `Profile ${isEdit ? 'updated' : 'created'} successfully`, [
+      Alert.alert(t('success'), t('profile_save_success', { action: isEdit ? t('updated') : t('created') }), [
         {
           text: 'OK',
           onPress: async () => {
@@ -446,7 +448,7 @@ const RegistrationScreen = ({ navigation, route }) => {
         }
       ]);
     } catch (error) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to save profile');
+      Alert.alert(t('error'), error.response?.data?.message || t('action_failed'));
     } finally {
       setLoading(false);
     }
@@ -479,75 +481,91 @@ const RegistrationScreen = ({ navigation, route }) => {
         {/* <TouchableOpacity onPress={handleGoBack} style={styles.inlineBack}>
           <Text style={styles.inlineBackText}>← Back</Text>
         </TouchableOpacity> */}
-        <Text style={styles.mainTitle}>{isEdit ? 'Edit Your Profile' : 'Create Your Profile'}</Text>
+        <Text style={styles.mainTitle}>{isEdit ? t('registration_title_edit') : t('registration_title_create')}</Text>
 
-        <Text style={styles.sectionTitle}>Basic Information</Text>
+        <Text style={styles.sectionTitle}>{t('basic_info')}</Text>
 
 
-        <Text style={styles.sectionTitle}>Personal Details</Text>
-        <CustomInput label="Full Name *" value={formData.full_name} onChangeText={(v) => updateField('full_name', v)} />
-        <CustomInput label="Father's Name" value={formData.father_name} onChangeText={(v) => updateField('father_name', v)} />
-        <CustomInput label="Mother's Maiden Name" value={formData.mother_maiden_name} onChangeText={(v) => updateField('mother_maiden_name', v)} />
-        <CustomInput label="Date of Birth (YYYY-MM-DD) *" value={formData.dob} onChangeText={(v) => updateField('dob', v)} placeholder="1995-10-25" />
+        <Text style={styles.sectionTitle}>{t('personal_details')}</Text>
+        <CustomInput label={`${t('full_name')} *`} value={formData.full_name} onChangeText={(v) => updateField('full_name', v)} />
+        <CustomInput label={t('father_name')} value={formData.father_name} onChangeText={(v) => updateField('father_name', v)} />
+        <CustomInput label={t('mother_maiden_name')} value={formData.mother_maiden_name} onChangeText={(v) => updateField('mother_maiden_name', v)} />
+        <CustomInput label={`${t('dob')} (YYYY-MM-DD) *`} value={formData.dob} onChangeText={(v) => updateField('dob', v)} placeholder="1995-10-25" />
 
         <CustomPicker
-          label="Gender *"
+          label={`${t('gender')} *`}
           value={formData.gender}
-          options={GENDER_OPTIONS}
-          placeholder="Select Gender"
+          options={[
+            { label: t('gender_male'), value: 'Male' },
+            { label: t('gender_female'), value: 'Female' },
+            { label: t('gender_other'), value: 'Other' }
+          ]}
+          placeholder={t('gender')}
           onSelect={(v) => updateField('gender', v)}
         />
 
         <CustomPicker
-          label="Marital Status *"
+          label={`${t('marital_status')} *`}
           value={formData.marital_status}
-          options={MARITAL_STATUS_OPTIONS}
-          placeholder="Select Marital Status"
+          options={[
+            { label: t('marital_single'), value: 'Single' },
+            { label: t('marital_married'), value: 'Married' },
+            { label: t('marital_divorced'), value: 'Divorced' },
+            { label: t('marital_widowed'), value: 'Widowed' }
+          ]}
+          placeholder={t('marital_status')}
           onSelect={(v) => updateField('marital_status', v)}
         />
 
         <CustomPicker
-          label="Creating Profile For *"
+          label={`${t('profile_for')} *`}
           value={formData.profile_for}
-          options={PROFILE_FOR_OPTIONS}
-          placeholder="Select Profile For"
+          options={[
+            { label: t('profile_for_myself'), value: 'Myself' },
+            { label: t('profile_for_son'), value: 'Son' },
+            { label: t('profile_for_daughter'), value: 'Daughter' },
+            { label: t('profile_for_brother'), value: 'Brother' },
+            { label: t('profile_for_sister'), value: 'Sister' },
+            { label: t('profile_for_other'), value: 'Other' }
+          ]}
+          placeholder={t('profile_for')}
           onSelect={(v) => updateField('profile_for', v)}
         />
 
         {formData.profile_for === 'Other' && (
           <CustomInput
-            label="Specify Relation *"
+            label={`${t('specify_relation')} *`}
             value={formData.other_profile_for}
             onChangeText={(v) => updateField('other_profile_for', v)}
             placeholder="e.g. Friend, Cousin"
           />
         )}
 
-        <Text style={styles.sectionTitle}>Contact & Location</Text>
-        <CustomInput label="Birthplace" value={formData.birthplace} onChangeText={(v) => updateField('birthplace', v)} />
-        <CustomInput label="Full Address" value={formData.address} onChangeText={(v) => updateField('address', v)} multiline numberOfLines={3} />
+        <Text style={styles.sectionTitle}>{t('contact_location')}</Text>
+        <CustomInput label={t('birthplace')} value={formData.birthplace} onChangeText={(v) => updateField('birthplace', v)} />
+        <CustomInput label={t('full_address')} value={formData.address} onChangeText={(v) => updateField('address', v)} multiline numberOfLines={3} />
 
-        <Text style={styles.sectionTitle}>Professional Details</Text>
-        <CustomInput label="Qualification" value={formData.qualification} onChangeText={(v) => updateField('qualification', v)} />
-        <CustomInput label="Occupation" value={formData.occupation} onChangeText={(v) => updateField('occupation', v)} />
-        <CustomInput label="Monthly Income" value={formData.monthly_income} onChangeText={(v) => updateField('monthly_income', v)} keyboardType="numeric" />
+        <Text style={styles.sectionTitle}>{t('professional_details')}</Text>
+        <CustomInput label={t('qualification')} value={formData.qualification} onChangeText={(v) => updateField('qualification', v)} />
+        <CustomInput label={t('occupation')} value={formData.occupation} onChangeText={(v) => updateField('occupation', v)} />
+        <CustomInput label={t('monthly_income')} value={formData.monthly_income} onChangeText={(v) => updateField('monthly_income', v)} keyboardType="numeric" />
 
-        <Text style={styles.sectionTitle}>Community Details</Text>
-        <CustomInput label="Caste" value={formData.caste} onChangeText={(v) => updateField('caste', v)} />
-        <CustomInput label="Sub-Caste" value={formData.sub_caste} onChangeText={(v) => updateField('sub_caste', v)} />
-        <CustomInput label="Relative Surname" value={formData.relative_surname} onChangeText={(v) => updateField('relative_surname', v)} />
+        <Text style={styles.sectionTitle}>{t('community_details')}</Text>
+        <CustomInput label={t('caste')} value={formData.caste} onChangeText={(v) => updateField('caste', v)} />
+        <CustomInput label={t('sub_caste')} value={formData.sub_caste} onChangeText={(v) => updateField('sub_caste', v)} />
+        <CustomInput label={t('relative_surname')} value={formData.relative_surname} onChangeText={(v) => updateField('relative_surname', v)} />
 
-        <Text style={styles.sectionTitle}>Expectations & Photo</Text>
-        <CustomInput label="Partner Expectations" value={formData.expectations} onChangeText={(v) => updateField('expectations', v)} multiline numberOfLines={3} />
+        <Text style={styles.sectionTitle}>{t('expectations_photo')}</Text>
+        <CustomInput label={t('partner_expectations')} value={formData.expectations} onChangeText={(v) => updateField('expectations', v)} multiline numberOfLines={3} />
 
         <View style={styles.photoSection}>
-          <Text style={styles.label}>Profile Photo</Text>
+          <Text style={styles.label}>{t('profile_photo')}</Text>
           <View style={styles.photoButtons}>
             <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
-              <Text style={styles.photoButtonText}>Take Photo</Text>
+              <Text style={styles.photoButtonText}>{t('take_photo')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
-              <Text style={styles.photoButtonText}>From Gallery</Text>
+              <Text style={styles.photoButtonText}>{t('from_gallery')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -558,12 +576,12 @@ const RegistrationScreen = ({ navigation, route }) => {
                 style={styles.photoPreview}
               />
               <TouchableOpacity onPress={() => { setPickedImage(null); updateField('avatar_url', ''); }}>
-                <Text style={styles.removeText}>Remove</Text>
+                <Text style={styles.removeText}>{t('remove')}</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.photoPlaceholder}>
-              <Text style={styles.placeholderText}>No photo selected</Text>
+              <Text style={styles.placeholderText}>{t('no_photo')}</Text>
             </View>
           )}
         </View>
@@ -572,15 +590,16 @@ const RegistrationScreen = ({ navigation, route }) => {
         {/*  MULTIPLE PROFILE PHOTOS SECTION           */}
         {/* ═══════════════════════════════════════════ */}
         <View style={styles.multiPhotoSection}>
-          <Text style={styles.sectionTitle}>Profile Photos</Text>
+          <Text style={styles.sectionTitle}>{t('profile_photo')}</Text>
           <Text style={styles.multiPhotoSubtitle}>
-            {existingPhotos.length}/5 photos uploaded • Add up to 5 photos
+            {t('profile_photos_limit', { count: existingPhotos.length })}
           </Text>
 
           {/* Existing Photos */}
           {fetchingPhotos ? (
             <ActivityIndicator size="small" color={COLORS.primary} style={{ marginVertical: 12 }} />
           ) : existingPhotos.length > 0 ? (
+            // ... (lines 584-604)
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -605,19 +624,20 @@ const RegistrationScreen = ({ navigation, route }) => {
           ) : (
             <View style={styles.multiPhotoEmpty}>
               <MaterialCommunityIcons name="image-multiple-outline" size={40} color={COLORS.border} />
-              <Text style={styles.multiPhotoEmptyText}>No photos yet</Text>
+              <Text style={styles.multiPhotoEmptyText}>{t('no_photos_yet')}</Text>
             </View>
           )}
 
           {/* Selected Previews (to be uploaded) */}
           {selectedMultipleImages.length > 0 && (
             <View>
-              <Text style={styles.multiPhotoPreviewTitle}>Selected for Upload</Text>
+              <Text style={styles.multiPhotoPreviewTitle}>{t('selected_upload')}</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.multiPhotoScroll}
               >
+// ... (lines 621-636)
                 {selectedMultipleImages.map((img, index) => (
                   <View key={`selected-${index}`} style={styles.multiPhotoThumbWrap}>
                     <Image source={{ uri: img.uri }} style={styles.multiPhotoThumb} />
@@ -647,7 +667,7 @@ const RegistrationScreen = ({ navigation, route }) => {
             >
               <MaterialCommunityIcons name="image-plus" size={20} color={COLORS.primary} />
               <Text style={styles.multiPhotoPickText}>
-                {selectedMultipleImages.length > 0 ? '+ Add More' : '+ Add Multiple Photos'}
+                {selectedMultipleImages.length > 0 ? t('add_more') : t('add_multiple_photos')}
               </Text>
             </TouchableOpacity>
 
@@ -664,7 +684,7 @@ const RegistrationScreen = ({ navigation, route }) => {
                   <>
                     <MaterialCommunityIcons name="cloud-upload" size={20} color="#fff" />
                     <Text style={styles.multiPhotoUploadText}>
-                      Upload ({selectedMultipleImages.length})
+                      {t('upload')} ({selectedMultipleImages.length})
                     </Text>
                   </>
                 )}
@@ -681,7 +701,7 @@ const RegistrationScreen = ({ navigation, route }) => {
         />
 
         <CustomButton
-          title={isEdit ? "Update Profile" : "Save Profile"}
+          title={isEdit ? t('update_profile') : t('save_profile')}
           onPress={handleSave}
           loading={loading}
           disabled={!isConsentValid}

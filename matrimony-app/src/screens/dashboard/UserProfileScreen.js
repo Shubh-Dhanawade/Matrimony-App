@@ -2,12 +2,15 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, FONT_SIZES } from '../../utils/constants';
 import { useAuth } from '../../context/AuthContext';
 import { getProfileImageUri } from '../../utils/imageUtils';
+import LanguageSelector from '../../components/LanguageSelector';
 import api from '../../services/api';
 
 const UserProfileScreen = ({ navigation }) => {
+    const { t } = useTranslation();
     const { user, logout, refreshUser } = useAuth();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -30,9 +33,9 @@ const UserProfileScreen = ({ navigation }) => {
     };
 
     const handleLogout = () => {
-        Alert.alert('Logout', 'Are you sure you want to logout?', [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Logout', style: 'destructive', onPress: logout }
+        Alert.alert(t('confirm_logout'), t('logout_message'), [
+            { text: t('cancel'), style: 'cancel' },
+            { text: t('logout'), style: 'destructive', onPress: logout }
         ]);
     };
 
@@ -59,45 +62,49 @@ const UserProfileScreen = ({ navigation }) => {
                         <MaterialCommunityIcons name="pencil" size={20} color="#fff" />
                     </TouchableOpacity>
                 </View>
-                <Text style={styles.name}>{profile?.full_name || 'My Profile'}</Text>
+                <Text style={styles.name}>{profile?.full_name || t('my_profile')}</Text>
                 <Text style={styles.status}>
-                    {user?.is_subscribed ? 'Premium Member' : 'Free Member'}
+                    {user?.is_subscribed ? t('premium_member') : t('free_member')}
                 </Text>
             </View>
 
             <View style={styles.statsRow}>
-                <StatBox label="Interests" value="12" icon="heart-outline" />
-                <StatBox label="Shortlists" value="5" icon="star-outline" />
-                <StatBox label="Views" value="45" icon="eye-outline" />
+                <StatBox label={t('interests')} value="12" icon="heart-outline" />
+                <StatBox label={t('shortlists')} value="5" icon="star-outline" />
+                <StatBox label={t('views')} value="45" icon="eye-outline" />
+            </View>
+
+            <View style={styles.sectionContainer}>
+                <LanguageSelector />
             </View>
 
             <View style={styles.menu}>
                 <MenuItem
                     icon="account-outline"
-                    label="Edit Personal Info"
+                    label={t('edit_personal_info')}
                     onPress={() => navigation.navigate('Registration', { isEdit: true })}
                 />
                 <MenuItem
                     icon="shield-check-outline"
-                    label="Account Security"
+                    label={t('account_security')}
                     onPress={() => { }}
                 />
                 {!user?.is_subscribed && (
                     <MenuItem
                         icon="crown-outline"
-                        label="Upgrade to Premium"
+                        label={t('upgrade_to_premium')}
                         onPress={() => navigation.navigate('Upgrade')}
                         color="#E91E63"
                     />
                 )}
                 <MenuItem
                     icon="help-circle-outline"
-                    label="Help & Support"
+                    label={t('help_support')}
                     onPress={() => { }}
                 />
                 <MenuItem
                     icon="logout"
-                    label="Logout"
+                    label={t('logout')}
                     onPress={handleLogout}
                     color="#F44336"
                 />
@@ -176,6 +183,10 @@ const styles = StyleSheet.create({
     },
     menuLabel: { flex: 1, marginLeft: 15, fontSize: 16, fontWeight: '500' },
     loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    sectionContainer: {
+        marginTop: 10,
+        paddingHorizontal: SPACING.md,
+    },
 });
 
 export default UserProfileScreen;
