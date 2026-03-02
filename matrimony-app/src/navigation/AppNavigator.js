@@ -121,6 +121,7 @@ const AppNavigator = () => {
   const isAdmin = user?.role === 'admin';
 
   return (
+
     <NavigationContainer>
       {!isAuthenticated ? (
         <AuthStack />

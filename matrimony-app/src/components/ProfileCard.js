@@ -1,5 +1,17 @@
-import React, { memo } from 'react';
-import { View, Text, StyleSheet, Image, Dimensions, TouchableOpacity, Animated, LayoutAnimation, Platform, UIManager } from 'react-native';
+import React, { memo, useState, useRef, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  Dimensions,
+  TouchableOpacity,
+  Animated,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+  FlatList,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -13,38 +25,91 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 const { width, height } = Dimensions.get('window');
 const CARD_HEIGHT = height * 0.65;
+const CARD_WIDTH = width * 0.92;
 
 const ProfileCard = ({ profile, isSubscribed, onUpgrade, onAction }) => {
-  const [isUnlocked, setIsUnlocked] = React.useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const flatListRef = useRef(null);
 
-  const imageUrl = getProfileImageUri(profile.avatar_url);
+  // Build photos array: use profile.photos if available, fallback to avatar_url
+  const photos = React.useMemo(() => {
+    if (profile.photos && profile.photos.length > 0) {
+      return profile.photos.map((url) => getProfileImageUri(url));
+    }
+    return [getProfileImageUri(profile.avatar_url)];
+  }, [profile.photos, profile.avatar_url]);
 
   const isBlurred = !isSubscribed && !isUnlocked;
 
   const handleUnlock = () => {
-    // Smooth transition for unlock
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setIsUnlocked(true);
   };
+
+  // Track active photo on scroll
+  const onMomentumScrollEnd = useCallback((event) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / CARD_WIDTH);
+    setActivePhotoIndex(index);
+  }, []);
+
+  // Render a single gallery photo
+  const renderPhoto = useCallback(({ item }) => (
+    <Image
+      source={{ uri: item }}
+      style={styles.galleryImage}
+      blurRadius={isBlurred ? 20 : 0}
+    />
+  ), [isBlurred]);
+
+  const keyExtractor = useCallback((_, index) => `photo-${index}`, []);
 
   return (
     <View style={styles.cardContainer}>
       <View style={styles.card}>
         <View style={styles.imageContainer}>
-          <Image
-            source={{ uri: imageUrl }}
-            style={styles.image}
-            blurRadius={isBlurred ? 20 : 0}
+          {/* Horizontal Photo Gallery */}
+          <FlatList
+            ref={flatListRef}
+            data={photos}
+            renderItem={renderPhoto}
+            keyExtractor={keyExtractor}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            bounces={false}
+            getItemLayout={(_, index) => ({
+              length: CARD_WIDTH,
+              offset: CARD_WIDTH * index,
+              index,
+            })}
           />
 
-          {/* Bottom Gradient Overlay - Render always but change opacity or keep if needed for text readability */}
+          {/* Pagination Dots */}
+          {photos.length > 1 && (
+            <View style={styles.paginationContainer}>
+              {photos.map((_, index) => (
+                <View
+                  key={`dot-${index}`}
+                  style={[
+                    styles.paginationDot,
+                    index === activePhotoIndex && styles.paginationDotActive,
+                  ]}
+                />
+              ))}
+            </View>
+          )}
+
+          {/* Bottom Gradient Overlay */}
           <LinearGradient
             colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,1)']}
             style={styles.gradientOverlay}
             pointerEvents="none"
           />
 
-          {/* Conditional Rendering: Only show blur overlay if blocked AND not unlocked locally */}
+          {/* Blur overlay for non-subscribed users */}
           {!isSubscribed && !isUnlocked && (
             <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill}>
               <View style={styles.blurOverlay}>
@@ -183,7 +248,7 @@ const styles = StyleSheet.create({
   },
   card: {
     height: CARD_HEIGHT,
-    width: width * 0.92,
+    width: CARD_WIDTH,
     backgroundColor: '#000',
     borderRadius: 25,
     overflow: 'hidden',
@@ -197,11 +262,40 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
   },
-  image: {
-    width: '100%',
+  galleryImage: {
+    width: CARD_WIDTH,
     height: '100%',
     resizeMode: 'cover',
   },
+
+  // Pagination dots
+  paginationContainer: {
+    position: 'absolute',
+    top: 12,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  paginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.4)',
+    marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.6)',
+  },
+  paginationDotActive: {
+    backgroundColor: '#fff',
+    width: 22,
+    borderRadius: 4,
+    borderColor: '#fff',
+  },
+
+  // Existing styles unchanged
   blurOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.5)',

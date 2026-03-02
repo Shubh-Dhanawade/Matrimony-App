@@ -1,15 +1,17 @@
-import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, Image, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, Image, Platform, ActivityIndicator, PermissionsAndroid } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
 import CustomPicker from '../../components/CustomPicker';
 import api from '../../services/api';
+import { uploadProfilePhotos, getProfilePhotos, deleteProfilePhoto } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, SPACING, FONT_SIZES, MARITAL_STATUS_OPTIONS, GENDER_OPTIONS, PROFILE_FOR_OPTIONS, TERMS_AND_CONDITIONS, PRIVACY_POLICY } from '../../utils/constants';
 import { getProfileImageUri } from '../../utils/imageUtils';
 import useHardwareBack from '../../hooks/useHardwareBack';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import TermsModal from '../../components/TermsModal';
 import ConsentSection from '../../components/ConsentSection';
 import { formatDateToISO } from '../../utils/dateUtils';
@@ -44,6 +46,12 @@ const RegistrationScreen = ({ navigation, route }) => {
   const [initialData, setInitialData] = useState(null);
   const [pickedImage, setPickedImage] = useState(null);
   const isSaved = useRef(false);
+
+  // Multiple Photos State
+  const [selectedMultipleImages, setSelectedMultipleImages] = useState([]);
+  const [existingPhotos, setExistingPhotos] = useState([]);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [fetchingPhotos, setFetchingPhotos] = useState(false);
 
 
   // Consent State
@@ -126,8 +134,144 @@ const RegistrationScreen = ({ navigation, route }) => {
   useEffect(() => {
     if (isEdit) {
       fetchCurrentProfile();
+      fetchExistingPhotos();
     }
   }, [isEdit]);
+
+  // ═══════════════════════════════════════════
+  //  MULTIPLE PHOTOS FUNCTIONS
+  // ═══════════════════════════════════════════
+
+  const fetchExistingPhotos = async () => {
+    try {
+      setFetchingPhotos(true);
+      const res = await api.get('/profiles/me');
+      const userId = res.data.profile?.user_id;
+      if (userId) {
+        const photosRes = await getProfilePhotos(userId);
+        setExistingPhotos(photosRes.data.photos || []);
+      }
+    } catch (err) {
+      console.error('[MULTI_PHOTO] Fetch error:', err);
+    } finally {
+      setFetchingPhotos(false);
+    }
+  };
+
+  const requestGalleryPermission = async () => {
+    console.log('[MULTI_PHOTO] Requesting gallery permission...');
+    if (Platform.OS !== 'web') {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log('[MULTI_PHOTO] Permission status:', status);
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'We need access to your photo library to select photos. Please grant permission in Settings.',
+        );
+        return false;
+      }
+      return true;
+    }
+    return true;
+  };
+
+  const selectMultiplePhotos = async () => {
+    console.log('[MULTI_PHOTO] Button pressed - selectMultiplePhotos called');
+    console.log('[MULTI_PHOTO] Existing photos:', existingPhotos.length);
+    console.log('[MULTI_PHOTO] Already selected:', selectedMultipleImages.length);
+
+    const maxNew = 5 - existingPhotos.length;
+    if (maxNew <= 0) {
+      Alert.alert('Limit Reached', 'You can upload a maximum of 5 photos.');
+      return;
+    }
+
+    const hasPermission = await requestGalleryPermission();
+    if (!hasPermission) {
+      console.log('[MULTI_PHOTO] Permission denied, aborting');
+      return;
+    }
+
+    try {
+      console.log('[MULTI_PHOTO] Launching image library with allowsMultipleSelection...');
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: true,
+        selectionLimit: Math.min(maxNew, 5 - selectedMultipleImages.length),
+        quality: 0.8,
+        orderedSelection: true,
+      });
+
+      console.log('[MULTI_PHOTO] Picker result canceled:', result.canceled);
+
+      if (result.canceled) {
+        console.log('[MULTI_PHOTO] User cancelled picker');
+        return;
+      }
+
+      if (result.assets && result.assets.length > 0) {
+        console.log('[MULTI_PHOTO] Selected', result.assets.length, 'images');
+        const newImages = result.assets.map(asset => ({
+          uri: asset.uri,
+          type: asset.mimeType || asset.type || 'image/jpeg',
+          fileName: asset.fileName || `photo_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`,
+        }));
+        setSelectedMultipleImages(prev => [...prev, ...newImages].slice(0, maxNew));
+      } else {
+        console.log('[MULTI_PHOTO] No assets in result');
+      }
+    } catch (error) {
+      console.error('[MULTI_PHOTO] Picker error:', error);
+      Alert.alert('Error', 'Failed to open image picker. Please try again.');
+    }
+  };
+
+  const uploadMultiplePhotosHandler = async () => {
+    if (selectedMultipleImages.length === 0) return;
+    setUploadingPhotos(true);
+    try {
+      const formData = new FormData();
+      selectedMultipleImages.forEach((img) => {
+        formData.append('photos', {
+          uri: Platform.OS === 'android' ? img.uri : img.uri.replace('file://', ''),
+          type: img.type || 'image/jpeg',
+          name: img.fileName || `photo_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`,
+        });
+      });
+
+      await uploadProfilePhotos(formData);
+      setSelectedMultipleImages([]);
+      await fetchExistingPhotos();
+      Alert.alert('Success', 'Photos uploaded successfully!');
+    } catch (error) {
+      const msg = error.response?.data?.message || 'Upload failed. Please try again.';
+      Alert.alert('Upload Failed', msg);
+    } finally {
+      setUploadingPhotos(false);
+    }
+  };
+
+  const removeExistingPhoto = (photoId) => {
+    Alert.alert('Delete Photo', 'Are you sure you want to delete this photo?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteProfilePhoto(photoId);
+            await fetchExistingPhotos();
+          } catch (err) {
+            Alert.alert('Error', 'Failed to delete photo.');
+          }
+        },
+      },
+    ]);
+  };
+
+  const removeSelectedImage = (index) => {
+    setSelectedMultipleImages(prev => prev.filter((_, i) => i !== index));
+  };
 
   const fetchCurrentProfile = async () => {
     try {
@@ -424,6 +568,111 @@ const RegistrationScreen = ({ navigation, route }) => {
           )}
         </View>
 
+        {/* ═══════════════════════════════════════════ */}
+        {/*  MULTIPLE PROFILE PHOTOS SECTION           */}
+        {/* ═══════════════════════════════════════════ */}
+        <View style={styles.multiPhotoSection}>
+          <Text style={styles.sectionTitle}>Profile Photos</Text>
+          <Text style={styles.multiPhotoSubtitle}>
+            {existingPhotos.length}/5 photos uploaded • Add up to 5 photos
+          </Text>
+
+          {/* Existing Photos */}
+          {fetchingPhotos ? (
+            <ActivityIndicator size="small" color={COLORS.primary} style={{ marginVertical: 12 }} />
+          ) : existingPhotos.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.multiPhotoScroll}
+            >
+              {existingPhotos.map((photo) => (
+                <View key={`existing-${photo.id}`} style={styles.multiPhotoThumbWrap}>
+                  <Image
+                    source={{ uri: getProfileImageUri(photo.photo_url) }}
+                    style={styles.multiPhotoThumb}
+                  />
+                  <TouchableOpacity
+                    style={styles.multiPhotoDeleteBtn}
+                    onPress={() => removeExistingPhoto(photo.id)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <MaterialCommunityIcons name="close-circle" size={22} color="#FF3B30" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.multiPhotoEmpty}>
+              <MaterialCommunityIcons name="image-multiple-outline" size={40} color={COLORS.border} />
+              <Text style={styles.multiPhotoEmptyText}>No photos yet</Text>
+            </View>
+          )}
+
+          {/* Selected Previews (to be uploaded) */}
+          {selectedMultipleImages.length > 0 && (
+            <View>
+              <Text style={styles.multiPhotoPreviewTitle}>Selected for Upload</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.multiPhotoScroll}
+              >
+                {selectedMultipleImages.map((img, index) => (
+                  <View key={`selected-${index}`} style={styles.multiPhotoThumbWrap}>
+                    <Image source={{ uri: img.uri }} style={styles.multiPhotoThumb} />
+                    <View style={styles.multiPhotoNewBadge}>
+                      <Text style={styles.multiPhotoNewBadgeText}>NEW</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.multiPhotoDeleteBtn}
+                      onPress={() => removeSelectedImage(index)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <MaterialCommunityIcons name="close-circle" size={22} color="#FF9500" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Action Buttons */}
+          <View style={styles.multiPhotoActions}>
+            <TouchableOpacity
+              style={styles.multiPhotoPickBtn}
+              onPress={selectMultiplePhotos}
+              disabled={uploadingPhotos}
+              activeOpacity={0.7}
+            >
+              <MaterialCommunityIcons name="image-plus" size={20} color={COLORS.primary} />
+              <Text style={styles.multiPhotoPickText}>
+                {selectedMultipleImages.length > 0 ? '+ Add More' : '+ Add Multiple Photos'}
+              </Text>
+            </TouchableOpacity>
+
+            {selectedMultipleImages.length > 0 && (
+              <TouchableOpacity
+                style={styles.multiPhotoUploadBtn}
+                onPress={uploadMultiplePhotosHandler}
+                disabled={uploadingPhotos}
+                activeOpacity={0.7}
+              >
+                {uploadingPhotos ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <MaterialCommunityIcons name="cloud-upload" size={20} color="#fff" />
+                    <Text style={styles.multiPhotoUploadText}>
+                      Upload ({selectedMultipleImages.length})
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
         <ConsentSection
           consents={consents}
           onToggle={toggleConsent}
@@ -472,7 +721,121 @@ const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: '#CCCCCC',
     opacity: 0.6,
-  }
+  },
+
+  // ═══════════════════════════════════════════
+  //  MULTIPLE PHOTOS STYLES
+  // ═══════════════════════════════════════════
+  multiPhotoSection: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    padding: SPACING.md,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.md,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  multiPhotoSubtitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.sm,
+    marginTop: -SPACING.xs,
+  },
+  multiPhotoScroll: {
+    paddingVertical: SPACING.sm,
+    gap: SPACING.sm,
+  },
+  multiPhotoThumbWrap: {
+    width: 100,
+    height: 100,
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: '#f0f0f0',
+    marginRight: SPACING.sm,
+    position: 'relative',
+  },
+  multiPhotoThumb: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  multiPhotoDeleteBtn: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 11,
+  },
+  multiPhotoNewBadge: {
+    position: 'absolute',
+    bottom: 4,
+    left: 4,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  multiPhotoNewBadgeText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  multiPhotoEmpty: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+  },
+  multiPhotoEmptyText: {
+    color: COLORS.textSecondary,
+    fontSize: 13,
+    marginTop: 6,
+  },
+  multiPhotoPreviewTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginTop: SPACING.sm,
+  },
+  multiPhotoActions: {
+    flexDirection: 'row',
+    marginTop: SPACING.md,
+    gap: SPACING.sm,
+  },
+  multiPhotoPickBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.surface,
+    gap: 6,
+  },
+  multiPhotoPickText: {
+    color: COLORS.primary,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  multiPhotoUploadBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+    gap: 6,
+  },
+  multiPhotoUploadText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
 });
 
 export default RegistrationScreen;
