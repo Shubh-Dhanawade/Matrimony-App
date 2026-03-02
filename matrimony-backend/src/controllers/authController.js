@@ -24,7 +24,7 @@ const authController = {
       const userId = await User.create(mobileNumber, hashedPassword, role);
 
       const token = jwt.sign({ id: userId, role: role }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' });
-      
+
       console.log(`Registration successful for: ${mobileNumber}, User ID: ${userId}`);
 
       res.status(201).json({
@@ -72,6 +72,21 @@ const authController = {
       });
     } catch (error) {
       console.error('Login error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  },
+
+  simulateUpgrade: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      // Assuming 'db' is available in this scope, e.g., imported or passed
+      // For this example, we'll assume it's available.
+      // In a real application, you might import it or pass it via middleware context.
+      const db = require('../config/db'); // Added for context, assuming db is available
+      await db.execute('UPDATE users SET is_subscribed = 1 WHERE id = ?', [userId]);
+      const [rows] = await db.execute('SELECT id, mobile_number, role, is_blocked, is_subscribed FROM users WHERE id = ?', [userId]);
+      res.json({ message: 'Upgraded successfully', user: rows[0] });
+    } catch (error) {
       res.status(500).json({ message: error.message });
     }
   }

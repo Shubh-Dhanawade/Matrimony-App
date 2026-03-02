@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIn
 import { SafeAreaView } from 'react-native-safe-area-context';
 import api from '../../services/api';
 import { COLORS, SPACING, FONT_SIZES } from '../../utils/constants';
+import { getProfileImageUri } from '../../utils/imageUtils';
+import { formatDateToDisplay, calculateAge } from '../../utils/dateUtils';
 
 const ProfileViewScreen = ({ navigation, route }) => {
   const [profile, setProfile] = useState(null);
@@ -10,14 +12,17 @@ const ProfileViewScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     fetchProfile();
-  }, []);
+  }, [route.params?.userId]);
 
   const fetchProfile = async () => {
     try {
-      const response = await api.get('/profiles/me');
+      setLoading(true);
+      const userId = route.params?.userId;
+      const endpoint = userId ? `/profiles/${userId}` : '/profiles/me';
+      const response = await api.get(endpoint);
       setProfile(response.data.profile);
     } catch (error) {
-      console.error(error);
+      console.error('Error fetching profile:', error);
     } finally {
       setLoading(false);
     }
@@ -36,22 +41,27 @@ const ProfileViewScreen = ({ navigation, route }) => {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Image source={{ uri: profile?.avatar_url || 'https://via.placeholder.com/150' }} style={styles.avatar} />
+          <Image source={{ uri: getProfileImageUri(profile?.avatar_url) }} style={styles.avatar} />
           <Text style={styles.name}>{profile?.full_name}</Text>
-          <Text style={styles.subtext}>{profile?.age} years | {profile?.marital_status}</Text>
+          <Text style={styles.subtext}>
+            {calculateAge(profile?.dob)} years | {profile?.marital_status}
+          </Text>
         </View>
 
-        <TouchableOpacity 
-          style={styles.editButton} 
-          onPress={() => navigation.navigate('Registration', { isEdit: true })}
-        >
-          <Text style={styles.editButtonText}>Edit Profile</Text>
-        </TouchableOpacity>
+        {!route.params?.userId && (
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => navigation.navigate('Registration', { isEdit: true })}
+          >
+            <Text style={styles.editButtonText}>Edit Profile</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Personal Information</Text>
           {renderDetailRow('Father Name', profile?.father_name)}
           {renderDetailRow('Mother Name', profile?.mother_maiden_name)}
+          {renderDetailRow('Date of Birth', formatDateToDisplay(profile?.dob))}
           {renderDetailRow('Gender', profile?.gender)}
           {renderDetailRow('Birthplace', profile?.birthplace)}
           {renderDetailRow('Address', profile?.address)}

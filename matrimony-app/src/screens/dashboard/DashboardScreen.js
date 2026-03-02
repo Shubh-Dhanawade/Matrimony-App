@@ -1,26 +1,31 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  View, Text, StyleSheet, FlatList, Image, TouchableOpacity, 
-  ActivityIndicator, ScrollView, Alert, Modal, TextInput 
+import {
+  View, Text, StyleSheet, FlatList, Image, TouchableOpacity,
+  ActivityIndicator, ScrollView, Alert, Modal, TextInput, Dimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, SPACING, FONT_SIZES, MARITAL_STATUS_OPTIONS } from '../../utils/constants';
+import { getProfileImageUri } from '../../utils/imageUtils';
+import Swiper from 'react-native-deck-swiper';
 import ProfileCard from '../../components/ProfileCard';
 import useHardwareBack from '../../hooks/useHardwareBack';
+import { useTranslation } from 'react-i18next';
+
+const { height } = Dimensions.get('window');
 
 const DashboardScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   useHardwareBack();
   const { logout } = useAuth();
   const [myProfile, setMyProfile] = useState(null);
   const [profiles, setProfiles] = useState([]);
   const [suggested, setSuggested] = useState([]);
-  const [invitations, setInvitations] = useState({ sent: [], received: [] });
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
-  const [activeTab, setActiveTab] = useState('Profiles'); // Profiles, Invitations
-  
+
   const [filters, setFilters] = useState({
     ageMin: '', ageMax: '', caste: '', qualification: '', monthly_income: '', birthplace: ''
   });
@@ -29,44 +34,61 @@ const DashboardScreen = ({ navigation }) => {
     setLoading(true);
     try {
       console.log('[DASHBOARD] Fetching data for user dashboard...');
-      
+
       const requests = [
-        api.get('/profiles', { params: filters }).catch(err => { console.error('Error fetching /profiles:', err.response?.data || err.message); throw err; }),
-        api.get('/profiles/suggested').catch(err => { console.error('Error fetching /suggested:', err.response?.data || err.message); throw err; }),
-        api.get('/invitations').catch(err => { console.error('Error fetching /invitations:', err.response?.data || err.message); throw err; }),
-        api.get('/profiles/me').catch(err => { console.error('Error fetching /profiles/me:', err.response?.data || err.message); throw err; })
+        api.get('/profiles', { params: filters }),
+        api.get('/profiles/suggested'),
+        api.get('/profiles/me')
       ];
 
-      const [pRes, sRes, iRes, mRes] = await Promise.all(requests);
-      
+      const [pRes, sRes, mRes] = await Promise.all(requests);
+
       setProfiles(pRes.data);
       setSuggested(sRes.data);
-      setInvitations(iRes.data);
       setMyProfile(mRes.data.profile);
       console.log('[DASHBOARD] Data fetch completed successfully');
     } catch (error) {
       console.error('Fetch error:', error);
-      Alert.alert('Error', 'Failed to fetch dashboard data (Status: 500 in backend). Check your backend terminal logs for the exact SQL error.');
+      Alert.alert(t('error'), t('error_fetch_profiles'));
     } finally {
       setLoading(false);
     }
   }, [filters]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [fetchData])
+  );
+
+  const handleSwipedLeft = (index) => {
+    const profile = profiles[index];
+    if (profile) {
+      api.post('/profiles/ignore', { receiverId: profile.user_id })
+        .catch(err => console.error('Ignore error:', err));
+    }
+  };
+
+  const handleSwipedRight = (index) => {
+    const profile = profiles[index];
+    if (profile) {
+      api.post('/profiles/interest', { receiverId: profile.user_id })
+        .then(() => Alert.alert(t('interested_title'), t('interested_msg', { name: profile.full_name })))
+        .catch(err => console.error('Interest error:', err));
+    }
+  };
 
   const handleSendInvitation = async (receiverUserId) => {
-  try {
-    await api.post('/invitations', {
-      receiverId: receiverUserId   
-    });
-    Alert.alert('Success', 'Invitation sent successfully!');
-    fetchData();
-  } catch (error) {
-    Alert.alert('Error', error.response?.data?.message || 'Failed to send invitation');
-  }
-};
+    try {
+      await api.post('/invitations', {
+        receiverId: receiverUserId
+      });
+      Alert.alert(t('success'), t('invitation_sent_success')); // Need key
+      fetchData();
+    } catch (error) {
+      Alert.alert(t('error'), error.response?.data?.message || t('action_failed'));
+    }
+  };
 
 
   const handleUpdateInvitation = async (invitationId, status) => {
@@ -83,56 +105,56 @@ const DashboardScreen = ({ navigation }) => {
     <Modal visible={showFilters} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Filter Profiles</Text>
+          <Text style={styles.modalTitle}>{t('filter_profiles')}</Text>
           <ScrollView>
-            <Text style={styles.label}>Age Range</Text>
+            <Text style={styles.label}>{t('age_range')}</Text>
             <View style={styles.row}>
-              <TextInput 
-                style={[styles.input, { flex: 1, marginRight: 8 }]} 
-                placeholder="Min" 
+              <TextInput
+                style={[styles.input, { flex: 1, marginRight: 8 }]}
+                placeholder={t('min')}
                 keyboardType="numeric"
                 value={filters.ageMin}
-                onChangeText={(v) => setFilters({...filters, ageMin: v})}
+                onChangeText={(v) => setFilters({ ...filters, ageMin: v })}
               />
-              <TextInput 
-                style={[styles.input, { flex: 1 }]} 
-                placeholder="Max" 
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                placeholder={t('max')}
                 keyboardType="numeric"
                 value={filters.ageMax}
-                onChangeText={(v) => setFilters({...filters, ageMax: v})}
+                onChangeText={(v) => setFilters({ ...filters, ageMax: v })}
               />
             </View>
-            <Text style={styles.label}>Caste</Text>
-            <TextInput 
-              style={styles.input} 
-              placeholder="Enter Caste"
+            <Text style={styles.label}>{t('caste')}</Text>
+            <TextInput
+              style={styles.input}
+              placeholder={t('enter_caste')}
               value={filters.caste}
-              onChangeText={(v) => setFilters({...filters, caste: v})}
+              onChangeText={(v) => setFilters({ ...filters, caste: v })}
             />
-            <Text style={styles.label}>Qualification</Text>
-            <TextInput 
-              style={styles.input} 
-              placeholder="e.g. BE, MBBS"
+            <Text style={styles.label}>{t('qualification')}</Text>
+            <TextInput
+              style={styles.input}
+              placeholder={t('qualification_placeholder')}
               value={filters.qualification}
-              onChangeText={(v) => setFilters({...filters, qualification: v})}
+              onChangeText={(v) => setFilters({ ...filters, qualification: v })}
             />
-            <Text style={styles.label}>Min Monthly Income</Text>
-            <TextInput 
-              style={styles.input} 
-              placeholder="Amount"
+            <Text style={styles.label}>{t('min_income')}</Text>
+            <TextInput
+              style={styles.input}
+              placeholder={t('amount')}
               keyboardType="numeric"
               value={filters.incomeMin}
-              onChangeText={(v) => setFilters({...filters, incomeMin: v})}
+              onChangeText={(v) => setFilters({ ...filters, incomeMin: v })}
             />
           </ScrollView>
           <View style={styles.modalActions}>
             <TouchableOpacity style={styles.clearBtn} onPress={() => setFilters({
               ageMin: '', ageMax: '', caste: '', qualification: '', incomeMin: '', birthplace: ''
             })}>
-              <Text style={styles.clearBtnText}>Clear All</Text>
+              <Text style={styles.clearBtnText}>{t('clear_all')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.applyBtn} onPress={() => setShowFilters(false)}>
-              <Text style={styles.applyBtnText}>Apply</Text>
+              <Text style={styles.applyBtnText}>{t('apply')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -140,80 +162,38 @@ const DashboardScreen = ({ navigation }) => {
     </Modal>
   );
 
-   const renderUserSummary = () => myProfile && (
-    <TouchableOpacity 
-      style={styles.summaryCard} 
+  const renderUserSummary = () => myProfile && (
+    <TouchableOpacity
+      style={styles.summaryCard}
       onPress={() => navigation.navigate('ProfileView')}
     >
-      <Image source={{ uri: myProfile.avatar_url || 'https://via.placeholder.com/150' }} style={styles.summaryAvatar} />
+      <Image source={{ uri: getProfileImageUri(myProfile.avatar_url) }} style={styles.summaryAvatar} />
       <View style={styles.summaryInfo}>
         <Text style={styles.summaryName}>{myProfile.full_name}</Text>
         <Text style={styles.summaryDetail}>{myProfile.age} yrs | {myProfile.marital_status}</Text>
       </View>
-      <TouchableOpacity 
-        style={styles.editBtn} 
+      <TouchableOpacity
+        style={styles.editBtn}
         onPress={() => navigation.navigate('Registration', { isEdit: true })}
       >
-        <Text style={styles.editBtnText}>Edit</Text>
+        <Text style={styles.editBtnText}>{t('edit')}</Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
 
+  // Placeholder for suggested profiles if needed
   const renderSuggested = () => suggested.length > 0 && (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Suggested Profiles</Text>
+      <Text style={styles.sectionTitle}>{t('quick_picks')}</Text>
       <FlatList
         horizontal
         showsHorizontalScrollIndicator={false}
         data={suggested}
-        keyExtractor={(item) => `s-${item.id}`}
+        keyExtractor={(item) => `suggested-${item.user_id}`}
         renderItem={({ item }) => (
-          <ProfileCard profile={item} onInvite={handleSendInvitation} isSuggested />
+          <ProfileCard profile={item} isSuggested />
         )}
       />
-    </View>
-  );
-
-  const renderInvitations = () => (
-    <View style={styles.container}>
-      <Text style={styles.subTitle}>Received Invitations</Text>
-      {invitations.received.length === 0 ? (
-        <Text style={styles.emptyText}>No invitations received</Text>
-      ) : (
-        invitations.received.map(item => (
-          <View key={item.id} style={styles.invitationItem}>
-            <Text style={styles.invitationName}>{item.full_name}</Text>
-            <View style={styles.row}>
-              <TouchableOpacity 
-                style={[styles.actionBtn, { backgroundColor: COLORS.success }]} 
-                onPress={() => handleUpdateInvitation(item.id, 'Accepted')}
-              >
-                <Text style={styles.actionBtnText}>Accept</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.actionBtn, { backgroundColor: COLORS.error }]} 
-                onPress={() => handleUpdateInvitation(item.id, 'Rejected')}
-              >
-                <Text style={styles.actionBtnText}>Reject</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))
-      )}
-
-      <Text style={[styles.subTitle, { marginTop: SPACING.lg }]}>Sent Invitations</Text>
-      {invitations.sent.length === 0 ? (
-        <Text style={styles.emptyText}>No invitations sent</Text>
-      ) : (
-        invitations.sent.map(item => (
-          <View key={item.id} style={styles.invitationItem}>
-            <Text style={styles.invitationName}>{item.full_name}</Text>
-            <Text style={[styles.status, { color: item.status === 'Accepted' ? COLORS.success : COLORS.textSecondary }]}>
-              {item.status}
-            </Text>
-          </View>
-        ))
-      )}
     </View>
   );
 
@@ -224,58 +204,54 @@ const DashboardScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.root}>
       {renderFilterModal()}
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Text style={styles.headerTitle}>Matrimony</Text>
-          <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-              <Text style={styles.logoutBtnText}>Logout</Text>
-            </TouchableOpacity>
+
+      <View style={{ flex: 1 }}>
+        <View style={styles.swiperContainer}>
+          {profiles.length > 0 ? (
+            <Swiper
+              cards={profiles}
+              renderCard={(card) => (
+                <ProfileCard
+                  profile={card}
+                  isSubscribed={card.is_subscribed === 1}
+                  onUpgrade={() => navigation.navigate('Upgrade')}
+                />
+              )}
+              onSwipedLeft={handleSwipedLeft}
+              onSwipedRight={handleSwipedRight}
+              cardIndex={0}
+              backgroundColor={'transparent'}
+              stackSize={3}
+              overlap={10}
+              infinite={false}
+              overlayLabels={{
+                left: {
+                  title: t('ignored') || 'IGNORED',
+                  style: {
+                    label: { backgroundColor: 'red', color: 'white', fontSize: 24 },
+                    wrapper: { flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'flex-start', marginTop: 30, marginLeft: -30 }
+                  }
+                },
+                right: {
+                  title: t('interested') || 'INTERESTED',
+                  style: {
+                    label: { backgroundColor: 'green', color: 'white', fontSize: 24 },
+                    wrapper: { flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start', marginTop: 30, marginLeft: 30 }
+                  }
+                }
+              }}
+            />
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>{t('no_more_profiles_show')}</Text>
+            </View>
+          )}
         </View>
-        
-        {/* Tabs */}
-        <View style={styles.tabs}>
-          <TouchableOpacity 
-            style={[styles.tab, activeTab === 'Profiles' && styles.activeTab]} 
-            onPress={() => setActiveTab('Profiles')}
-          >
-            <Text style={[styles.tabText, activeTab === 'Profiles' && styles.activeTabText]}>Find Match</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.tab, activeTab === 'Invitations' && styles.activeTab]} 
-            onPress={() => setActiveTab('Invitations')}
-          >
-            <Text style={[styles.tabText, activeTab === 'Invitations' && styles.activeTabText]}>Invitations</Text>
-          </TouchableOpacity>
+
+        <View style={{ marginTop: 20 }}>
+          {renderSuggested()}
         </View>
       </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {activeTab === 'Profiles' ? (
-          <>
-            {renderUserSummary()}
-            {renderSuggested()}
-            
-            <View style={[styles.row, styles.listHeader]}>
-              <Text style={styles.sectionTitle}>Latest Profiles</Text>
-              <TouchableOpacity onPress={() => setShowFilters(true)}>
-                <Text style={styles.filterLink}>Filter</Text>
-              </TouchableOpacity>
-            </View>
-
-            {profiles.length === 0 ? (
-              <Text style={styles.emptyMessage}>No profiles found. Try adjusting filters.</Text>
-            ) : (
-              profiles.map(item => (
-                <ProfileCard key={item.id} profile={item} onInvite={handleSendInvitation} />
-              ))
-            )}
-          </>
-        ) : (
-          renderInvitations()
-        )}
-      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -287,7 +263,7 @@ export const styles = StyleSheet.create({
   headerTitle: { fontSize: FONT_SIZES.xl, fontWeight: 'bold', color: COLORS.primary },
   logoutBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: COLORS.error },
   logoutBtnText: { color: COLORS.surface, fontSize: FONT_SIZES.sm, fontWeight: 'bold' },
-  
+
   tabs: { flexDirection: 'row' },
   tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 3, borderBottomColor: 'transparent' },
   activeTab: { borderBottomColor: COLORS.primary },
@@ -295,7 +271,7 @@ export const styles = StyleSheet.create({
   activeTabText: { color: COLORS.primary },
 
   scrollContent: { padding: SPACING.md },
-  
+
   summaryCard: { backgroundColor: COLORS.primary, borderRadius: 16, padding: SPACING.md, flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.lg },
   summaryAvatar: { width: 50, height: 50, borderRadius: 25, borderWidth: 2, borderColor: COLORS.surface },
   summaryInfo: { flex: 1, marginLeft: SPACING.md },
@@ -308,14 +284,46 @@ export const styles = StyleSheet.create({
   sectionTitle: { fontSize: FONT_SIZES.lg, fontWeight: 'bold', color: COLORS.text, marginBottom: SPACING.md },
   listHeader: { justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md },
   filterLink: { color: COLORS.primary, fontWeight: 'bold' },
-  
-  invitationItem: { backgroundColor: COLORS.surface, borderRadius: 12, padding: SPACING.md, marginBottom: SPACING.sm, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  invitationName: { fontSize: FONT_SIZES.md, fontWeight: '600', color: COLORS.text },
+
+  invSectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md },
+  countBadge: { backgroundColor: COLORS.primary, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2, marginLeft: 8 },
+  countText: { color: COLORS.surface, fontSize: 10, fontWeight: 'bold' },
+
+  invCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  invHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md },
+  invAvatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: COLORS.background },
+  invInfo: { flex: 1, marginLeft: SPACING.md },
+  invName: { fontSize: FONT_SIZES.md, fontWeight: 'bold', color: COLORS.text },
+  invMeta: { fontSize: FONT_SIZES.sm, color: COLORS.textSecondary, marginTop: 2 },
+  pendingBadge: { backgroundColor: '#FFF9C4', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
+  pendingBadgeText: { color: '#FBC02D', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' },
+
+  invBody: { borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: SPACING.md },
+  actionRow: { flexDirection: 'row', gap: SPACING.md },
+  modernBtn: { flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  acceptBtn: { backgroundColor: COLORS.success },
+  rejectBtn: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.error },
+  btnText: { color: COLORS.surface, fontWeight: 'bold', fontSize: FONT_SIZES.sm },
+
+  statusContainer: { alignItems: 'center', paddingVertical: 4 },
+  matchBadge: { backgroundColor: '#FCE4EC', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginBottom: SPACING.sm },
+  matchBadgeText: { color: COLORS.primary, fontWeight: 'bold', fontSize: FONT_SIZES.sm },
+  viewProfileBtn: { paddingVertical: 4 },
+  viewProfileText: { color: 'black', fontWeight: 'bold', fontSize: FONT_SIZES.sm, textDecorationLine: 'underline' },
+  statusText: { fontSize: FONT_SIZES.sm, fontWeight: '600', color: COLORS.textSecondary },
+
+  emptyContainer: { padding: SPACING.xl, alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.02)', borderRadius: 12 },
   subTitle: { fontSize: FONT_SIZES.md, fontWeight: 'bold', color: COLORS.textSecondary, marginBottom: SPACING.sm },
-  status: { fontWeight: 'bold', fontSize: FONT_SIZES.sm },
-  actionBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, marginLeft: 8 },
-  actionBtnText: { color: COLORS.surface, fontWeight: 'bold', fontSize: FONT_SIZES.xs },
-  
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: COLORS.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: SPACING.lg, maxHeight: '80%' },
   modalTitle: { fontSize: FONT_SIZES.xl, fontWeight: 'bold', color: COLORS.text, marginBottom: SPACING.lg },
@@ -327,10 +335,14 @@ export const styles = StyleSheet.create({
   applyBtn: { flex: 2, backgroundColor: COLORS.primary, padding: 16, borderRadius: 12, alignItems: 'center' },
   applyBtnText: { color: COLORS.surface, fontWeight: 'bold', fontSize: FONT_SIZES.md },
   clearBtnText: { color: COLORS.textSecondary, fontWeight: 'bold' },
-  
+
   loader: { flex: 1, justifyContent: 'center' },
   emptyMessage: { textAlign: 'center', marginTop: 30, color: COLORS.textSecondary, fontStyle: 'italic' },
-  emptyText: { color: COLORS.textSecondary, fontStyle: 'italic', marginBottom: SPACING.md }
+  emptyText: { color: COLORS.textSecondary, fontStyle: 'italic' },
+  swiperContainer: {
+    height: height * 0.78,
+    marginTop: 0,
+  }
 });
 
 export default DashboardScreen;
