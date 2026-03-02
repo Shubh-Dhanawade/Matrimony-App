@@ -145,5 +145,6 @@
     "reject": "Reject",
     "match_success": "🎉 It's a Match!",
     "invitation_rejected": "❌ Invitation Rejected",
-    "invitation_status": "Status: {{status}}"
+    "invitation_status": "Status: {{status}}",
+    "age_validation_error": "Minimum age required is {{min}} years"
 }
