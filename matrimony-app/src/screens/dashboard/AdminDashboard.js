@@ -13,7 +13,7 @@ const AdminDashboard = ({ navigation }) => {
   const fetchStats = async () => {
     try {
       const response = await api.get('/admin/stats');
-
+      console.log('DASHBOARD STATS RESPONSE:', response.data);
       setStats(response.data);
     } catch (error) {
       console.error('Fetch stats error:', error.response?.data || error.message);
@@ -52,36 +52,37 @@ const AdminDashboard = ({ navigation }) => {
   );
 
   return (
-    <ScrollView 
+    <ScrollView
       style={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Text style={styles.title}>Admin Overview</Text>
-      
+      <Text style={styles.title}>Admin </Text>
+
       <View style={styles.statsGrid}>
         <StatCard title="Total Users" value={stats?.totalUsers || 0} color="#3498db" />
         <StatCard title="Total Profiles" value={stats?.totalProfiles || 0} color="#9b59b6" />
-        <StatCard title="Pending" value={stats?.pendingProfiles || 0} color="#e67e22" />
-        <StatCard title="Approved" value={stats?.approvedProfiles || 0} color="#2ecc71" />
+        <StatCard title="Pending Profiles" value={stats?.pendingProfiles || 0} color="#e67e22" />
+        <StatCard title="Approved Profiles" value={stats?.approvedProfiles || 0} color="#2ecc71" />
+        <StatCard title="Rejected Profiles" value={stats?.rejectedProfiles || 0} color="#e74c3c" />
       </View>
 
       <View style={styles.managementSection}>
         <Text style={styles.sectionTitle}>Management</Text>
         <View style={styles.cardRow}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.card}
             onPress={() => navigation.navigate('ManageProfiles')}
           >
-            <Text style={styles.cardTitle}>Manage Profiles</Text>
-            <Text style={styles.cardSub}>View and Edit Profiles</Text>
+            <Text style={styles.cardTitle}>Manage Profiles </Text>
+            <Text style={styles.cardSub}>Approve & Reject Profiles</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.card}
             onPress={() => navigation.navigate('ManageUsers')}
           >
             <Text style={styles.cardTitle}>Manage Users</Text>
-            <Text style={styles.cardSub}>Deactivate or Reset</Text>
+            <Text style={styles.cardSub}>Deactivate or Reset Profiles</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -97,13 +98,13 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background, padding: SPACING.lg },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   title: { fontSize: FONT_SIZES.xxl, fontWeight: 'bold', color: COLORS.primary, marginBottom: SPACING.xl, textAlign: 'center' },
-  
+
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: SPACING.xl },
-  statCard: { 
-    backgroundColor: '#fff', 
-    padding: SPACING.md, 
-    borderRadius: 8, 
-    width: '48%', 
+  statCard: {
+    backgroundColor: '#fff',
+    padding: SPACING.md,
+    borderRadius: 8,
+    width: '48%',
     marginBottom: SPACING.md,
     elevation: 2,
     borderLeftWidth: 4
