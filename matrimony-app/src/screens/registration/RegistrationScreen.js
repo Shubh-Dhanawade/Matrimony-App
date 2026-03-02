@@ -15,7 +15,8 @@ import useHardwareBack from '../../hooks/useHardwareBack';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import TermsModal from '../../components/TermsModal';
 import ConsentSection from '../../components/ConsentSection';
-import { formatDateToISO } from '../../utils/dateUtils';
+import CustomDatePicker from '../../components/CustomDatePicker';
+import { formatDateToISO, calculateAge } from '../../utils/dateUtils';
 
 const RegistrationScreen = ({ navigation, route }) => {
   const { t } = useTranslation();
@@ -68,6 +69,7 @@ const RegistrationScreen = ({ navigation, route }) => {
   // Modal State
   const [modalVisible, setModalVisible] = useState(false);
   const [modalData, setModalData] = useState({ title: '', content: '' });
+  const [ageError, setAgeError] = useState('');
 
   const isConsentValid = Object.values(consents).every(val => val === true);
 
@@ -454,7 +456,21 @@ const RegistrationScreen = ({ navigation, route }) => {
     }
   };
 
-  const updateField = (field, value) => setFormData({ ...formData, [field]: value });
+  const updateField = (field, value) => {
+    setFormData({ ...formData, [field]: value });
+    if (field === 'dob') {
+      const age = calculateAge(value);
+      if (age < 18) {
+        setAgeError(t('age_validation_error', { min: 18 }));
+      } else {
+        setAgeError('');
+      }
+    }
+  };
+
+  const handleDateChange = (date) => {
+    updateField('dob', date);
+  };
 
   const toggleConsent = (field) => {
     setConsents(prev => ({ ...prev, [field]: !prev[field] }));
@@ -490,7 +506,13 @@ const RegistrationScreen = ({ navigation, route }) => {
         <CustomInput label={`${t('full_name')} *`} value={formData.full_name} onChangeText={(v) => updateField('full_name', v)} />
         <CustomInput label={t('father_name')} value={formData.father_name} onChangeText={(v) => updateField('father_name', v)} />
         <CustomInput label={t('mother_maiden_name')} value={formData.mother_maiden_name} onChangeText={(v) => updateField('mother_maiden_name', v)} />
-        <CustomInput label={`${t('dob')} (YYYY-MM-DD) *`} value={formData.dob} onChangeText={(v) => updateField('dob', v)} placeholder="1995-10-25" />
+        <CustomDatePicker
+          label={`${t('dob')} *`}
+          value={formData.dob}
+          onDateChange={handleDateChange}
+          error={ageError}
+          maximumDate={new Date()}
+        />
 
         <CustomPicker
           label={`${t('gender')} *`}

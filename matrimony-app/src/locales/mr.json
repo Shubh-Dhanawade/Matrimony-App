@@ -145,5 +145,6 @@
     "reject": "नाकारा",
     "match_success": "🎉 ही जोडी जुळली आहे!",
     "invitation_rejected": "❌ आमंत्रण नाकारले",
-    "invitation_status": "स्थिती: {{status}}"
+    "invitation_status": "स्थिती: {{status}}",
+    "age_validation_error": "किमान वय {{min}} वर्षे आवश्यक आहे"
 }

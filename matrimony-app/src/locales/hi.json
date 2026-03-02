@@ -145,5 +145,6 @@
     "reject": "अस्वीकार करें",
     "match_success": "🎉 यह एक मैच है!",
     "invitation_rejected": "❌ आमंत्रण अस्वीकार कर दिया गया",
-    "invitation_status": "स्थिति: {{status}}"
+    "invitation_status": "स्थिति: {{status}}",
+    "age_validation_error": "न्यूनतम आयु {{min}} वर्ष आवश्यक है"
 }
