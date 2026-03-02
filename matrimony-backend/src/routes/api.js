@@ -19,7 +19,18 @@ router.put('/profiles', auth, profileController.updateProfile);
 router.get('/profiles', auth, profileController.getProfiles);
 router.get('/profiles/suggested', auth, profileController.getSuggestedMatches);
 router.get('/profiles/me', auth, profileController.getMyProfile);
+router.get('/profiles/latest', auth, profileController.getLatestProfiles);
+router.post('/profiles/interest', auth, profileController.sendInterest);
+router.post('/profiles/ignore', auth, profileController.ignoreProfile);
+
+// Multiple Profile Photos Routes (must be before :id to avoid param conflicts)
+router.post('/profiles/photos', auth, upload.array('photos', 5), profileController.uploadMultiplePhotos);
+router.delete('/profiles/photos/:photoId', auth, profileController.deleteProfilePhoto);
+
+// Parameterized profile routes (keep :id routes last)
 router.get('/profiles/:id', auth, profileController.getProfileById);
+router.get('/profiles/:id/photos', auth, profileController.getProfilePhotos);
+
 router.post('/upload/profile-image', auth, upload.single('image'), profileController.uploadImage);
 
 // Invitation Routes
@@ -34,5 +45,6 @@ router.patch('/admin/profiles/:id/status', auth, admin, adminController.updatePr
 router.get('/admin/users', auth, admin, adminController.getAllUsers);
 router.patch('/admin/users/:id/block', auth, admin, adminController.toggleBlockUser);
 router.delete('/admin/users/:id', auth, admin, adminController.deleteUser);
+router.patch('/admin/users/me/subscribe', auth, authController.simulateUpgrade);
 
 module.exports = router;

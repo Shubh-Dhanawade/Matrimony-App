@@ -57,16 +57,16 @@ const Profile = {
     inv.receiver_id AS inv_receiver_id
 FROM profiles p
 JOIN users u ON u.id = p.user_id
-LEFT JOIN invitations inv ON inv.id = (
-    SELECT i.id 
-    FROM invitations i
-    WHERE 
-        (i.sender_id = ? AND i.receiver_id = p.user_id)
-        OR
-        (i.receiver_id = ? AND i.sender_id = p.user_id)
-    ORDER BY i.created_at DESC
-    LIMIT 1
-)
+    LEFT JOIN invitations inv ON inv.id = (
+        SELECT i.id 
+        FROM invitations i
+        WHERE 
+            (i.sender_id = ? AND i.receiver_id = p.user_id)
+            OR
+            (i.receiver_id = ? AND i.sender_id = p.user_id)
+        ORDER BY i.id DESC
+        LIMIT 1
+    )
 WHERE p.user_id != ?
 
     `;
@@ -127,6 +127,74 @@ WHERE p.user_id != ?
       console.error('[FILTER_ERROR] SQL execution failed:', error.message);
       console.error('[FILTER_ERROR] Failed Query:', query);
       throw error; // Re-throw to be handled by controller
+    }
+  },
+
+  getLatest: async (currentUserId, filters = {}) => {
+    // Sanitize and provide defaults for pagination
+    const page = Math.max(1, parseInt(filters.page) || 1);
+    const limit = Math.max(1, Math.min(100, parseInt(filters.limit) || 10));
+    const offset = (page - 1) * limit;
+
+    // Sanitize age filters
+    const minAge = filters.minAge ? parseInt(filters.minAge) : null;
+    const maxAge = filters.maxAge ? parseInt(filters.maxAge) : null;
+
+    console.log(`[SQL_DEBUG] Fetching profiles for userId: ${currentUserId}, Page: ${page}, Limit: ${limit}`);
+
+    // Optimized SQL using subquery for invitation status to comply with ONLY_FULL_GROUP_BY
+    // Mapping: Accepted -> Connected, Pending -> Pending, else None.
+    let query = `
+      SELECT 
+        p.*,
+        u.is_subscribed,
+        u.mobile_number,
+        TIMESTAMPDIFF(YEAR, p.dob, CURDATE()) AS age,
+        CASE 
+          WHEN inv.status = 'Accepted' THEN 'Connected'
+          WHEN inv.status = 'Pending' THEN 'Pending'
+          ELSE 'None'
+        END AS invitation_status
+      FROM profiles p
+      JOIN users u ON u.id = p.user_id
+      LEFT JOIN invitations inv ON inv.id = (
+        SELECT i.id 
+        FROM invitations i
+        WHERE 
+          (i.sender_id = ? AND i.receiver_id = p.user_id)
+          OR
+          (i.receiver_id = ? AND i.sender_id = p.user_id)
+        ORDER BY i.id DESC
+        LIMIT 1
+      )
+      WHERE p.user_id != ? 
+        AND p.status = 'Approved'
+    `;
+
+    const params = [currentUserId, currentUserId, currentUserId];
+
+    if (minAge !== null && !isNaN(minAge)) {
+      query += ` AND TIMESTAMPDIFF(YEAR, p.dob, CURDATE()) >= ?`;
+      params.push(minAge);
+    }
+    if (maxAge !== null && !isNaN(maxAge)) {
+      query += ` AND TIMESTAMPDIFF(YEAR, p.dob, CURDATE()) <= ?`;
+      params.push(maxAge);
+    }
+
+    query += ` ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
+    params.push(limit, offset);
+
+    try {
+      // Use db.query instead of db.execute for better LIMIT ? OFFSET ? compatibility 
+      // in some MySQL environments/prepared statements.
+      const [rows] = await db.query(query, params);
+      return rows;
+    } catch (error) {
+      console.error('[SQL_ERROR] getLatest failed:', error.message);
+      console.error('[SQL_ERROR] Query:', query.replace(/\s+/g, ' ').trim());
+      console.error('[SQL_ERROR] Params:', params);
+      throw error;
     }
   },
 

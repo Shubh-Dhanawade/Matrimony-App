@@ -1,234 +1,418 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { COLORS, SPACING, FONT_SIZES } from '../utils/constants';
+import React, { memo, useState, useRef, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  Dimensions,
+  TouchableOpacity,
+  Animated,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+  FlatList,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { API_BASE_URL, COLORS, SPACING, FONT_SIZES } from '../utils/constants';
 import { getProfileImageUri } from '../utils/imageUtils';
-import Icon from 'react-native-vector-icons/MaterialIcons';
 
-const ProfileCard = ({ profile, onInvite, isSuggested = false }) => {
-  const renderInvitationAction = () => {
-    const status = profile.invitation_status;
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
-    if (status === 'Accepted') {
-      return (
-        <View style={styles.statusBadgeAccepted}>
-          <Icon name="check-circle" size={16} color={COLORS.primary} />
-          <Text style={styles.statusTextAccepted}>Connected</Text>
-        </View>
-      );
+const { width, height } = Dimensions.get('window');
+const CARD_HEIGHT = height * 0.65;
+const CARD_WIDTH = width * 0.92;
+
+const ProfileCard = ({ profile, isSubscribed, onUpgrade, onAction }) => {
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const flatListRef = useRef(null);
+
+  // Build photos array: use profile.photos if available, fallback to avatar_url
+  const photos = React.useMemo(() => {
+    if (profile.photos && profile.photos.length > 0) {
+      return profile.photos.map((url) => getProfileImageUri(url));
     }
+    return [getProfileImageUri(profile.avatar_url)];
+  }, [profile.photos, profile.avatar_url]);
 
-    if (status === 'Pending') {
-      return (
-        <View style={styles.statusBadgePending}>
-          <Icon name="schedule" size={16} color="#E67E22" />
-          <Text style={styles.statusTextPending}>Pending</Text>
-        </View>
-      );
-    }
+  const isBlurred = !isSubscribed && !isUnlocked;
 
-    return (
-      <TouchableOpacity
-        style={styles.sendBtn}
-        onPress={() => onInvite(profile.user_id)}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.sendBtnText}>Send</Text>
-      </TouchableOpacity>
-    );
+  const handleUnlock = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIsUnlocked(true);
   };
 
-  if (isSuggested) {
-    return (
-      <View style={styles.suggestedCard}>
-        <Image
-          source={{ uri: getProfileImageUri(profile.avatar_url) }}
-          style={styles.suggestedAvatar}
-        />
-        <Text style={styles.suggestedName} numberOfLines={1}>{profile.full_name}</Text>
-        <Text style={styles.suggestedDetail}>{profile.age} yrs | {profile.marital_status}</Text>
-        <TouchableOpacity
-          style={styles.suggestedInviteBtn}
-          onPress={() => onInvite(profile.user_id)}
-          disabled={!!profile.invitation_status}
-        >
-          <Text style={styles.suggestedInviteText}>
-            {profile.invitation_status || 'Invite'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  // Track active photo on scroll
+  const onMomentumScrollEnd = useCallback((event) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / CARD_WIDTH);
+    setActivePhotoIndex(index);
+  }, []);
+
+  // Render a single gallery photo
+  const renderPhoto = useCallback(({ item }) => (
+    <Image
+      source={{ uri: item }}
+      style={styles.galleryImage}
+      blurRadius={isBlurred ? 20 : 0}
+    />
+  ), [isBlurred]);
+
+  const keyExtractor = useCallback((_, index) => `photo-${index}`, []);
 
   return (
-    <View style={styles.fullCard}>
-      <View style={styles.leftSection}>
-        <Image
-          source={{ uri: getProfileImageUri(profile.avatar_url) }}
-          style={styles.avatar}
-        />
-      </View>
+    <View style={styles.cardContainer}>
+      <View style={styles.card}>
+        <View style={styles.imageContainer}>
+          {/* Horizontal Photo Gallery */}
+          <FlatList
+            ref={flatListRef}
+            data={photos}
+            renderItem={renderPhoto}
+            keyExtractor={keyExtractor}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            bounces={false}
+            getItemLayout={(_, index) => ({
+              length: CARD_WIDTH,
+              offset: CARD_WIDTH * index,
+              index,
+            })}
+          />
 
-      <View style={styles.centerSection}>
-        <Text style={styles.name}>{profile.full_name}</Text>
-        <Text style={styles.detailText}>{profile.age} yrs | {profile.marital_status}</Text>
+          {/* Pagination Dots */}
+          {photos.length > 1 && (
+            <View style={styles.paginationContainer}>
+              {photos.map((_, index) => (
+                <View
+                  key={`dot-${index}`}
+                  style={[
+                    styles.paginationDot,
+                    index === activePhotoIndex && styles.paginationDotActive,
+                  ]}
+                />
+              ))}
+            </View>
+          )}
 
-        <View style={styles.iconInfoRow}>
-          <Icon name="school" size={14} color={COLORS.textSecondary} />
-          <Text style={styles.subDetailText} numberOfLines={1}>{profile.qualification}</Text>
+          {/* Bottom Gradient Overlay */}
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,1)']}
+            style={styles.gradientOverlay}
+            pointerEvents="none"
+          />
+
+          {/* Blur overlay for non-subscribed users */}
+          {!isSubscribed && !isUnlocked && (
+            <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill}>
+              <View style={styles.blurOverlay}>
+                <View style={styles.blurContent}>
+                  <MaterialCommunityIcons
+                    name="eye-off-outline"
+                    size={50}
+                    color="#fff"
+                  />
+                  <Text style={styles.blurText}>
+                    Photo visible to paid members only
+                  </Text>
+
+                  <TouchableOpacity
+                    style={styles.upgradeBtn}
+                    onPress={handleUnlock}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.upgradeBtnText}>Unlock Preview</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </BlurView>
+          )}
+
+          {/* Details Overlay (Bottom Left) */}
+          <View style={styles.detailsContainer} pointerEvents="box-none">
+            <View style={styles.verifiedRow}>
+              {profile.is_verified && (
+                <View style={styles.verifiedBadge}>
+                  <MaterialCommunityIcons name="check-decagram" size={12} color="#fff" />
+                  <Text style={styles.verifiedText}>Verified</Text>
+                </View>
+              )}
+              <Text style={styles.statusBadgeText}>
+                {profile.invitation_status === 'Connected' ? '🤝 Connected' : ''}
+              </Text>
+            </View>
+
+            <Text style={styles.nameText}>{profile.full_name}, {profile.age}</Text>
+
+            <View style={styles.infoRow}>
+              <MaterialCommunityIcons name="map-marker" size={14} color="#ddd" />
+              <Text style={styles.infoText}>{profile.address || 'Location Hidden'}</Text>
+            </View>
+
+            <View style={styles.infoRow}>
+              <MaterialCommunityIcons name="school" size={14} color="#ddd" />
+              <Text style={styles.infoText} numberOfLines={1}>
+                {profile.qualification || 'Education not specified'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Fixed Action Button Container (Bottom) */}
+          <View style={styles.actionContainer} pointerEvents="box-none">
+            <ActionButton
+              icon="close"
+              label="Skip"
+              color="#9E9E9E"
+              onPress={() => onAction('skip', profile)}
+            />
+            <ActionButton
+              icon="star"
+              label="Shortlist"
+              color="#FF9800"
+              onPress={() => onAction('shortlist', profile)}
+            />
+            <ActionButton
+              icon="heart"
+              label="Interest"
+              color="#fff"
+              isPrimary
+              onPress={() => onAction('interested', profile)}
+            />
+            <ActionButton
+              icon="message-text"
+              label="Chat"
+              color="#4CAF50"
+              onPress={() => onAction('chat', profile)}
+            />
+          </View>
         </View>
-
-        <View style={styles.iconInfoRow}>
-          <Icon name="location-on" size={14} color={COLORS.textSecondary} />
-          <Text style={styles.subDetailText} numberOfLines={1}>{profile.birthplace || 'Location N/A'}</Text>
-        </View>
-      </View>
-
-      <View style={styles.rightSection}>
-        {renderInvitationAction()}
       </View>
     </View>
   );
 };
 
+const ActionButton = ({ icon, label, color, onPress, isPrimary }) => {
+  const animatedValue = new Animated.Value(1);
+
+  const handlePressIn = () => {
+    Animated.spring(animatedValue, {
+      toValue: 0.85,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(animatedValue, {
+      toValue: 1,
+      friction: 4,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  return (
+    <TouchableOpacity
+      activeOpacity={1}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      onPress={onPress}
+      style={styles.actionBtnWrapper}
+    >
+      <Animated.View style={[
+        styles.circleBtn,
+        isPrimary && styles.primaryBtn,
+        { transform: [{ scale: animatedValue }] }
+      ]}>
+        <MaterialCommunityIcons name={icon} size={28} color={isPrimary ? '#fff' : color} />
+      </Animated.View>
+      <Text style={styles.actionLabel}>{label}</Text>
+    </TouchableOpacity>
+  );
+};
+
 const styles = StyleSheet.create({
-  fullCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
+  cardContainer: {
+    height: CARD_HEIGHT + 30,
+    width: width,
+    paddingHorizontal: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  card: {
+    height: CARD_HEIGHT,
+    width: CARD_WIDTH,
+    backgroundColor: '#000',
+    borderRadius: 25,
+    overflow: 'hidden',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  imageContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  galleryImage: {
+    width: CARD_WIDTH,
+    height: '100%',
+    resizeMode: 'cover',
+  },
+
+  // Pagination dots
+  paginationContainer: {
+    position: 'absolute',
+    top: 12,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  paginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.4)',
+    marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.6)',
+  },
+  paginationDotActive: {
+    backgroundColor: '#fff',
+    width: 22,
+    borderRadius: 4,
+    borderColor: '#fff',
+  },
+
+  // Existing styles unchanged
+  blurOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  blurContent: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  blurText: {
+    color: '#fff',
+    fontSize: 16,
+    textAlign: 'center',
+    marginVertical: 15,
+    fontWeight: '600',
+  },
+  upgradeBtn: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 25,
+  },
+  upgradeBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  gradientOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '45%',
+  },
+  detailsContainer: {
+    position: 'absolute',
+    bottom: 95,
+    left: 20,
+    right: 20,
+  },
+  verifiedRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    elevation: 3,
+    marginBottom: 5,
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginRight: 6,
+  },
+  verifiedText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: 'bold',
+    marginLeft: 2,
+  },
+  statusBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  nameText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  infoText: {
+    color: '#ddd',
+    fontSize: 14,
+    marginLeft: 6,
+    fontWeight: '500',
+  },
+  actionContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+  },
+  actionBtnWrapper: {
+    alignItems: 'center',
+  },
+  circleBtn: {
+    width: 55,
+    height: 55,
+    borderRadius: 30,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
+    marginBottom: 5,
   },
-  leftSection: {
-    marginRight: SPACING.md,
+  primaryBtn: {
+    backgroundColor: '#E91E63',
+    transform: [{ scale: 1.1 }],
   },
-  avatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    borderWidth: 2,
-    borderColor: '#FCE4EC',
-  },
-  centerSection: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  name: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    marginBottom: 2,
-  },
-  detailText: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.text,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  iconInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  subDetailText: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginLeft: 4,
-  },
-  rightSection: {
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    marginLeft: SPACING.sm,
-    minWidth: 80,
-  },
-
-  // Action Buttons & Badges
-  sendBtn: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  sendBtnText: {
-    color: COLORS.surface,
-    fontWeight: 'bold',
-    fontSize: 13,
-  },
-  statusBadgeAccepted: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FCE4EC',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  statusTextAccepted: {
-    color: COLORS.primary,
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginLeft: 4,
-  },
-  statusBadgePending: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF3E0',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  statusTextPending: {
-    color: '#E67E22',
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginLeft: 4,
-  },
-
-  // Suggested Section Styles
-  suggestedCard: {
-    width: 150,
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: SPACING.md,
-    marginRight: SPACING.md,
-    alignItems: 'center',
-    elevation: 2,
-    marginBottom: SPACING.sm,
-  },
-  suggestedAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginBottom: SPACING.sm,
-  },
-  suggestedName: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    textAlign: 'center',
-  },
-  suggestedDetail: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.sm,
-  },
-  suggestedInviteBtn: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-    width: '100%',
-    alignItems: 'center',
-  },
-  suggestedInviteText: {
-    color: COLORS.surface,
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
+  actionLabel: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  }
 });
 
-export default ProfileCard;
+export default memo(ProfileCard);

@@ -18,7 +18,9 @@ const CustomPicker = ({ label, value, options, placeholder, onSelect, error }) =
         onPress={() => setModalVisible(true)}
       >
         <Text style={[styles.valueText, !value && styles.placeholderText]}>
-          {value || placeholder}
+          {typeof options[0] === 'object'
+            ? options.find(o => o.value === value)?.label || placeholder
+            : value || placeholder}
         </Text>
         <Text style={styles.arrow}>▼</Text>
       </TouchableOpacity>
@@ -37,17 +39,23 @@ const CustomPicker = ({ label, value, options, placeholder, onSelect, error }) =
               <Text style={styles.modalTitle}>{placeholder}</Text>
               <FlatList
                 data={options}
-                keyExtractor={(item) => item}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[styles.optionItem, item === value && styles.selectedOption]}
-                    onPress={() => handleSelect(item)}
-                  >
-                    <Text style={[styles.optionText, item === value && styles.selectedOptionText]}>
-                      {item}
-                    </Text>
-                  </TouchableOpacity>
-                )}
+                keyExtractor={(item, index) => typeof item === 'object' ? item.value : item}
+                renderItem={({ item }) => {
+                  const isObject = typeof item === 'object';
+                  const labelStr = isObject ? item.label : item;
+                  const itemValue = isObject ? item.value : item;
+
+                  return (
+                    <TouchableOpacity
+                      style={[styles.optionItem, itemValue === value && styles.selectedOption]}
+                      onPress={() => handleSelect(itemValue)}
+                    >
+                      <Text style={[styles.optionText, itemValue === value && styles.selectedOptionText]}>
+                        {labelStr}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                }}
               />
               <TouchableOpacity
                 style={styles.closeButton}
