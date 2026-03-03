@@ -163,5 +163,10 @@
     "profile_rejected_msg": "दुर्दैवाने, तुमची प्रोफाईल मंजूर केली गेली नाही. अधिक माहितीसाठी सपोर्टशी संपर्क साधा.",
     "status_pending": "विचाराधीन",
     "status_rejected": "नामंजूर",
-    "check_status": "स्थिती तपासा"
+    "check_status": "स्थिती तपासा",
+    "occupation_job": "नोकरी",
+    "occupation_business": "व्यवसाय",
+    "occupation_farmer": "शेतकरी",
+    "select_occupation": "व्यवसाय निवडा",
+    "occupation_validation_error": "व्यवसाय आवश्यक आहे"
 }

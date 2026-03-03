@@ -152,7 +152,7 @@ const RegistrationScreen = ({ navigation, route }) => {
       e.preventDefault();
 
       Alert.alert(t("unsaved_changes"), t("unsaved_changes_msg"), [
-        { text: t("stay"), style: "cancel", onPress: () => {} },
+        { text: t("stay"), style: "cancel", onPress: () => { } },
         {
           text: t("discard"),
           style: "destructive",
@@ -647,6 +647,10 @@ const RegistrationScreen = ({ navigation, route }) => {
       } else {
         setAgeError("");
       }
+    }
+    if (field === 'occupation') {
+      if (safeValue) setOccupationError('');
+      else setOccupationError(t('occupation_validation_error'));
     }
   };
 
@@ -1154,6 +1158,10 @@ const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: "#CCCCCC",
     opacity: 0.6,
+  },
+  readonlyInput: {
+    backgroundColor: '#F5F5F5',
+    color: '#555',
   },
 
   // ═══════════════════════════════════════════
