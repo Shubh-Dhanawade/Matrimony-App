@@ -1,5 +1,5 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useState, useContext, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const AuthContext = createContext();
 
@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState(true);
+  const [profileStatus, setProfileStatus] = useState(null); // null | 'Pending' | 'Approved' | 'Rejected'
 
   useEffect(() => {
     loadStorageData();
@@ -15,9 +16,9 @@ export const AuthProvider = ({ children }) => {
 
   const loadStorageData = async () => {
     try {
-      console.log('[AUTH_CONTEXT] Loading storage data...');
-      const storedToken = await AsyncStorage.getItem('token');
-      const storedUser = await AsyncStorage.getItem('user');
+      console.log("[AUTH_CONTEXT] Loading storage data...");
+      const storedToken = await AsyncStorage.getItem("token");
+      const storedUser = await AsyncStorage.getItem("user");
 
       if (storedToken && storedUser) {
         const parsedUser = JSON.parse(storedUser);
@@ -25,12 +26,12 @@ export const AuthProvider = ({ children }) => {
         setUser(parsedUser);
 
         // If it's a regular user, check profile
-        if (parsedUser.role !== 'admin') {
+        if (parsedUser.role !== "admin") {
           await checkProfileStatus();
         }
       }
     } catch (e) {
-      console.error('[AUTH_CONTEXT] Load error:', e);
+      console.error("[AUTH_CONTEXT] Load error:", e);
     } finally {
       setLoading(false);
     }
@@ -38,28 +39,29 @@ export const AuthProvider = ({ children }) => {
 
   const checkProfileStatus = async () => {
     try {
-      const api = (await import('../services/api')).default;
-      const response = await api.get('/profiles/me');
-      setHasProfile(response.data.hasProfile);
-      return response.data.hasProfile;
+      const api = (await import("../services/api")).default;
+      const response = await api.get("/profiles/me");
+      const hp = response.data.hasProfile;
+      const status = response.data.profile?.status || null;
+      setHasProfile(hp);
+      setProfileStatus(hp ? status : null);
+      return { hasProfile: hp, profileStatus: status };
     } catch (error) {
-      console.error('[AUTH_CONTEXT] Profile check error:', error);
-      // Default to true to avoid redirect loops on server error, 
-      // but you might want to handle this differently
+      console.error("[AUTH_CONTEXT] Profile check error:", error);
       setHasProfile(true);
-      return true;
+      return { hasProfile: true, profileStatus: null };
     }
   };
 
   const login = async (newToken, userData) => {
-    console.log('[AUTH_CONTEXT] Login called, saving token...');
+    console.log("[AUTH_CONTEXT] Login called, saving token...");
     setToken(newToken);
     setUser(userData);
-    await AsyncStorage.setItem('token', newToken);
-    await AsyncStorage.setItem('user', JSON.stringify(userData));
+    await AsyncStorage.setItem("token", newToken);
+    await AsyncStorage.setItem("user", JSON.stringify(userData));
 
     // Check profile immediately after login if not admin
-    if (userData.role !== 'admin') {
+    if (userData.role !== "admin") {
       await checkProfileStatus();
     }
   };
@@ -68,29 +70,30 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     setUser(null);
     setHasProfile(true);
-    await AsyncStorage.removeItem('token');
-    await AsyncStorage.removeItem('user');
+    setProfileStatus(null);
+    await AsyncStorage.removeItem("token");
+    await AsyncStorage.removeItem("user");
   };
 
   const updateUser = async (updatedData) => {
     try {
       const newUser = { ...user, ...updatedData };
       setUser(newUser);
-      await AsyncStorage.setItem('user', JSON.stringify(newUser));
-      console.log('[AUTH_CONTEXT] User updated locally');
+      await AsyncStorage.setItem("user", JSON.stringify(newUser));
+      console.log("[AUTH_CONTEXT] User updated locally");
     } catch (e) {
-      console.error('[AUTH_CONTEXT] Update user error:', e);
+      console.error("[AUTH_CONTEXT] Update user error:", e);
     }
   };
 
   const refreshUser = async () => {
     try {
-      const api = (await import('../services/api')).default;
+      const api = (await import("../services/api")).default;
 
       // Get latest user info
-      const authRes = await api.get('/auth/me');
+      const authRes = await api.get("/auth/me");
       // Get latest profile info (especially avatar_url)
-      const profileRes = await api.get('/profiles/me');
+      const profileRes = await api.get("/profiles/me");
 
       if (authRes.data.user) {
         let userData = authRes.data.user;
@@ -101,27 +104,36 @@ export const AuthProvider = ({ children }) => {
         }
 
         setUser(userData);
-        await AsyncStorage.setItem('user', JSON.stringify(userData));
-        console.log('[AUTH_CONTEXT] User and Profile refreshed');
+        await AsyncStorage.setItem("user", JSON.stringify(userData));
+        console.log("[AUTH_CONTEXT] User and Profile refreshed");
+      }
+
+      // Also refresh status
+      if (profileRes.data.hasProfile) {
+        setHasProfile(true);
+        setProfileStatus(profileRes.data.profile?.status || null);
       }
     } catch (error) {
-      console.error('[AUTH_CONTEXT] Refresh error:', error);
+      console.error("[AUTH_CONTEXT] Refresh error:", error);
     }
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      token,
-      loading,
-      isAuthenticated: !!token,
-      hasProfile,
-      checkProfileStatus,
-      login,
-      logout,
-      refreshUser,
-      updateUser
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        isAuthenticated: !!token,
+        hasProfile,
+        profileStatus,
+        checkProfileStatus,
+        login,
+        logout,
+        refreshUser,
+        updateUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
