@@ -9,13 +9,14 @@ import CustomPicker from '../../components/CustomPicker';
 import api from '../../services/api';
 import { uploadProfilePhotos, getProfilePhotos, deleteProfilePhoto } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { COLORS, SPACING, FONT_SIZES, MARITAL_STATUS_OPTIONS, GENDER_OPTIONS, PROFILE_FOR_OPTIONS, TERMS_AND_CONDITIONS, PRIVACY_POLICY } from '../../utils/constants';
+import { COLORS, SPACING, FONT_SIZES, MARITAL_STATUS_OPTIONS, GENDER_OPTIONS, PROFILE_FOR_OPTIONS, OCCUPATION_OPTIONS, TERMS_AND_CONDITIONS, PRIVACY_POLICY } from '../../utils/constants';
 import { getProfileImageUri } from '../../utils/imageUtils';
 import useHardwareBack from '../../hooks/useHardwareBack';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import TermsModal from '../../components/TermsModal';
 import ConsentSection from '../../components/ConsentSection';
 import CustomDatePicker from '../../components/CustomDatePicker';
+import CustomDropdown from '../../components/CustomDropdown';
 import { formatDateToISO, calculateAge } from '../../utils/dateUtils';
 
 const RegistrationScreen = ({ navigation, route }) => {
@@ -35,7 +36,7 @@ const RegistrationScreen = ({ navigation, route }) => {
     qualification: '',
     occupation: '',
     monthly_income: '',
-    caste: '',
+    caste: 'Lingayat',
     sub_caste: '',
     relative_surname: '',
     expectations: '',
@@ -70,6 +71,7 @@ const RegistrationScreen = ({ navigation, route }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalData, setModalData] = useState({ title: '', content: '' });
   const [ageError, setAgeError] = useState('');
+  const [occupationError, setOccupationError] = useState('');
 
   const isConsentValid = Object.values(consents).every(val => val === true);
 
@@ -287,6 +289,7 @@ const RegistrationScreen = ({ navigation, route }) => {
           const newData = {
             ...profile,
             dob: formatDateToISO(profile.dob),
+            caste: profile.caste || 'Lingayat',
             profile_for: 'Other',
             other_profile_for: profile.profile_for
           };
@@ -296,6 +299,7 @@ const RegistrationScreen = ({ navigation, route }) => {
           const newData = {
             ...profile,
             dob: formatDateToISO(profile.dob),
+            caste: profile.caste || 'Lingayat',
             other_profile_for: ''
           };
           setFormData(newData);
@@ -406,6 +410,12 @@ const RegistrationScreen = ({ navigation, route }) => {
       return;
     }
 
+    if (!formData.occupation) {
+      setOccupationError(t('occupation_validation_error'));
+      Alert.alert(t('error'), t('occupation_validation_error'));
+      return;
+    }
+
     setLoading(true);
     try {
       let finalAvatarUrl = formData.avatar_url;
@@ -457,14 +467,20 @@ const RegistrationScreen = ({ navigation, route }) => {
   };
 
   const updateField = (field, value) => {
-    setFormData({ ...formData, [field]: value });
+    // Prevent caste from ever being set to null/empty — always keep 'Lingayat' as fallback
+    const safeValue = field === 'caste' ? (value && value.trim() ? value.trim() : 'Lingayat') : value;
+    setFormData(prev => ({ ...prev, [field]: safeValue }));
     if (field === 'dob') {
-      const age = calculateAge(value);
+      const age = calculateAge(safeValue);
       if (age < 18) {
         setAgeError(t('age_validation_error', { min: 18 }));
       } else {
         setAgeError('');
       }
+    }
+    if (field === 'occupation') {
+      if (safeValue) setOccupationError('');
+      else setOccupationError(t('occupation_validation_error'));
     }
   };
 
@@ -569,11 +585,27 @@ const RegistrationScreen = ({ navigation, route }) => {
 
         <Text style={styles.sectionTitle}>{t('professional_details')}</Text>
         <CustomInput label={t('qualification')} value={formData.qualification} onChangeText={(v) => updateField('qualification', v)} />
-        <CustomInput label={t('occupation')} value={formData.occupation} onChangeText={(v) => updateField('occupation', v)} />
+        <CustomDropdown
+          label={`${t('occupation')} *`}
+          selectedValue={formData.occupation}
+          options={OCCUPATION_OPTIONS.map(opt => ({
+            label: t(`occupation_${opt.toLowerCase()}`),
+            value: opt
+          }))}
+          placeholder={t('select_occupation')}
+          onValueChange={(v) => updateField('occupation', v)}
+          error={occupationError}
+        />
         <CustomInput label={t('monthly_income')} value={formData.monthly_income} onChangeText={(v) => updateField('monthly_income', v)} keyboardType="numeric" />
 
         <Text style={styles.sectionTitle}>{t('community_details')}</Text>
-        <CustomInput label={t('caste')} value={formData.caste} onChangeText={(v) => updateField('caste', v)} />
+        <CustomInput
+          label={t('caste')}
+          value={formData.caste || 'Lingayat'}
+          onChangeText={(v) => updateField('caste', v)}
+          editable={false}
+          style={styles.readonlyInput}
+        />
         <CustomInput label={t('sub_caste')} value={formData.sub_caste} onChangeText={(v) => updateField('sub_caste', v)} />
         <CustomInput label={t('relative_surname')} value={formData.relative_surname} onChangeText={(v) => updateField('relative_surname', v)} />
 
@@ -763,6 +795,10 @@ const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: '#CCCCCC',
     opacity: 0.6,
+  },
+  readonlyInput: {
+    backgroundColor: '#F5F5F5',
+    color: '#555',
   },
 
   // ═══════════════════════════════════════════

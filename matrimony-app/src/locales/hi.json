@@ -146,5 +146,10 @@
     "match_success": "🎉 यह एक मैच है!",
     "invitation_rejected": "❌ आमंत्रण अस्वीकार कर दिया गया",
     "invitation_status": "स्थिति: {{status}}",
-    "age_validation_error": "न्यूनतम आयु {{min}} वर्ष आवश्यक है"
+    "age_validation_error": "न्यूनतम आयु {{min}} वर्ष आवश्यक है",
+    "occupation_job": "नौकरी",
+    "occupation_business": "व्यवसाय",
+    "occupation_farmer": "किसान",
+    "select_occupation": "व्यवसाय चुनें",
+    "occupation_validation_error": "व्यवसाय आवश्यक है"
 }

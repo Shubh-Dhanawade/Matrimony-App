@@ -146,5 +146,10 @@
     "match_success": "🎉 It's a Match!",
     "invitation_rejected": "❌ Invitation Rejected",
     "invitation_status": "Status: {{status}}",
-    "age_validation_error": "Minimum age required is {{min}} years"
+    "age_validation_error": "Minimum age required is {{min}} years",
+    "occupation_job": "Job",
+    "occupation_business": "Business",
+    "occupation_farmer": "Farmer",
+    "select_occupation": "Select Occupation",
+    "occupation_validation_error": "Occupation is required"
 }

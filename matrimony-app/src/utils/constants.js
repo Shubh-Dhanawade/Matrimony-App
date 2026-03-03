@@ -37,6 +37,7 @@ export const MARITAL_STATUS_OPTIONS = [
 ];
 
 export const GENDER_OPTIONS = ['Male', 'Female', 'Other'];
+export const OCCUPATION_OPTIONS = ['Job', 'Business', 'Farmer'];
 
 export const PROFILE_FOR_OPTIONS = [
   'Myself',
