@@ -1,21 +1,40 @@
-const db = require('../config/db');
+const db = require("../config/db");
 
 const allowedColumns = [
-  'user_id', 'full_name', 'father_name', 'mother_maiden_name', 'dob', 'gender',
-  'marital_status', 'address', 'birthplace', 'qualification', 'occupation',
-  'monthly_income', 'caste', 'sub_caste', 'relative_surname', 'expectations',
-  'avatar_url', 'other_comments', 'profile_for', 'status'
+  "user_id",
+  "full_name",
+  "father_name",
+  "mother_maiden_name",
+  "dob",
+  "gender",
+  "marital_status",
+  "address",
+  "birthplace",
+  "qualification",
+  "occupation",
+  "monthly_income",
+  "caste",
+  "sub_caste",
+  "relative_surname",
+  "expectations",
+  "avatar_url",
+  "other_comments",
+  "profile_for",
+  "status",
+  "state",
+  "district",
+  "taluka",
 ];
 
 const filterValidData = (data) => {
   const filtered = {};
-  Object.keys(data).forEach(key => {
+  Object.keys(data).forEach((key) => {
     if (allowedColumns.includes(key)) {
       let value = data[key];
 
       // Clean avatar_url to store only relative path
-      if (key === 'avatar_url' && value && typeof value === 'string') {
-        const uploadsIndex = value.indexOf('uploads/');
+      if (key === "avatar_url" && value && typeof value === "string") {
+        const uploadsIndex = value.indexOf("uploads/");
         if (uploadsIndex !== -1) {
           value = value.substring(uploadsIndex);
         }
@@ -24,7 +43,7 @@ const filterValidData = (data) => {
       filtered[key] = value;
     }
   });
-  if (!filtered.status) filtered.status = 'Accepted'; // Default to Approved for now to avoid query filtering issues
+  if (!filtered.status) filtered.status = "Pending";
   return filtered;
 };
 
@@ -33,15 +52,18 @@ const Profile = {
     const validData = filterValidData(profileData);
     const fields = Object.keys(validData);
     const values = Object.values(validData);
-    const placeholders = fields.map(() => '?').join(', ');
+    const placeholders = fields.map(() => "?").join(", ");
 
-    const query = `INSERT INTO profiles (${fields.join(', ')}) VALUES (${placeholders})`;
+    const query = `INSERT INTO profiles (${fields.join(", ")}) VALUES (${placeholders})`;
     const [result] = await db.execute(query, values);
     return result.insertId;
   },
 
   findByUserId: async (userId) => {
-    const [rows] = await db.execute('SELECT * FROM profiles WHERE user_id = ?', [userId]);
+    const [rows] = await db.execute(
+      "SELECT * FROM profiles WHERE user_id = ?",
+      [userId],
+    );
     return rows[0];
   },
 
@@ -74,49 +96,53 @@ WHERE p.user_id != ?
     const params = [currentUserId, currentUserId, currentUserId];
 
     // Helper to check if value is valid (not undefined, null, or empty string)
-    const isValid = (val) => val !== undefined && val !== null && val.toString().trim() !== '';
+    const isValid = (val) =>
+      val !== undefined && val !== null && val.toString().trim() !== "";
 
     if (isValid(filters.gender)) {
-      query += ' AND p.gender = ?';
+      query += " AND p.gender = ?";
       params.push(filters.gender);
     }
 
     if (isValid(filters.ageMin)) {
-      query += ' AND TIMESTAMPDIFF(YEAR, p.dob, CURDATE()) >= ?';
+      query += " AND TIMESTAMPDIFF(YEAR, p.dob, CURDATE()) >= ?";
       params.push(Number(filters.ageMin));
     }
 
     if (isValid(filters.ageMax)) {
-      query += ' AND TIMESTAMPDIFF(YEAR, p.dob, CURDATE()) <= ?';
+      query += " AND TIMESTAMPDIFF(YEAR, p.dob, CURDATE()) <= ?";
       params.push(Number(filters.ageMax));
     }
 
     if (isValid(filters.qualification)) {
-      query += ' AND p.qualification LIKE ?';
+      query += " AND p.qualification LIKE ?";
       params.push(`%${filters.qualification}%`);
     }
 
     if (isValid(filters.caste)) {
-      query += ' AND p.caste = ?';
+      query += " AND p.caste = ?";
       params.push(filters.caste);
     }
 
     if (isValid(filters.incomeMin)) {
       const minIncome = Number(filters.incomeMin);
       if (!isNaN(minIncome)) {
-        query += ' AND p.monthly_income >= ?';
+        query += " AND p.monthly_income >= ?";
         params.push(minIncome);
       }
     }
 
     if (isValid(filters.birthplace)) {
-      query += ' AND p.birthplace LIKE ?';
+      query += " AND p.birthplace LIKE ?";
       params.push(`%${filters.birthplace}%`);
     }
 
     // Add logging for debugging
-    console.log('[FILTER_DEBUG] Generated Query:', query.replace(/\s+/g, ' ').trim());
-    console.log('[FILTER_DEBUG] Query Params:', params);
+    console.log(
+      "[FILTER_DEBUG] Generated Query:",
+      query.replace(/\s+/g, " ").trim(),
+    );
+    console.log("[FILTER_DEBUG] Query Params:", params);
 
     try {
       const [rows] = await db.execute(query, params);
@@ -124,8 +150,8 @@ WHERE p.user_id != ?
 
       return rows;
     } catch (error) {
-      console.error('[FILTER_ERROR] SQL execution failed:', error.message);
-      console.error('[FILTER_ERROR] Failed Query:', query);
+      console.error("[FILTER_ERROR] SQL execution failed:", error.message);
+      console.error("[FILTER_ERROR] Failed Query:", query);
       throw error; // Re-throw to be handled by controller
     }
   },
@@ -140,7 +166,9 @@ WHERE p.user_id != ?
     const minAge = filters.minAge ? parseInt(filters.minAge) : null;
     const maxAge = filters.maxAge ? parseInt(filters.maxAge) : null;
 
-    console.log(`[SQL_DEBUG] Fetching profiles for userId: ${currentUserId}, Page: ${page}, Limit: ${limit}`);
+    console.log(
+      `[SQL_DEBUG] Fetching profiles for userId: ${currentUserId}, Page: ${page}, Limit: ${limit}`,
+    );
 
     // Optimized SQL using subquery for invitation status to comply with ONLY_FULL_GROUP_BY
     // Mapping: Accepted -> Connected, Pending -> Pending, else None.
@@ -186,21 +214,24 @@ WHERE p.user_id != ?
     params.push(limit, offset);
 
     try {
-      // Use db.query instead of db.execute for better LIMIT ? OFFSET ? compatibility 
+      // Use db.query instead of db.execute for better LIMIT ? OFFSET ? compatibility
       // in some MySQL environments/prepared statements.
       const [rows] = await db.query(query, params);
       return rows;
     } catch (error) {
-      console.error('[SQL_ERROR] getLatest failed:', error.message);
-      console.error('[SQL_ERROR] Query:', query.replace(/\s+/g, ' ').trim());
-      console.error('[SQL_ERROR] Params:', params);
+      console.error("[SQL_ERROR] getLatest failed:", error.message);
+      console.error("[SQL_ERROR] Query:", query.replace(/\s+/g, " ").trim());
+      console.error("[SQL_ERROR] Params:", params);
       throw error;
     }
   },
 
   getSuggested: async (userId) => {
     // Get current user's profile to match against
-    const [userProfileRows] = await db.execute('SELECT * FROM profiles WHERE user_id = ?', [userId]);
+    const [userProfileRows] = await db.execute(
+      "SELECT * FROM profiles WHERE user_id = ?",
+      [userId],
+    );
     if (userProfileRows.length === 0) return [];
 
     const userProfile = userProfileRows[0];
@@ -237,10 +268,10 @@ WHERE p.user_id != ?
       userId,
       userId,
       userId,
-      userProfile.caste || '',
-      userProfile.birthplace || '',
+      userProfile.caste || "",
+      userProfile.birthplace || "",
       age - 5,
-      age + 5
+      age + 5,
     ]);
     return rows;
   },
@@ -252,12 +283,12 @@ WHERE p.user_id != ?
 
     if (fields.length === 0) return false;
 
-    const setClause = fields.map(field => `${field} = ?`).join(', ');
+    const setClause = fields.map((field) => `${field} = ?`).join(", ");
 
     const query = `UPDATE profiles SET ${setClause} WHERE user_id = ?`;
     const [result] = await db.execute(query, [...values, userId]);
     return result.affectedRows > 0;
-  }
+  },
 };
 
 module.exports = Profile;

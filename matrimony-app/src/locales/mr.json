@@ -146,5 +146,22 @@
     "match_success": "🎉 ही जोडी जुळली आहे!",
     "invitation_rejected": "❌ आमंत्रण नाकारले",
     "invitation_status": "स्थिती: {{status}}",
-    "age_validation_error": "किमान वय {{min}} वर्षे आवश्यक आहे"
+    "age_validation_error": "किमान वय {{min}} वर्षे आवश्यक आहे",
+    "loading": "लोड होत आहे",
+    "state": "राज्य",
+    "district": "जिल्हा",
+    "taluka": "तालुका",
+    "select_state": "राज्य निवडा",
+    "select_district": "जिल्हा निवडा",
+    "select_taluka": "तालुका निवडा",
+    "select_state_first": "आधी राज्य निवडा",
+    "select_district_first": "आधी जिल्हा निवडा",
+    "no_talukas": "उपलब्ध नाही",
+    "profile_pending_title": "प्रोफाईल विचाराधीन आहे",
+    "profile_pending_msg": "तुमची प्रोफाईल सादर केली गेली आहे आणि आमच्या टीमकडून त्याचे पुनरावलोकन केले जात आहे. मंजूर झाल्यावर तुम्हाला पूर्ण प्रवेश मिळेल.",
+    "profile_rejected_title": "प्रोफाईल मंजूर नाही",
+    "profile_rejected_msg": "दुर्दैवाने, तुमची प्रोफाईल मंजूर केली गेली नाही. अधिक माहितीसाठी सपोर्टशी संपर्क साधा.",
+    "status_pending": "विचाराधीन",
+    "status_rejected": "नामंजूर",
+    "check_status": "स्थिती तपासा"
 }

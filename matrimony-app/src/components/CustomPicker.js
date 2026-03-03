@@ -1,8 +1,24 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, TouchableWithoutFeedback } from 'react-native';
-import { COLORS, SPACING, FONT_SIZES } from '../utils/constants';
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  FlatList,
+  TouchableWithoutFeedback,
+} from "react-native";
+import { COLORS, SPACING, FONT_SIZES } from "../utils/constants";
 
-const CustomPicker = ({ label, value, options, placeholder, onSelect, error }) => {
+const CustomPicker = ({
+  label,
+  value,
+  options,
+  placeholder,
+  onSelect,
+  error,
+  disabled,
+}) => {
   const [modalVisible, setModalVisible] = useState(false);
 
   const handleSelect = (item) => {
@@ -14,21 +30,33 @@ const CustomPicker = ({ label, value, options, placeholder, onSelect, error }) =
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
       <TouchableOpacity
-        style={[styles.pickerTrigger, error && styles.errorBorder]}
-        onPress={() => setModalVisible(true)}
+        style={[
+          styles.pickerTrigger,
+          error && styles.errorBorder,
+          disabled && styles.disabledTrigger,
+        ]}
+        onPress={() => !disabled && setModalVisible(true)}
+        activeOpacity={disabled ? 1 : 0.7}
       >
-        <Text style={[styles.valueText, !value && styles.placeholderText]}>
-          {typeof options[0] === 'object'
-            ? options.find(o => o.value === value)?.label || placeholder
-            : value || placeholder}
+        <Text
+          style={[
+            styles.valueText,
+            (!value || disabled) && styles.placeholderText,
+          ]}
+        >
+          {!disabled && typeof options[0] === "object"
+            ? options.find((o) => o.value === value)?.label || placeholder
+            : !disabled && value
+              ? value
+              : placeholder}
         </Text>
-        <Text style={styles.arrow}>▼</Text>
+        <Text style={[styles.arrow, disabled && styles.disabledArrow]}>▼</Text>
       </TouchableOpacity>
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
       <Modal
-        visible={modalVisible}
+        visible={modalVisible && !disabled}
         transparent={true}
         animationType="fade"
         onRequestClose={() => setModalVisible(false)}
@@ -39,18 +67,28 @@ const CustomPicker = ({ label, value, options, placeholder, onSelect, error }) =
               <Text style={styles.modalTitle}>{placeholder}</Text>
               <FlatList
                 data={options}
-                keyExtractor={(item, index) => typeof item === 'object' ? item.value : item}
+                keyExtractor={(item, index) =>
+                  typeof item === "object" ? item.value : item
+                }
                 renderItem={({ item }) => {
-                  const isObject = typeof item === 'object';
+                  const isObject = typeof item === "object";
                   const labelStr = isObject ? item.label : item;
                   const itemValue = isObject ? item.value : item;
 
                   return (
                     <TouchableOpacity
-                      style={[styles.optionItem, itemValue === value && styles.selectedOption]}
+                      style={[
+                        styles.optionItem,
+                        itemValue === value && styles.selectedOption,
+                      ]}
                       onPress={() => handleSelect(itemValue)}
                     >
-                      <Text style={[styles.optionText, itemValue === value && styles.selectedOptionText]}>
+                      <Text
+                        style={[
+                          styles.optionText,
+                          itemValue === value && styles.selectedOptionText,
+                        ]}
+                      >
                         {labelStr}
                       </Text>
                     </TouchableOpacity>
@@ -77,14 +115,14 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: FONT_SIZES.sm,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COLORS.textSecondary,
     marginBottom: SPACING.xs,
   },
   pickerTrigger: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: SPACING.md,
     backgroundColor: COLORS.surface,
     borderRadius: 8,
@@ -106,6 +144,14 @@ const styles = StyleSheet.create({
   errorBorder: {
     borderColor: COLORS.error,
   },
+  disabledTrigger: {
+    backgroundColor: "#F5F5F5",
+    borderColor: "#E0E0E0",
+    opacity: 0.7,
+  },
+  disabledArrow: {
+    color: "#BDBDBD",
+  },
   errorText: {
     color: COLORS.error,
     fontSize: 10,
@@ -113,29 +159,29 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: SPACING.lg,
   },
   modalContent: {
-    width: '100%',
+    width: "100%",
     backgroundColor: COLORS.surface,
     borderRadius: 12,
-    maxHeight: '80%',
+    maxHeight: "80%",
     padding: SPACING.md,
     elevation: 5,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
   modalTitle: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COLORS.primary,
     marginBottom: SPACING.md,
-    textAlign: 'center',
+    textAlign: "center",
   },
   optionItem: {
     paddingVertical: SPACING.md,
@@ -144,7 +190,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   selectedOption: {
-    backgroundColor: COLORS.primary + '10', // Light primary background
+    backgroundColor: COLORS.primary + "10", // Light primary background
   },
   optionText: {
     fontSize: FONT_SIZES.md,
@@ -152,17 +198,17 @@ const styles = StyleSheet.create({
   },
   selectedOptionText: {
     color: COLORS.primary,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   closeButton: {
     marginTop: SPACING.md,
     paddingVertical: SPACING.md,
-    alignItems: 'center',
+    alignItems: "center",
   },
   closeButtonText: {
     fontSize: FONT_SIZES.md,
     color: COLORS.textSecondary,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });
 
