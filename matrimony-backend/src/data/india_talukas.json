@@ -1,0 +1,110 @@
+{
+  "1401": [
+    {"id":140101,"name":"Akole"},{"id":140102,"name":"Jamkhed"},{"id":140103,"name":"Karjat"},{"id":140104,"name":"Kopargaon"},{"id":140105,"name":"Nagar"},{"id":140106,"name":"Nevasa"},{"id":140107,"name":"Parner"},{"id":140108,"name":"Pathardi"},{"id":140109,"name":"Rahata"},{"id":140110,"name":"Rahuri"},{"id":140111,"name":"Sangamner"},{"id":140112,"name":"Shevgaon"},{"id":140113,"name":"Shrirampur"},{"id":140114,"name":"Shrigonda"}
+  ],
+  "1402": [
+    {"id":140201,"name":"Akola"},{"id":140202,"name":"Akot"},{"id":140203,"name":"Balapur"},{"id":140204,"name":"Barshitakli"},{"id":140205,"name":"Murtizapur"},{"id":140206,"name":"Patur"},{"id":140207,"name":"Telhara"}
+  ],
+  "1403": [
+    {"id":140301,"name":"Achalpur"},{"id":140302,"name":"Amravati"},{"id":140303,"name":"Anjangaon Surji"},{"id":140304,"name":"Chandur Bazar"},{"id":140305,"name":"Chandur Railway"},{"id":140306,"name":"Chikhaldara"},{"id":140307,"name":"Daryapur"},{"id":140308,"name":"Dhamangaon Railway"},{"id":140309,"name":"Dharni"},{"id":140310,"name":"Morshi"},{"id":140311,"name":"Municipality"},{"id":140312,"name":"Nandgaon Khandeshwar"},{"id":140313,"name":"Warud"}
+  ],
+  "1404": [
+    {"id":140401,"name":"Aurangabad"},{"id":140402,"name":"Gangapur"},{"id":140403,"name":"Kannad"},{"id":140404,"name":"Khuldabad"},{"id":140405,"name":"Paithan"},{"id":140406,"name":"Phulambri"},{"id":140407,"name":"Sillod"},{"id":140408,"name":"Soegaon"},{"id":140409,"name":"Vaijapur"}
+  ],
+  "1405": [
+    {"id":140501,"name":"Ambejogai"},{"id":140502,"name":"Ashti"},{"id":140503,"name":"Beed"},{"id":140504,"name":"Dharur"},{"id":140505,"name":"Georai"},{"id":140506,"name":"Kaij"},{"id":140507,"name":"Majalgaon"},{"id":140508,"name":"Manjlegaon"},{"id":140509,"name":"Patoda"},{"id":140510,"name":"Shirur Kasar"},{"id":140511,"name":"Wadwani"}
+  ],
+  "1406": [
+    {"id":140601,"name":"Bhandara"},{"id":140602,"name":"Lakhandur"},{"id":140603,"name":"Lakhani"},{"id":140604,"name":"Mohadi"},{"id":140605,"name":"Pauni"},{"id":140606,"name":"Sakoli"},{"id":140607,"name":"Tumsar"}
+  ],
+  "1407": [
+    {"id":140701,"name":"Buldana"},{"id":140702,"name":"Chikhli"},{"id":140703,"name":"Deulgaon Raja"},{"id":140704,"name":"Jalgaon Jamod"},{"id":140705,"name":"Khamgaon"},{"id":140706,"name":"Lonar"},{"id":140707,"name":"Malkapur"},{"id":140708,"name":"Mehkar"},{"id":140709,"name":"Motala"},{"id":140710,"name":"Nandura"},{"id":140711,"name":"Sangrampur"},{"id":140712,"name":"Shegaon"},{"id":140713,"name":"Sindkhed Raja"}
+  ],
+  "1408": [
+    {"id":140801,"name":"Ballarpur"},{"id":140802,"name":"Bhadravati"},{"id":140803,"name":"Bramhapuri"},{"id":140804,"name":"Chandrapur"},{"id":140805,"name":"Chimur"},{"id":140806,"name":"Gondpipri"},{"id":140807,"name":"Jiwati"},{"id":140808,"name":"Korpana"},{"id":140809,"name":"Mul"},{"id":140810,"name":"Nagbhid"},{"id":140811,"name":"Pombhurna"},{"id":140812,"name":"Rajura"},{"id":140813,"name":"Sawali"},{"id":140814,"name":"Sindewahi"},{"id":140815,"name":"Warora"}
+  ],
+  "1409": [
+    {"id":140901,"name":"Dhule"},{"id":140902,"name":"Sakri"},{"id":140903,"name":"Shirpur"},{"id":140904,"name":"Sindkhede"}
+  ],
+  "1410": [
+    {"id":141001,"name":"Aheri"},{"id":141002,"name":"Armori"},{"id":141003,"name":"Bhamragad"},{"id":141004,"name":"Chamorshi"},{"id":141005,"name":"Dhanora"},{"id":141006,"name":"Etapalli"},{"id":141007,"name":"Gadchiroli"},{"id":141008,"name":"Korchi"},{"id":141009,"name":"Kurkheda"},{"id":141010,"name":"Mulchera"},{"id":141011,"name":"Sironcha"}
+  ],
+  "1411": [
+    {"id":141101,"name":"Amgaon"},{"id":141102,"name":"Arjuni Morgaon"},{"id":141103,"name":"Deori"},{"id":141104,"name":"Gondiya"},{"id":141105,"name":"Goregaon"},{"id":141106,"name":"Sadak Arjuni"},{"id":141107,"name":"Salekasa"},{"id":141108,"name":"Tirora"}
+  ],
+  "1412": [
+    {"id":141201,"name":"Aundha Nagnath"},{"id":141202,"name":"Basmath"},{"id":141203,"name":"Hingoli"},{"id":141204,"name":"Kalamnuri"},{"id":141205,"name":"Sengaon"}
+  ],
+  "1413": [
+    {"id":141301,"name":"Amalner"},{"id":141302,"name":"Bhadgaon"},{"id":141303,"name":"Bhusawal"},{"id":141304,"name":"Bodwad"},{"id":141305,"name":"Chalisgaon"},{"id":141306,"name":"Chopda"},{"id":141307,"name":"Dharangaon"},{"id":141308,"name":"Erandol"},{"id":141309,"name":"Jalgaon"},{"id":141310,"name":"Jamner"},{"id":141311,"name":"Muktainagar"},{"id":141312,"name":"Pachora"},{"id":141313,"name":"Parola"},{"id":141314,"name":"Raver"},{"id":141315,"name":"Yawal"}
+  ],
+  "1414": [
+    {"id":141401,"name":"Ambad"},{"id":141402,"name":"Bhokardan"},{"id":141403,"name":"Badnapur"},{"id":141404,"name":"Ghansavangi"},{"id":141405,"name":"Jafferabad"},{"id":141406,"name":"Jalna"},{"id":141407,"name":"Mantha"},{"id":141408,"name":"Partur"}
+  ],
+  "1415": [
+    {"id":141501,"name":"Ajra"},{"id":141502,"name":"Bavda"},{"id":141503,"name":"Bhudargad"},{"id":141504,"name":"Chandgad"},{"id":141505,"name":"Gadhinglaj"},{"id":141506,"name":"Hatkanangle"},{"id":141507,"name":"Kagal"},{"id":141508,"name":"Karvir"},{"id":141509,"name":"Panhala"},{"id":141510,"name":"Radhanagari"},{"id":141511,"name":"Shahuwadi"},{"id":141512,"name":"Shirol"}
+  ],
+  "1416": [
+    {"id":141601,"name":"Ausa"},{"id":141602,"name":"Chakur"},{"id":141603,"name":"Deoni"},{"id":141604,"name":"Latur"},{"id":141605,"name":"Nilanga"},{"id":141606,"name":"Renapur"},{"id":141607,"name":"Shirur Anantpal"},{"id":141608,"name":"Udgir"}
+  ],
+  "1417": [
+    {"id":141701,"name":"Mumbai City"}
+  ],
+  "1418": [
+    {"id":141801,"name":"Andheri"},{"id":141802,"name":"Borivali"},{"id":141803,"name":"Kurla"}
+  ],
+  "1419": [
+    {"id":141901,"name":"Bhiwapur"},{"id":141902,"name":"Hingna"},{"id":141903,"name":"Kalmeshwar"},{"id":141904,"name":"Kamthi"},{"id":141905,"name":"Katol"},{"id":141906,"name":"Kuhi"},{"id":141907,"name":"Mauda"},{"id":141908,"name":"Nagpur Rural"},{"id":141909,"name":"Nagpur Urban"},{"id":141910,"name":"Narkhed"},{"id":141911,"name":"Parseoni"},{"id":141912,"name":"Ramtek"},{"id":141913,"name":"Savner"},{"id":141914,"name":"Umred"}
+  ],
+  "1420": [
+    {"id":142001,"name":"Ardhapur"},{"id":142002,"name":"Biloli"},{"id":142003,"name":"Bhokar"},{"id":142004,"name":"Deglur"},{"id":142005,"name":"Dharmabad"},{"id":142006,"name":"Hadgaon"},{"id":142007,"name":"Himayatnagar"},{"id":142008,"name":"Kandhar"},{"id":142009,"name":"Kinwat"},{"id":142010,"name":"Loha"},{"id":142011,"name":"Mahur"},{"id":142012,"name":"Mudkhed"},{"id":142013,"name":"Mukhed"},{"id":142014,"name":"Naigaon"},{"id":142015,"name":"Nanded"},{"id":142016,"name":"Umri"}
+  ],
+  "1421": [
+    {"id":142101,"name":"Akkalkuwa"},{"id":142102,"name":"Akrani"},{"id":142103,"name":"Nandurbar"},{"id":142104,"name":"Nawapur"},{"id":142105,"name":"Shahada"},{"id":142106,"name":"Taloda"}
+  ],
+  "1422": [
+    {"id":142201,"name":"Baglan"},{"id":142202,"name":"Chandwad"},{"id":142203,"name":"Deola"},{"id":142204,"name":"Dindori"},{"id":142205,"name":"Igatpuri"},{"id":142206,"name":"Kalwan"},{"id":142207,"name":"Malegaon"},{"id":142208,"name":"Nandgaon"},{"id":142209,"name":"Nashik"},{"id":142210,"name":"Niphad"},{"id":142211,"name":"Peint"},{"id":142212,"name":"Sinnar"},{"id":142213,"name":"Surgana"},{"id":142214,"name":"Trimbakeshwar"},{"id":142215,"name":"Yeola"}
+  ],
+  "1423": [
+    {"id":142301,"name":"Bhoom"},{"id":142302,"name":"Kalamb"},{"id":142303,"name":"Lohara"},{"id":142304,"name":"Osmanabad"},{"id":142305,"name":"Paranda"},{"id":142306,"name":"Tuljapur"},{"id":142307,"name":"Umarga"},{"id":142308,"name":"Washi"}
+  ],
+  "1424": [
+    {"id":142401,"name":"Dahanu"},{"id":142402,"name":"Jawhar"},{"id":142403,"name":"Mokhada"},{"id":142404,"name":"Palghar"},{"id":142405,"name":"Talasari"},{"id":142406,"name":"Vasai"},{"id":142407,"name":"Vikramgad"},{"id":142408,"name":"Wada"}
+  ],
+  "1425": [
+    {"id":142501,"name":"Gangakhed"},{"id":142502,"name":"Jintur"},{"id":142503,"name":"Manwath"},{"id":142504,"name":"Parbhani"},{"id":142505,"name":"Pathri"},{"id":142506,"name":"Purna"},{"id":142507,"name":"Selu"},{"id":142508,"name":"Sonpeth"},{"id":142509,"name":"Vayad"}
+  ],
+  "1426": [
+    {"id":142601,"name":"Ambegaon"},{"id":142602,"name":"Baramati"},{"id":142603,"name":"Bhor"},{"id":142604,"name":"Daund"},{"id":142605,"name":"Haveli"},{"id":142606,"name":"Indapur"},{"id":142607,"name":"Junnar"},{"id":142608,"name":"Khed"},{"id":142609,"name":"Mawal"},{"id":142610,"name":"Mulshi"},{"id":142611,"name":"Pune City"},{"id":142612,"name":"Purandar"},{"id":142613,"name":"Shirur"},{"id":142614,"name":"Velhe"}
+  ],
+  "1427": [
+    {"id":142701,"name":"Alibag"},{"id":142702,"name":"Karjat"},{"id":142703,"name":"Khalapur"},{"id":142704,"name":"Mahad"},{"id":142705,"name":"Mangaon"},{"id":142706,"name":"Murud"},{"id":142707,"name":"Panvel"},{"id":142708,"name":"Pen"},{"id":142709,"name":"Poladpur"},{"id":142710,"name":"Roha"},{"id":142711,"name":"Shriwardhan"},{"id":142712,"name":"Sudhagad"},{"id":142713,"name":"Tala"},{"id":142714,"name":"Uran"}
+  ],
+  "1428": [
+    {"id":142801,"name":"Chiplun"},{"id":142802,"name":"Dapoli"},{"id":142803,"name":"Guhagar"},{"id":142804,"name":"Khed"},{"id":142805,"name":"Lanja"},{"id":142806,"name":"Mandangad"},{"id":142807,"name":"Rajapur"},{"id":142808,"name":"Ratnagiri"},{"id":142809,"name":"Sangameshwar"}
+  ],
+  "1429": [
+    {"id":142901,"name":"Atpadi"},{"id":142902,"name":"Jat"},{"id":142903,"name":"Kadegaon"},{"id":142904,"name":"Kavathemahankal"},{"id":142905,"name":"Khanapur"},{"id":142906,"name":"Miraj"},{"id":142907,"name":"Palus"},{"id":142908,"name":"Shirala"},{"id":142909,"name":"Tasgaon"},{"id":142910,"name":"Walwa"}
+  ],
+  "1430": [
+    {"id":143001,"name":"Jaoli"},{"id":143002,"name":"Karad"},{"id":143003,"name":"Khandala"},{"id":143004,"name":"Khatav"},{"id":143005,"name":"Koregaon"},{"id":143006,"name":"Mahabaleshwar"},{"id":143007,"name":"Man"},{"id":143008,"name":"Patan"},{"id":143009,"name":"Phaltan"},{"id":143010,"name":"Satara"},{"id":143011,"name":"Wai"},{"id":143012,"name":"Waishet"}
+  ],
+  "1431": [
+    {"id":143101,"name":"Deogad"},{"id":143102,"name":"Dodamarg"},{"id":143103,"name":"Kankavli"},{"id":143104,"name":"Kudal"},{"id":143105,"name":"Malvan"},{"id":143106,"name":"Sawantwadi"},{"id":143107,"name":"Vaibhavvadi"},{"id":143108,"name":"Vengurla"}
+  ],
+  "1432": [
+    {"id":143201,"name":"Akkalkot"},{"id":143202,"name":"Barshi"},{"id":143203,"name":"Karmala"},{"id":143204,"name":"Madha"},{"id":143205,"name":"Malshiras"},{"id":143206,"name":"Mangalwedha"},{"id":143207,"name":"Mohol"},{"id":143208,"name":"North Solapur"},{"id":143209,"name":"Pandharpur"},{"id":143210,"name":"Sangola"},{"id":143211,"name":"South Solapur"}
+  ],
+  "1433": [
+    {"id":143301,"name":"Ambarnath"},{"id":143302,"name":"Bhiwandi"},{"id":143303,"name":"Kalyan"},{"id":143304,"name":"Murbad"},{"id":143305,"name":"Shahapur"},{"id":143306,"name":"Thane"},{"id":143307,"name":"Ulhasnagar"}
+  ],
+  "1434": [
+    {"id":143401,"name":"Arvi"},{"id":143402,"name":"Ashti"},{"id":143403,"name":"Deoli"},{"id":143404,"name":"Hinganghat"},{"id":143405,"name":"Karanja"},{"id":143406,"name":"Samudrapur"},{"id":143407,"name":"Seloo"},{"id":143408,"name":"Wardha"},{"id":143409,"name":"Warud"}
+  ],
+  "1435": [
+    {"id":143501,"name":"Karanja"},{"id":143502,"name":"Malegaon"},{"id":143503,"name":"Mangrulpir"},{"id":143504,"name":"Manora"},{"id":143505,"name":"Risod"},{"id":143506,"name":"Washim"}
+  ],
+  "1436": [
+    {"id":143601,"name":"Arni"},{"id":143602,"name":"Babhulgaon"},{"id":143603,"name":"Darwha"},{"id":143604,"name":"Digras"},{"id":143605,"name":"Ghatanji"},{"id":143606,"name":"Kalamb"},{"id":143607,"name":"Kelapur"},{"id":143608,"name":"Mahagaon"},{"id":143609,"name":"Maregaon"},{"id":143610,"name":"Ner"},{"id":143611,"name":"Pusad"},{"id":143612,"name":"Ralegaon"},{"id":143613,"name":"Umarkhed"},{"id":143614,"name":"Wani"},{"id":143615,"name":"Yavatmal"},{"id":143616,"name":"Zari Jamni"}
+  ]
+}
