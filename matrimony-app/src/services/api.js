@@ -41,11 +41,25 @@ export default api;
  * Upload multiple profile photos via FormData
  * @param {FormData} formData - Must contain 'photos' field with image files
  */
-export const uploadProfilePhotos = (formData) => {
-  return api.post('/profiles/photos', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-    transformRequest: (data) => data, // prevent axios from serializing
+export const uploadProfilePhotos = async (formData) => {
+  // Use native fetch instead of Axios — Axios cannot correctly handle
+  // multipart FormData boundaries in React Native
+  const token = await AsyncStorage.getItem('token');
+  const response = await fetch(`${API_BASE_URL}/profiles/photos`, {
+    method: 'POST',
+    headers: {
+      'Authorization': token ? `Bearer ${token}` : '',
+      // Do NOT set Content-Type — fetch sets it automatically with the correct boundary
+    },
+    body: formData,
   });
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    throw { response: { data: errData } }; // mimic Axios error shape
+  }
+
+  return { data: await response.json() };
 };
 
 /**

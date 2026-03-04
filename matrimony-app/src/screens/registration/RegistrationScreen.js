@@ -31,9 +31,12 @@ import {
   MARITAL_STATUS_OPTIONS,
   GENDER_OPTIONS,
   PROFILE_FOR_OPTIONS,
+  OCCUPATION_OPTIONS,
   TERMS_AND_CONDITIONS,
   PRIVACY_POLICY,
+  API_BASE_URL,
 } from "../../utils/constants";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getProfileImageUri } from "../../utils/imageUtils";
 import useHardwareBack from "../../hooks/useHardwareBack";
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -44,7 +47,7 @@ import { formatDateToISO, calculateAge } from "../../utils/dateUtils";
 
 const RegistrationScreen = ({ navigation, route }) => {
   const { t } = useTranslation();
-  const { logout, checkProfileStatus, updateUser } = useAuth();
+  const { logout, checkProfileStatus, updateUser, user } = useAuth();
   useHardwareBack();
   const isEdit = route.params?.isEdit || false;
   const [formData, setFormData] = useState({
@@ -172,9 +175,15 @@ const RegistrationScreen = ({ navigation, route }) => {
   useEffect(() => {
     if (isEdit) {
       fetchCurrentProfile();
-      fetchExistingPhotos();
     }
   }, [isEdit]);
+
+  // Always load existing photos on mount (works for both new and edit users)
+  useEffect(() => {
+    if (user?.id) {
+      fetchExistingPhotos();
+    }
+  }, [user?.id]);
 
   // ═══════════════════════════════════════════
   //  LOCATION HELPERS
@@ -251,14 +260,11 @@ const RegistrationScreen = ({ navigation, route }) => {
   // ═══════════════════════════════════════════
 
   const fetchExistingPhotos = async () => {
+    if (!user?.id) return;
     try {
       setFetchingPhotos(true);
-      const res = await api.get("/profiles/me");
-      const userId = res.data.profile?.user_id;
-      if (userId) {
-        const photosRes = await getProfilePhotos(userId);
-        setExistingPhotos(photosRes.data.photos || []);
-      }
+      const photosRes = await getProfilePhotos(user.id);
+      setExistingPhotos(photosRes.data.photos || []);
     } catch (err) {
       console.error("[MULTI_PHOTO] Fetch error:", err);
     } finally {
@@ -524,25 +530,36 @@ const RegistrationScreen = ({ navigation, route }) => {
 
     const formData = new FormData();
     const uri = pickedImage.uri;
-    const fileType = uri.substring(uri.lastIndexOf(".") + 1);
+    // Extract extension safely
+    const extMatch = uri.match(/\.([a-zA-Z0-9]+)(\?|#|$)/);
+    const fileType = extMatch ? extMatch[1].toLowerCase() : 'jpg';
+    const mimeType = fileType === 'jpg' ? 'image/jpeg' : `image/${fileType}`;
 
-    formData.append("image", {
-      uri: Platform.OS === "android" ? uri : uri.replace("file://", ""),
+    formData.append('image', {
+      uri,           // send uri as-is — RN fetch handles file:// on all platforms
       name: `photo.${fileType}`,
-      type: `image/${fileType}`,
+      type: mimeType,
     });
 
-    try {
-      const response = await api.post("/upload/profile-image", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      return response.data.imageUrl;
-    } catch (error) {
-      console.error("Upload Error:", error);
-      throw new Error("Failed to upload image. Please try again.");
+    const token = await AsyncStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/upload/profile-image`, {
+      method: 'POST',
+      headers: {
+        Authorization: token ? `Bearer ${token}` : '',
+        // No Content-Type — fetch auto-sets it with the correct multipart boundary
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      console.error('[UPLOAD_IMAGE] Server error:', errData);
+      throw new Error(errData.message || 'Upload failed');
     }
+
+    const data = await response.json();
+    console.log('[UPLOAD_IMAGE] Success:', data.imageUrl);
+    return data.imageUrl;
   };
 
   const handleSave = async () => {
@@ -576,48 +593,63 @@ const RegistrationScreen = ({ navigation, route }) => {
 
     setLoading(true);
     try {
-      let finalAvatarUrl = formData.avatar_url;
-
-      if (pickedImage) {
-        finalAvatarUrl = await uploadProfileImage();
-      }
-
-      const payload = {
+      // ── Step 1: Build profile payload (WITHOUT photo for now) ────────────
+      const basePayload = {
         ...formData,
-        avatar_url: finalAvatarUrl,
+        avatar_url: formData.avatar_url, // keep existing if editing
         monthly_income: formData.monthly_income
           ? parseInt(formData.monthly_income, 10)
           : 0,
         profile_for:
-          formData.profile_for === "Other"
+          formData.profile_for === 'Other'
             ? formData.other_profile_for
             : formData.profile_for,
       };
+      delete basePayload.other_profile_for;
 
-      // Remove other_profile_for from payload as it's UI state
-      delete payload.other_profile_for;
-
-      let updatedProfileRes;
+      // ── Step 2: Create / update profile ──────────────────────────────────
+      let profileRes;
       if (isEdit) {
-        updatedProfileRes = await api.put("/profiles", payload);
+        profileRes = await api.put('/profiles', basePayload);
       } else {
-        updatedProfileRes = await api.post("/profiles", payload);
+        profileRes = await api.post('/profiles', basePayload);
       }
 
-      // Update local auth context with new profile data (especially avatar_url)
-      if (updatedProfileRes?.data?.profile) {
-        await updateUser(updatedProfileRes.data.profile);
+      // ── Step 3: Upload photo AFTER profile exists, then patch avatar_url ──
+      if (pickedImage) {
+        try {
+          const imageUrl = await uploadProfileImage();
+          if (imageUrl) {
+            // Patch the profile's avatar_url via PUT
+            const patchRes = await api.put('/profiles', { avatar_url: imageUrl });
+            if (patchRes?.data?.profile) {
+              profileRes = patchRes; // use updated profile
+            }
+          }
+        } catch (imgErr) {
+          console.warn('[PROFILE_SAVE] Photo upload failed, profile saved without photo:', imgErr.message);
+          // Profile is already saved — just warn, don't fail
+          Alert.alert(
+            'Photo Upload Failed',
+            'Your profile was saved, but the photo could not be uploaded. You can add it later from Edit Profile.',
+          );
+        }
+      }
+
+      // ── Step 4: Sync auth context with latest profile data ───────────────
+      if (profileRes?.data?.profile) {
+        await updateUser(profileRes.data.profile);
       }
 
       isSaved.current = true;
       Alert.alert(
-        t("success"),
-        t("profile_save_success", {
-          action: isEdit ? t("updated") : t("created"),
+        t('success'),
+        t('profile_save_success', {
+          action: isEdit ? t('updated') : t('created'),
         }),
         [
           {
-            text: "OK",
+            text: 'OK',
             onPress: async () => {
               if (!isEdit) {
                 await checkProfileStatus();
@@ -629,9 +661,10 @@ const RegistrationScreen = ({ navigation, route }) => {
         ],
       );
     } catch (error) {
+      console.error('[PROFILE_SAVE] Error:', error);
       Alert.alert(
-        t("error"),
-        error.response?.data?.message || t("action_failed"),
+        t('error'),
+        error.response?.data?.message || t('action_failed'),
       );
     } finally {
       setLoading(false);
@@ -647,10 +680,6 @@ const RegistrationScreen = ({ navigation, route }) => {
       } else {
         setAgeError("");
       }
-    }
-    if (field === 'occupation') {
-      if (safeValue) setOccupationError('');
-      else setOccupationError(t('occupation_validation_error'));
     }
   };
 
@@ -835,10 +864,15 @@ const RegistrationScreen = ({ navigation, route }) => {
           value={formData.qualification}
           onChangeText={(v) => updateField("qualification", v)}
         />
-        <CustomInput
-          label={t("occupation")}
+        <CustomPicker
+          label={`${t("occupation")} *`}
           value={formData.occupation}
-          onChangeText={(v) => updateField("occupation", v)}
+          options={OCCUPATION_OPTIONS.map((opt) => ({
+            label: opt,
+            value: opt,
+          }))}
+          placeholder={t("select_occupation") || "Select Occupation"}
+          onSelect={(v) => updateField("occupation", v)}
         />
         <CustomInput
           label={t("monthly_income")}
@@ -1158,10 +1192,6 @@ const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: "#CCCCCC",
     opacity: 0.6,
-  },
-  readonlyInput: {
-    backgroundColor: '#F5F5F5',
-    color: '#555',
   },
 
   // ═══════════════════════════════════════════
