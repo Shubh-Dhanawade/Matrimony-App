@@ -44,8 +44,11 @@ const PhotoGalleryUpload = ({ userId, onPhotosChanged }) => {
 
     // Pick images from device
     const handlePickImages = async () => {
-        const maxNew = 5 - existingPhotos.length;
-        if (maxNew <= 0) {
+        // Account for BOTH server-uploaded photos AND locally selected (pending) images
+        const totalUsed = existingPhotos.length + selectedImages.length;
+        const remainingSlots = 5 - totalUsed;
+
+        if (remainingSlots <= 0) {
             Alert.alert('Limit Reached', 'You can upload a maximum of 5 photos.');
             return;
         }
@@ -60,7 +63,7 @@ const PhotoGalleryUpload = ({ userId, onPhotosChanged }) => {
             const result = await ExpoImagePicker.launchImageLibraryAsync({
                 mediaTypes: ExpoImagePicker.MediaTypeOptions.Images,
                 allowsMultipleSelection: true,
-                selectionLimit: maxNew,
+                selectionLimit: remainingSlots, // enforce OS-level limit correctly
                 quality: 0.8,
                 orderedSelection: true,
             });
@@ -71,9 +74,14 @@ const PhotoGalleryUpload = ({ userId, onPhotosChanged }) => {
                     type: asset.mimeType || 'image/jpeg',
                     fileName: asset.fileName || `photo_${Date.now()}.jpg`,
                 }));
-                setSelectedImages(newImages);
+                // APPEND to existing selection (don't replace) so "Pick More" works
+                setSelectedImages(prev => {
+                    const combined = [...prev, ...newImages];
+                    return combined.slice(0, remainingSlots + prev.length); // safety cap
+                });
             }
         } catch (error) {
+            console.error('[GALLERY] Picker error:', error);
             Alert.alert('Error', 'Failed to open image picker.');
         }
     };

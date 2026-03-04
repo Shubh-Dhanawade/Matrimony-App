@@ -144,9 +144,9 @@ const ProfileCard = ({ profile, isSubscribed, onUpgrade, onAction }) => {
                   <Text style={styles.verifiedText}>Verified</Text>
                 </View>
               )}
-              <Text style={styles.statusBadgeText}>
-                {profile.invitation_status === 'Connected' ? '🤝 Connected' : ''}
-              </Text>
+              {profile.invitation_status === 'Connected' && (
+                <Text style={styles.statusBadgeText}>🤝 Connected</Text>
+              )}
             </View>
 
             <Text style={styles.nameText}>{profile.full_name}, {profile.age}</Text>
