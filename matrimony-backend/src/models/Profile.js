@@ -24,6 +24,12 @@ const allowedColumns = [
   "state",
   "district",
   "taluka",
+  // New profile fields
+  "property",
+  "profession",
+  "height",
+  "color",
+  "age",
 ];
 
 const filterValidData = (data) => {

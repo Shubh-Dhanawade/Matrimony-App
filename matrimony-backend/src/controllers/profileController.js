@@ -9,6 +9,16 @@ const profileController = {
       const userId = req.user.id;
       const data = { ...req.body };
 
+      // ── Required fields guard ─────────────────────────────────────────
+      const REQUIRED = ["full_name", "dob", "age", "gender", "marital_status", "occupation", "caste", "address"];
+      const missing = REQUIRED.filter((f) => !data[f] || String(data[f]).trim() === "");
+      if (missing.length > 0) {
+        return res.status(400).json({
+          message: `Please fill all required fields: ${missing.join(", ")}`,
+          missingFields: missing,
+        });
+      }
+
       // Handle monthly_income numeric conversion
       if (data.monthly_income !== undefined) {
         if (data.monthly_income === '' || data.monthly_income === null) {
@@ -72,6 +82,16 @@ const profileController = {
     try {
       const userId = req.user.id;
       const data = { ...req.body };
+
+      // ── Required fields guard ─────────────────────────────────────────
+      const REQUIRED = ["full_name", "dob", "age", "gender", "marital_status", "occupation", "caste", "address"];
+      const missing = REQUIRED.filter((f) => !data[f] || String(data[f]).trim() === "");
+      if (missing.length > 0) {
+        return res.status(400).json({
+          message: `Please fill all required fields: ${missing.join(", ")}`,
+          missingFields: missing,
+        });
+      }
 
       // Handle monthly_income numeric conversion
       if (data.monthly_income !== undefined) {

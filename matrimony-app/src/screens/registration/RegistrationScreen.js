@@ -32,6 +32,7 @@ import {
   GENDER_OPTIONS,
   PROFILE_FOR_OPTIONS,
   OCCUPATION_OPTIONS,
+  QUALIFICATION_OPTIONS,
   TERMS_AND_CONDITIONS,
   PRIVACY_POLICY,
   API_BASE_URL,
@@ -56,12 +57,17 @@ const RegistrationScreen = ({ navigation, route }) => {
     mother_maiden_name: "",
     dob: "",
     gender: "",
+    height: "",
+    color: "",
+    age: "",
     marital_status: "",
     address: "",
     birthplace: "",
     qualification: "",
     occupation: "",
+    profession: "",
     monthly_income: "",
+    property: "",
     caste: "",
     sub_caste: "",
     relative_surname: "",
@@ -415,9 +421,12 @@ const RegistrationScreen = ({ navigation, route }) => {
           profile.profile_for &&
           !PROFILE_FOR_OPTIONS.includes(profile.profile_for)
         ) {
+          const isoDate = formatDateToISO(profile.dob);
+          const recalcAge = calculateAge(isoDate);
           const newData = {
             ...profile,
-            dob: formatDateToISO(profile.dob),
+            dob: isoDate,
+            age: typeof recalcAge === "number" ? String(recalcAge) : (profile.age ? String(profile.age) : ""),
             profile_for: "Other",
             other_profile_for: profile.profile_for,
             state: profile.state || "",
@@ -427,9 +436,12 @@ const RegistrationScreen = ({ navigation, route }) => {
           setFormData(newData);
           setInitialData(newData);
         } else {
+          const isoDate = formatDateToISO(profile.dob);
+          const recalcAge = calculateAge(isoDate);
           const newData = {
             ...profile,
-            dob: formatDateToISO(profile.dob),
+            dob: isoDate,
+            age: typeof recalcAge === "number" ? String(recalcAge) : (profile.age ? String(profile.age) : ""),
             other_profile_for: "",
             state: profile.state || "",
             district: profile.district || "",
@@ -563,6 +575,7 @@ const RegistrationScreen = ({ navigation, route }) => {
   };
 
   const handleSave = async () => {
+    // ── Step 0: Validate profile_for + Other sub-field ───────────────────
     if (!formData.profile_for) {
       Alert.alert(t("error"), t("profile_for"));
       return;
@@ -576,18 +589,30 @@ const RegistrationScreen = ({ navigation, route }) => {
       return;
     }
 
-    if (!formData.full_name || !formData.dob) {
-      Alert.alert(t("error"), `${t("full_name")} & ${t("dob")} are required`);
-      return;
-    }
+    // ── Step 0b: Validate all required fields ────────────────────────────
+    const requiredFields = [
+      { key: "full_name", label: t("full_name") },
+      { key: "father_name", label: t("father_name") },
+      { key: "dob", label: t("dob") },
+      { key: "gender", label: t("gender") },
+      { key: "height", label: t("height") },
+      { key: "marital_status", label: t("marital_status") },
+      { key: "address", label: t("address") },
+      { key: "qualification", label: t("qualification") },
+      { key: "occupation", label: t("occupation") },
+      { key: "caste", label: t("caste") },
+    ];
 
-    if (!formData.gender) {
-      Alert.alert(t("error"), t("gender"));
-      return;
-    }
+    const missing = requiredFields.filter(
+      ({ key }) => !formData[key] || String(formData[key]).trim() === ""
+    );
 
-    if (!formData.marital_status) {
-      Alert.alert(t("error"), t("marital_status"));
+    if (missing.length > 0) {
+      const fieldList = missing.map(({ label }) => `• ${label}`).join("\n");
+      Alert.alert(
+        t("error"),
+        `${t("fill_required_fields") || "Please fill all required fields"}:\n\n${fieldList}`
+      );
       return;
     }
 
@@ -672,14 +697,18 @@ const RegistrationScreen = ({ navigation, route }) => {
   };
 
   const updateField = (field, value) => {
-    setFormData({ ...formData, [field]: value });
     if (field === "dob") {
-      const age = calculateAge(value);
-      if (age < 18) {
+      const calculatedAge = calculateAge(value);
+      // Auto-fill age from DOB; store as string for form consistency
+      const ageStr = typeof calculatedAge === "number" ? String(calculatedAge) : "";
+      setFormData((prev) => ({ ...prev, dob: value, age: ageStr }));
+      if (typeof calculatedAge === "number" && calculatedAge < 18) {
         setAgeError(t("age_validation_error", { min: 18 }));
       } else {
         setAgeError("");
       }
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }));
     }
   };
 
@@ -760,6 +789,23 @@ const RegistrationScreen = ({ navigation, route }) => {
           ]}
           placeholder={t("gender")}
           onSelect={(v) => updateField("gender", v)}
+        />
+        <CustomInput
+          label={`${t("height")} *`}
+          value={formData.height}
+          onChangeText={(v) => updateField("height", v)}
+        />
+        <CustomInput
+          label={`${t("color")} *`}
+          value={formData.color}
+          onChangeText={(v) => updateField("color", v)}
+        />
+        <CustomInput
+          label={`${t("age")} *`}
+          value={formData.age ? String(formData.age) : ""}
+          onChangeText={() => { }} // read-only: auto-calculated from DOB
+          editable={false}
+          inputStyle={styles.readOnlyInput}
         />
 
         <CustomPicker
@@ -859,10 +905,15 @@ const RegistrationScreen = ({ navigation, route }) => {
         />
 
         <Text style={styles.sectionTitle}>{t("professional_details")}</Text>
-        <CustomInput
-          label={t("qualification")}
+        <CustomPicker
+          label={`${t("qualification")} *`}
           value={formData.qualification}
-          onChangeText={(v) => updateField("qualification", v)}
+          options={QUALIFICATION_OPTIONS.map((opt) => ({
+            label: opt,
+            value: opt,
+          }))}
+          placeholder={t("Qualification") || "Select Qualification"}
+          onSelect={(v) => updateField("qualification", v)}
         />
         <CustomPicker
           label={`${t("occupation")} *`}
@@ -871,14 +922,24 @@ const RegistrationScreen = ({ navigation, route }) => {
             label: opt,
             value: opt,
           }))}
-          placeholder={t("select_occupation") || "Select Occupation"}
+          placeholder={t("Occupation") || "Select Occupation"}
           onSelect={(v) => updateField("occupation", v)}
         />
         <CustomInput
-          label={t("monthly_income")}
+          label={`${t("profession")} *`}
+          value={formData.profession}
+          onChangeText={(v) => updateField("profession", v)}
+        />
+        <CustomInput
+          label={`${t("monthly_income")} *`}
           value={formData.monthly_income}
           onChangeText={(v) => updateField("monthly_income", v)}
           keyboardType="numeric"
+        />
+        <CustomInput
+          label={`${t("property")} *`}
+          value={formData.property}
+          onChangeText={(v) => updateField("property", v)}
         />
 
         <Text style={styles.sectionTitle}>{t("community_details")}</Text>
@@ -1306,6 +1367,10 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 14,
+  },
+  readOnlyInput: {
+    backgroundColor: "#f0f0f0",
+    color: "#888",
   },
 });
 
