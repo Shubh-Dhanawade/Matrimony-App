@@ -71,12 +71,21 @@ const AdminDashboard = ({ navigation }) => {
         <View style={styles.cardRow}>
           <TouchableOpacity
             style={styles.card}
+            onPress={() => navigation.navigate('PendingProfiles')}
+          >
+            <Text style={styles.cardTitle}>Pending Profiles</Text>
+            <Text style={styles.cardSub}>Review & Approve</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.card}
             onPress={() => navigation.navigate('ManageProfiles')}
           >
             <Text style={styles.cardTitle}>Manage Profiles </Text>
-            <Text style={styles.cardSub}>Approve & Reject Profiles</Text>
+            <Text style={styles.cardSub}>View Approved</Text>
           </TouchableOpacity>
-
+        </View>
+        <View style={[styles.cardRow, { marginTop: SPACING.md }]}>
           <TouchableOpacity
             style={styles.card}
             onPress={() => navigation.navigate('ManageUsers')}

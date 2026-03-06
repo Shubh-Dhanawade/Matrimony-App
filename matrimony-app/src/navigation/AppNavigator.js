@@ -22,6 +22,7 @@ import CustomHeader from "../components/CustomHeader";
 import api from "../services/api";
 import { COLORS } from "../utils/constants";
 import AdminDashboard from "../screens/dashboard/AdminDashboard";
+import PendingProfiles from "../screens/dashboard/PendingProfiles";
 import ManageProfiles from "../screens/dashboard/ManageProfiles";
 import ManageUsers from "../screens/dashboard/ManageUsers";
 import ProfilesFeedScreen from "../screens/dashboard/ProfilesFeedScreen";
@@ -73,6 +74,11 @@ const AdminStack = () => (
       name="AdminDashboard"
       component={AdminDashboard}
       options={{ title: "Admin Overview" }}
+    />
+    <Stack.Screen
+      name="PendingProfiles"
+      component={PendingProfiles}
+      options={{ title: "Pending Profiles" }}
     />
     <Stack.Screen
       name="ManageProfiles"

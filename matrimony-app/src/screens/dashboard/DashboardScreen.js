@@ -191,7 +191,11 @@ const DashboardScreen = ({ navigation }) => {
         data={suggested}
         keyExtractor={(item) => `suggested-${item.user_id}`}
         renderItem={({ item }) => (
-          <ProfileCard profile={item} isSuggested />
+          <ProfileCard
+            profile={item}
+            isSuggested
+            onViewProfile={(userId) => navigation.navigate('ViewFullProfile', { userId })}
+          />
         )}
       />
     </View>
@@ -215,6 +219,11 @@ const DashboardScreen = ({ navigation }) => {
                   profile={card}
                   isSubscribed={card.is_subscribed === 1}
                   onUpgrade={() => navigation.navigate('Upgrade')}
+                  onViewProfile={(userId) => navigation.navigate('ViewFullProfile', { userId })}
+                  onAction={(action, p) => {
+                    if (action === 'interested') handleSwipedRight(profiles.indexOf(p));
+                    else if (action === 'skip') handleSwipedLeft(profiles.indexOf(p));
+                  }}
                 />
               )}
               onSwipedLeft={handleSwipedLeft}
