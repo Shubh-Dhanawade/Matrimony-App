@@ -16,6 +16,7 @@ import DashboardScreen from "../screens/dashboard/DashboardScreen";
 import ProfileViewScreen from "../screens/dashboard/ProfileViewScreen";
 import UpgradeScreen from "../screens/dashboard/UpgradeScreen";
 import UserProfileScreen from "../screens/dashboard/UserProfileScreen";
+import ViewFullProfileScreen from "../screens/dashboard/ViewFullProfileScreen";
 import InvitationsScreen from "../screens/dashboard/InvitationsScreen";
 import CustomHeader from "../components/CustomHeader";
 import api from "../services/api";
@@ -170,6 +171,11 @@ const MainStack = () => {
         name="Upgrade"
         component={UpgradeScreen}
         options={{ title: t("upgrade_to_premium_title") }}
+      />
+      <Stack.Screen
+        name="ViewFullProfile"
+        component={ViewFullProfileScreen}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );
