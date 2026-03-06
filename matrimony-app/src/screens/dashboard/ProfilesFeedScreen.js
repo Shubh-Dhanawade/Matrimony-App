@@ -89,6 +89,7 @@ const ProfilesFeedScreen = ({ navigation }) => {
             isSubscribed={isSubscribed}
             onUpgrade={() => navigation.navigate('Upgrade')}
             onAction={handleAction}
+            onViewProfile={(userId) => navigation.navigate('ViewFullProfile', { userId })}
         />
     ), [isSubscribed, navigation, t]); // t is needed for handleAction dependence indirectly
 

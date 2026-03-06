@@ -266,11 +266,14 @@ const RegistrationScreen = ({ navigation, route }) => {
   // ═══════════════════════════════════════════
 
   const fetchExistingPhotos = async () => {
-    if (!user?.id) return;
     try {
       setFetchingPhotos(true);
-      const photosRes = await getProfilePhotos(user.id);
-      setExistingPhotos(photosRes.data.photos || []);
+      const res = await api.get("/profiles/me");
+      const userId = res.data.profile?.user_id;
+      if (userId) {
+        const photosRes = await getProfilePhotos(userId);
+        setExistingPhotos(photosRes.data.photos || []);
+      }
     } catch (err) {
       console.error("[MULTI_PHOTO] Fetch error:", err);
     } finally {
@@ -618,10 +621,16 @@ const RegistrationScreen = ({ navigation, route }) => {
 
     setLoading(true);
     try {
-      // ── Step 1: Build profile payload (WITHOUT photo for now) ────────────
+      // ── Step 1: Upload image FIRST so the URL is ready for the payload ───
+      let finalAvatarUrl = formData.avatar_url;
+      if (pickedImage) {
+        finalAvatarUrl = await uploadProfileImage();
+      }
+
+      // ── Step 2: Build profile payload WITH the final avatar_url ──────────
       const basePayload = {
         ...formData,
-        avatar_url: formData.avatar_url, // keep existing if editing
+        avatar_url: finalAvatarUrl,         // ← includes newly uploaded URL
         monthly_income: formData.monthly_income
           ? parseInt(formData.monthly_income, 10)
           : 0,
@@ -632,7 +641,7 @@ const RegistrationScreen = ({ navigation, route }) => {
       };
       delete basePayload.other_profile_for;
 
-      // ── Step 2: Create / update profile ──────────────────────────────────
+      // ── Step 3: Create / update profile (now persists correct avatar_url) ─
       let profileRes;
       if (isEdit) {
         profileRes = await api.put('/profiles', basePayload);
@@ -640,28 +649,7 @@ const RegistrationScreen = ({ navigation, route }) => {
         profileRes = await api.post('/profiles', basePayload);
       }
 
-      // ── Step 3: Upload photo AFTER profile exists, then patch avatar_url ──
-      if (pickedImage) {
-        try {
-          const imageUrl = await uploadProfileImage();
-          if (imageUrl) {
-            // Patch the profile's avatar_url via PUT
-            const patchRes = await api.put('/profiles', { avatar_url: imageUrl });
-            if (patchRes?.data?.profile) {
-              profileRes = patchRes; // use updated profile
-            }
-          }
-        } catch (imgErr) {
-          console.warn('[PROFILE_SAVE] Photo upload failed, profile saved without photo:', imgErr.message);
-          // Profile is already saved — just warn, don't fail
-          Alert.alert(
-            'Photo Upload Failed',
-            'Your profile was saved, but the photo could not be uploaded. You can add it later from Edit Profile.',
-          );
-        }
-      }
-
-      // ── Step 4: Sync auth context with latest profile data ───────────────
+      // ── Step 4: Sync auth context with the fresh profile (has new URL) ───
       if (profileRes?.data?.profile) {
         await updateUser(profileRes.data.profile);
       }

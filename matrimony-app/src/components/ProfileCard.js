@@ -27,7 +27,7 @@ const { width, height } = Dimensions.get('window');
 const CARD_HEIGHT = height * 0.65;
 const CARD_WIDTH = width * 0.92;
 
-const ProfileCard = ({ profile, isSubscribed, onUpgrade, onAction }) => {
+const ProfileCard = ({ profile, isSubscribed, onUpgrade, onAction, onViewProfile }) => {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const flatListRef = useRef(null);
@@ -164,7 +164,18 @@ const ProfileCard = ({ profile, isSubscribed, onUpgrade, onAction }) => {
             </View>
           </View>
 
-          {/* Fixed Action Button Container (Bottom) */}
+          {/* View Full Profile Button – shown after unlock */}
+          {isUnlocked && (
+            <TouchableOpacity
+              style={styles.viewProfileBtn}
+              onPress={() => onViewProfile && onViewProfile(profile.user_id)}
+              activeOpacity={0.85}
+            >
+              <MaterialCommunityIcons name="account-details" size={18} color="#fff" />
+              <Text style={styles.viewProfileBtnText}>View Full Profile</Text>
+            </TouchableOpacity>
+          )}
+
           <View style={styles.actionContainer} pointerEvents="box-none">
             <ActionButton
               icon="close"
@@ -412,7 +423,29 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
-  }
+  },
+  viewProfileBtn: {
+    position: 'absolute',
+    bottom: 90,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(233,30,99,0.92)',
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 25,
+    elevation: 6,
+    shadowColor: '#E91E63',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.4,
+    shadowRadius: 5,
+  },
+  viewProfileBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 13,
+    marginLeft: 6,
+  },
 });
 
 export default memo(ProfileCard);
