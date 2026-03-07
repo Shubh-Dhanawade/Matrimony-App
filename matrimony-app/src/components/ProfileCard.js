@@ -17,6 +17,7 @@ import { BlurView } from 'expo-blur';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { API_BASE_URL, COLORS, SPACING, FONT_SIZES } from '../utils/constants';
 import { getProfileImageUri } from '../utils/imageUtils';
+import { formatLastActive } from '../utils/dateUtils';
 
 // Enable LayoutAnimation for Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -27,8 +28,21 @@ const { width, height } = Dimensions.get('window');
 const CARD_HEIGHT = height * 0.65;
 const CARD_WIDTH = width * 0.92;
 
-const ProfileCard = ({ profile, isSubscribed, onUpgrade, onAction, onViewProfile }) => {
-  const [isUnlocked, setIsUnlocked] = useState(false);
+// ─── Helper: mask all name parts except the last, which shows only first letter ───
+// Example: "Om Karan Sharma" → "Om Karan S."
+const getMaskedName = (fullName) => {
+  if (!fullName) return 'Unknown';
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return `${parts[0][0]}.`;
+  const lastName = parts[parts.length - 1];
+  const otherNames = parts.slice(0, -1).join(' ');
+  return `${otherNames} ${lastName[0]}.`;
+};
+
+const ProfileCard = ({ profile, isSubscribed, onUpgrade, onAction, onViewProfile, navigation }) => {
+  // STEP 4 — Two-state logic
+  const [isPreviewUnlocked, setIsPreviewUnlocked] = useState(false);
+  const [isFullProfileViewed, setIsFullProfileViewed] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const flatListRef = useRef(null);
 
@@ -40,11 +54,24 @@ const ProfileCard = ({ profile, isSubscribed, onUpgrade, onAction, onViewProfile
     return [getProfileImageUri(profile.avatar_url)];
   }, [profile.photos, profile.avatar_url]);
 
-  const isBlurred = !isSubscribed && !isUnlocked;
+  // Derived: is the photo blurred?
+  const isBlurred = !isPreviewUnlocked;
 
-  const handleUnlock = () => {
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  // STEP 2 — Unlock Preview: remove blur, reveal "View Full Profile" button
+  const handleUnlockPreview = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsUnlocked(true);
+    setIsPreviewUnlocked(true);
+  };
+
+  // STEP 3 — View Full Profile: mark viewed (shows full name on card) + navigate
+  const handleViewFullProfile = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIsFullProfileViewed(true);
+    if (onViewProfile) {
+      onViewProfile(profile.user_id);
+    }
   };
 
   // Track active photo on scroll
@@ -65,10 +92,16 @@ const ProfileCard = ({ profile, isSubscribed, onUpgrade, onAction, onViewProfile
 
   const keyExtractor = useCallback((_, index) => `photo-${index}`, []);
 
+  // STEP 6 — Displayed name follows state rules
+  const displayName = isFullProfileViewed
+    ? profile.full_name
+    : getMaskedName(profile.full_name);
+
   return (
     <View style={styles.cardContainer}>
       <View style={styles.card}>
         <View style={styles.imageContainer}>
+
           {/* Horizontal Photo Gallery */}
           <FlatList
             ref={flatListRef}
@@ -109,8 +142,18 @@ const ProfileCard = ({ profile, isSubscribed, onUpgrade, onAction, onViewProfile
             pointerEvents="none"
           />
 
-          {/* Blur overlay for non-subscribed users */}
-          {!isSubscribed && !isUnlocked && (
+          {/* Top Right "Last Active" Badge */}
+          {profile.last_active_at ? (
+            <View style={styles.lastActiveBadge}>
+              <MaterialCommunityIcons name="clock-outline" size={12} color="#fff" />
+              <Text style={styles.lastActiveText}>
+                {formatLastActive(profile.last_active_at)}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* ── STEP 1: Blur overlay + Unlock Preview button ── */}
+          {!isPreviewUnlocked && (
             <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill}>
               <View style={styles.blurOverlay}>
                 <View style={styles.blurContent}>
@@ -122,10 +165,9 @@ const ProfileCard = ({ profile, isSubscribed, onUpgrade, onAction, onViewProfile
                   <Text style={styles.blurText}>
                     Photo visible to paid members only
                   </Text>
-
                   <TouchableOpacity
                     style={styles.upgradeBtn}
-                    onPress={handleUnlock}
+                    onPress={handleUnlockPreview}
                     activeOpacity={0.8}
                   >
                     <Text style={styles.upgradeBtnText}>Unlock Preview</Text>
@@ -133,6 +175,18 @@ const ProfileCard = ({ profile, isSubscribed, onUpgrade, onAction, onViewProfile
                 </View>
               </View>
             </BlurView>
+          )}
+
+          {/* ── STEP 2: View Full Profile button (after unlock, before viewed) ── */}
+          {isPreviewUnlocked && (
+            <TouchableOpacity
+              style={styles.viewProfileBtn}
+              onPress={handleViewFullProfile}
+              activeOpacity={0.85}
+            >
+              <MaterialCommunityIcons name="account-details" size={18} color="#fff" />
+              <Text style={styles.viewProfileBtnText}>View Full Profile</Text>
+            </TouchableOpacity>
           )}
 
           {/* Details Overlay (Bottom Left) */}
@@ -149,32 +203,33 @@ const ProfileCard = ({ profile, isSubscribed, onUpgrade, onAction, onViewProfile
               )}
             </View>
 
-            <Text style={styles.nameText}>{profile.full_name}, {profile.age}</Text>
+            {/* Name and Age/Status */}
+            <Text style={styles.nameText} numberOfLines={1}>
+              {isPreviewUnlocked ? profile.full_name : getMaskedName(profile.full_name, profile.gender)}, {profile.age}
+            </Text>
 
+            {profile.profile_managed_by && (
+              <Text style={styles.managedByText}>
+                👤 Managed by {profile.profile_managed_by}
+              </Text>
+            )}
+
+            {/* Location row — always shown */}
             <View style={styles.infoRow}>
               <MaterialCommunityIcons name="map-marker" size={14} color="#ddd" />
               <Text style={styles.infoText}>{profile.address || 'Location Hidden'}</Text>
             </View>
 
-            <View style={styles.infoRow}>
-              <MaterialCommunityIcons name="school" size={14} color="#ddd" />
-              <Text style={styles.infoText} numberOfLines={1}>
-                {profile.qualification || 'Education not specified'}
-              </Text>
-            </View>
+            {/* Education row — only shown after preview unlocked */}
+            {isPreviewUnlocked && (
+              <View style={styles.infoRow}>
+                <MaterialCommunityIcons name="school" size={14} color="#ddd" />
+                <Text style={styles.infoText} numberOfLines={1}>
+                  {profile.qualification || 'Education not specified'}
+                </Text>
+              </View>
+            )}
           </View>
-
-          {/* View Full Profile Button – shown after unlock */}
-          {isUnlocked && (
-            <TouchableOpacity
-              style={styles.viewProfileBtn}
-              onPress={() => onViewProfile && onViewProfile(profile.user_id)}
-              activeOpacity={0.85}
-            >
-              <MaterialCommunityIcons name="account-details" size={18} color="#fff" />
-              <Text style={styles.viewProfileBtnText}>View Full Profile</Text>
-            </TouchableOpacity>
-          )}
 
           <View style={styles.actionContainer} pointerEvents="box-none">
             <ActionButton
@@ -306,7 +361,7 @@ const styles = StyleSheet.create({
     borderColor: '#fff',
   },
 
-  // Existing styles unchanged
+  // Blur overlay (STEP 1)
   blurOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -334,6 +389,29 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+
+  // Last Active Top Badge
+  lastActiveBadge: {
+    position: 'absolute',
+    top: 15,
+    right: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
+    zIndex: 15, // ensures it sits above images but below popups
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  lastActiveText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+
   gradientOverlay: {
     position: 'absolute',
     bottom: 0,
@@ -341,6 +419,35 @@ const styles = StyleSheet.create({
     right: 0,
     height: '45%',
   },
+
+  // "View Full Profile" button pinned to top left (STEP 2)
+  viewProfileBtn: {
+    position: 'absolute',
+    top: 15,
+    left: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(233,30,99,0.85)', // slightly more transparent pink
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    zIndex: 20,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.4)',
+    elevation: 5,
+    shadowColor: '#E91E63',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+  },
+  viewProfileBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 11,
+    marginLeft: 4,
+  },
+
+  // Details overlay
   detailsContainer: {
     position: 'absolute',
     bottom: 95,
@@ -376,6 +483,17 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     color: '#fff',
+    marginBottom: 4,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  managedByText: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 11,
+    marginBottom: 6,
+    fontWeight: '500',
+    fontStyle: 'italic',
   },
   infoRow: {
     flexDirection: 'row',
@@ -388,6 +506,8 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontWeight: '500',
   },
+
+  // Action buttons row
   actionContainer: {
     position: 'absolute',
     bottom: 20,
@@ -423,28 +543,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
-  },
-  viewProfileBtn: {
-    position: 'absolute',
-    bottom: 90,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(233,30,99,0.92)',
-    paddingHorizontal: 18,
-    paddingVertical: 9,
-    borderRadius: 25,
-    elevation: 6,
-    shadowColor: '#E91E63',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.4,
-    shadowRadius: 5,
-  },
-  viewProfileBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 13,
-    marginLeft: 6,
   },
 });
 

@@ -133,6 +133,7 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
 
                 {/* ─── Community Details ─── */}
                 <SectionCard title="Community & Family" icon="account-group-outline">
+                    <DetailRow icon="account-supervisor-circle-outline" label="Managed By" value={profile.profile_managed_by} />
                     <DetailRow icon="account-multiple-outline" label="Caste" value={profile.caste} />
                     <DetailRow icon="account-child-outline" label="Sub-Caste" value={profile.sub_caste} />
                     <DetailRow icon="account-supervisor-outline" label="Father's Name" value={profile.father_name} />

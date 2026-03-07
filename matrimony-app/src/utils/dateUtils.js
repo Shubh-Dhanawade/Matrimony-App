@@ -53,3 +53,26 @@ export const calculateAge = (dob) => {
 
     return age;
 };
+
+/**
+ * Calculates human readable relative time based on last active timestamp
+ * @param {string|Date} date 
+ * @returns {string} Human readable elapsed time
+ */
+export const formatLastActive = (date) => {
+    if (!date) return '';
+    const diff = Date.now() - new Date(date).getTime();
+    if (isNaN(diff)) return '';
+
+    const minutes = Math.floor(diff / 60000);
+
+    if (minutes < 5) return "Active now";
+    if (minutes < 60) return `Active ${minutes} min ago`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `Active ${hours} hours ago`;
+
+    const days = Math.floor(hours / 24);
+    if (days === 1) return `Active yesterday`;
+    return `Active ${days} days ago`;
+};

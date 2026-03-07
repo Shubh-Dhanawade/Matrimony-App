@@ -66,6 +66,11 @@ const UserProfileScreen = ({ navigation }) => {
                 <Text style={styles.status}>
                     {user?.is_subscribed ? t('premium_member') : t('free_member')}
                 </Text>
+                {profile?.profile_managed_by && (
+                    <Text style={[styles.status, { fontStyle: 'italic', fontSize: 13, marginTop: 2 }]}>
+                        Managed by {profile.profile_managed_by}
+                    </Text>
+                )}
             </View>
 
             <View style={styles.statsRow}>

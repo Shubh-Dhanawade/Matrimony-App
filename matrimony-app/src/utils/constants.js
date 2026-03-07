@@ -26,8 +26,8 @@ export const FONT_SIZES = {
   xxl: 32,
 };
 
-export const API_BASE_URL = "http://192.168.0.176:5472/api"; // Standard Android Emulator IP for localhost
-export const IMAGE_BASE_URL = "http://192.168.0.176:5472";
+export const API_BASE_URL = "http://192.168.0.106:5472/api"; // Standard Android Emulator IP for localhost
+export const IMAGE_BASE_URL = "http://192.168.0.106:5472";
 
 export const MARITAL_STATUS_OPTIONS = [
   "Single",
@@ -37,7 +37,7 @@ export const MARITAL_STATUS_OPTIONS = [
 ];
 
 export const GENDER_OPTIONS = ['Male', 'Female', 'Other'];
-export const OCCUPATION_OPTIONS = ['Job', 'Business', 'Farmer','Private sector', 'Government sector', 'Other'];
+export const OCCUPATION_OPTIONS = ['Job', 'Business', 'Farmer', 'Private sector', 'Government sector', 'Other'];
 export const QUALIFICATION_OPTIONS = ['High School', 'Diploma', 'Bachelor', 'Master', 'PhD', 'Other'];
 
 export const PROFILE_FOR_OPTIONS = [

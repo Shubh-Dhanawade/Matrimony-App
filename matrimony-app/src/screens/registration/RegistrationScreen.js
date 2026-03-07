@@ -76,6 +76,7 @@ const RegistrationScreen = ({ navigation, route }) => {
     avatar_url: "",
     profile_for: "",
     other_profile_for: "",
+    profile_managed_by: "",
     state: "",
     district: "",
     taluka: "",
@@ -432,6 +433,7 @@ const RegistrationScreen = ({ navigation, route }) => {
             age: typeof recalcAge === "number" ? String(recalcAge) : (profile.age ? String(profile.age) : ""),
             profile_for: "Other",
             other_profile_for: profile.profile_for,
+            profile_managed_by: profile.profile_managed_by || "",
             state: profile.state || "",
             district: profile.district || "",
             taluka: profile.taluka || "",
@@ -446,6 +448,7 @@ const RegistrationScreen = ({ navigation, route }) => {
             dob: isoDate,
             age: typeof recalcAge === "number" ? String(recalcAge) : (profile.age ? String(profile.age) : ""),
             other_profile_for: "",
+            profile_managed_by: profile.profile_managed_by || "",
             state: profile.state || "",
             district: profile.district || "",
             taluka: profile.taluka || "",
@@ -822,6 +825,21 @@ const RegistrationScreen = ({ navigation, route }) => {
           ]}
           placeholder={t("profile_for")}
           onSelect={(v) => updateField("profile_for", v)}
+        />
+
+        <CustomPicker
+          label={t("profile_managed_by") || "Profile Managed By"}
+          value={formData.profile_managed_by}
+          options={[
+            { label: t("managed_by_self") || "Self", value: "Self" },
+            { label: t("managed_by_parents") || "Parents", value: "Parents" },
+            { label: t("managed_by_brother") || "Brother", value: "Brother" },
+            { label: t("managed_by_sister") || "Sister", value: "Sister" },
+            { label: t("managed_by_relative") || "Relative", value: "Relative" },
+            { label: t("managed_by_friend") || "Friend", value: "Friend" },
+          ]}
+          placeholder={t("select_manager") || "Select Manager"}
+          onSelect={(v) => updateField("profile_managed_by", v)}
         />
 
         {formData.profile_for === "Other" && (

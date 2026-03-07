@@ -30,6 +30,7 @@ const allowedColumns = [
   "height",
   "color",
   "age",
+  "profile_managed_by",
 ];
 
 const filterValidData = (data) => {
