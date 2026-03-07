@@ -31,6 +31,8 @@ const allowedColumns = [
   "color",
   "age",
   "profile_managed_by",
+  "phone_number",
+  "whatsapp_number",
 ];
 
 const filterValidData = (data) => {

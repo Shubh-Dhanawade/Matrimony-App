@@ -80,6 +80,8 @@ const RegistrationScreen = ({ navigation, route }) => {
     state: "",
     district: "",
     taluka: "",
+    phone_number: "",
+    whatsapp_number: "",
   });
 
   // Location dropdown state
@@ -622,6 +624,11 @@ const RegistrationScreen = ({ navigation, route }) => {
       return;
     }
 
+    if (!formData.phone_number || formData.phone_number.length !== 10) {
+      Alert.alert(t("error") || "Error", t("invalid_phone_number") || "Please enter valid phone number");
+      return;
+    }
+
     setLoading(true);
     try {
       // ── Step 1: Upload image FIRST so the URL is ready for the payload ───
@@ -633,6 +640,8 @@ const RegistrationScreen = ({ navigation, route }) => {
       // ── Step 2: Build profile payload WITH the final avatar_url ──────────
       const basePayload = {
         ...formData,
+        phone_number: formData.phone_number,
+        whatsapp_number: formData.whatsapp_number,
         avatar_url: finalAvatarUrl,         // ← includes newly uploaded URL
         monthly_income: formData.monthly_income
           ? parseInt(formData.monthly_income, 10)
@@ -851,7 +860,19 @@ const RegistrationScreen = ({ navigation, route }) => {
           />
         )}
 
-        <Text style={styles.sectionTitle}>{t("contact_location")}</Text>
+        <Text style={styles.sectionTitle}>{t("contact_location") || "Contact Details"}</Text>
+        <CustomInput
+          label={`${t("phone_number") || "Phone Number"} *`}
+          value={formData.phone_number}
+          keyboardType="phone-pad"
+          onChangeText={(v) => updateField("phone_number", v)}
+        />
+        <CustomInput
+          label={t("whatsapp_number") || "WhatsApp Number"}
+          value={formData.whatsapp_number}
+          keyboardType="phone-pad"
+          onChangeText={(v) => updateField("whatsapp_number", v)}
+        />
         <CustomInput
           label={t("birthplace")}
           value={formData.birthplace}

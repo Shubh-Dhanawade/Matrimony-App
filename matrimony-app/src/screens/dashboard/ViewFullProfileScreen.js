@@ -115,37 +115,75 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
                     <QuickStat icon="school-outline" label="Education" value={profile.qualification ?? '—'} />
                 </View>
 
-                {/* ─── Personal Details ─── */}
-                <SectionCard title="Personal Information" icon="account-outline">
-                    <DetailRow icon="cake-variant-outline" label="Age" value={profile.age ? `${profile.age} years` : null} />
-                    <DetailRow icon="human-male-height" label="Height" value={profile.height} />
-                    <DetailRow icon="map-marker-outline" label="Address" value={profile.address} />
-                    <DetailRow icon="palette-outline" label="Complexion" value={profile.color} />
-                </SectionCard>
+                <View style={styles.sectionsWrapper}>
+                    {/* 1️⃣ Basic Information */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Basic Information</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Name:</Text> {profile.full_name}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Profile For:</Text> {profile.profile_for}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Profile Managed By:</Text> {profile.profile_managed_by}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Gender:</Text> {profile.gender}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Age:</Text> {profile.age}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Date of Birth:</Text> {profile.dob ? new Date(profile.dob).toLocaleDateString() : 'N/A'}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Height:</Text> {profile.height}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Color:</Text> {profile.color}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Marital Status:</Text> {profile.marital_status}</Text>
+                    </View>
 
-                {/* ─── Professional Details ─── */}
-                <SectionCard title="Professional Details" icon="briefcase-outline">
-                    <DetailRow icon="briefcase-outline" label="Profession" value={profile.profession ?? profile.occupation} />
-                    <DetailRow icon="school-outline" label="Qualification" value={profile.qualification} />
-                    <DetailRow icon="currency-inr" label="Monthly Income" value={profile.monthly_income} />
-                    <DetailRow icon="home-city-outline" label="Property" value={profile.property} />
-                </SectionCard>
+                    {/* 2️⃣ Family Details */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Family Details</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Father Name:</Text> {profile.father_name}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Mother Maiden Name:</Text> {profile.mother_maiden_name}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Relative Surname:</Text> {profile.relative_surname}</Text>
+                    </View>
 
-                {/* ─── Community Details ─── */}
-                <SectionCard title="Community & Family" icon="account-group-outline">
-                    <DetailRow icon="account-supervisor-circle-outline" label="Managed By" value={profile.profile_managed_by} />
-                    <DetailRow icon="account-multiple-outline" label="Caste" value={profile.caste} />
-                    <DetailRow icon="account-child-outline" label="Sub-Caste" value={profile.sub_caste} />
-                    <DetailRow icon="account-supervisor-outline" label="Father's Name" value={profile.father_name} />
-                    <DetailRow icon="account-heart-outline" label="Mother's Name" value={profile.mother_maiden_name} />
-                </SectionCard>
+                    {/* 3️⃣ Location Details */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Location</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Birthplace:</Text> {profile.birthplace}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Address:</Text> {profile.address}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>State:</Text> {profile.state}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>District:</Text> {profile.district}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Taluka:</Text> {profile.taluka}</Text>
+                    </View>
 
-                {/* ─── Expectations ─── */}
-                {profile.expectations ? (
-                    <SectionCard title="Partner Expectations" icon="heart-outline">
-                        <Text style={styles.expectationsText}>{profile.expectations}</Text>
-                    </SectionCard>
-                ) : null}
+                    {/* 4️⃣ Professional Details */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Professional Details</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Qualification:</Text> {profile.qualification}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Occupation:</Text> {profile.occupation}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Profession:</Text> {profile.profession}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Monthly Income:</Text> {profile.monthly_income}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Property:</Text> {profile.property}</Text>
+                    </View>
+
+                    {/* 5️⃣ Community Details */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Community Details</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Caste:</Text> {profile.caste}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Sub Caste:</Text> {profile.sub_caste}</Text>
+                    </View>
+
+                    {/* 6️⃣ Contact Details */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Contact Details</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Phone:</Text> {profile.phone_number}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>WhatsApp:</Text> {profile.whatsapp_number}</Text>
+                    </View>
+
+                    {/* 7️⃣ Partner Expectations */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Partner Expectations</Text>
+                        <Text style={styles.detailText}>{profile.expectations || 'Not Specified'}</Text>
+                    </View>
+
+                    {/* 8️⃣ Other Comments */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Other Comments</Text>
+                        <Text style={styles.detailText}>{profile.other_comments || 'None'}</Text>
+                    </View>
+                </View>
 
                 {/* ─── Action Buttons ─── */}
                 <View style={styles.actionsContainer}>
@@ -352,69 +390,38 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
 
-    // Section Cards
-    card: {
+    sectionsWrapper: {
+        paddingHorizontal: SPACING.md,
+    },
+    section: {
         backgroundColor: '#fff',
-        marginHorizontal: SPACING.md,
-        marginBottom: SPACING.md,
-        borderRadius: 16,
-        padding: SPACING.md,
-        elevation: 3,
+        padding: 16,
+        marginBottom: 12,
+        borderRadius: 12,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
+        shadowOpacity: 0.1,
         shadowRadius: 4,
+        elevation: 3,
     },
-    cardHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: SPACING.xs,
-    },
-    cardTitle: {
-        fontSize: FONT_SIZES.lg,
-        fontWeight: '700',
-        color: COLORS.text,
-        marginLeft: SPACING.xs,
-    },
-    cardDivider: {
-        height: 1,
-        backgroundColor: COLORS.border,
-        marginBottom: SPACING.sm,
-    },
-
-    // Detail Row
-    detailRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: 7,
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        color: COLORS.primary,
         borderBottomWidth: 1,
-        borderBottomColor: '#f5f5f5',
+        borderBottomColor: '#f1f1f1',
+        paddingBottom: 6,
     },
-    detailIconLabel: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
+    detailText: {
+        fontSize: 15,
+        color: '#333',
+        marginBottom: 6,
+        lineHeight: 22,
     },
     detailLabel: {
-        fontSize: FONT_SIZES.md,
-        color: COLORS.textSecondary,
-        marginLeft: 8,
-        fontWeight: '500',
-    },
-    detailValue: {
-        fontSize: FONT_SIZES.md,
-        color: COLORS.text,
         fontWeight: '600',
-        maxWidth: '55%',
-        textAlign: 'right',
-    },
-
-    // Expectations
-    expectationsText: {
-        fontSize: FONT_SIZES.md,
-        color: COLORS.text,
-        lineHeight: 24,
+        color: '#555',
     },
 
     // Actions

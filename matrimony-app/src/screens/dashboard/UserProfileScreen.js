@@ -83,6 +83,12 @@ const UserProfileScreen = ({ navigation }) => {
                 <LanguageSelector />
             </View>
 
+            <View style={styles.contactInfoContainer}>
+                <Text style={styles.sectionTitle}>{t('contact_details') || 'Contact Details'}</Text>
+                <Text style={styles.contactText}>📞 Phone: {profile?.phone_number || 'N/A'}</Text>
+                <Text style={styles.contactText}>💬 WhatsApp: {profile?.whatsapp_number || 'N/A'}</Text>
+            </View>
+
             <View style={styles.menu}>
                 <MenuItem
                     icon="account-outline"
@@ -192,6 +198,15 @@ const styles = StyleSheet.create({
         marginTop: 10,
         paddingHorizontal: SPACING.md,
     },
+    contactInfoContainer: {
+        backgroundColor: '#fff',
+        padding: 20,
+        marginHorizontal: SPACING.md,
+        marginTop: 10,
+        borderRadius: 10,
+    },
+    sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 10 },
+    contactText: { fontSize: 16, color: '#555', marginBottom: 5 },
 });
 
 export default UserProfileScreen;
