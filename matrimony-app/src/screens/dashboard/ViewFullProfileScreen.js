@@ -154,6 +154,7 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
                         <Text style={styles.detailText}><Text style={styles.detailLabel}>Qualification:</Text> {profile.qualification}</Text>
                         <Text style={styles.detailText}><Text style={styles.detailLabel}>Occupation:</Text> {profile.occupation}</Text>
                         <Text style={styles.detailText}><Text style={styles.detailLabel}>Profession:</Text> {profile.profession}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Company Name:</Text> {profile.company_name || 'N/A'}</Text>
                         <Text style={styles.detailText}><Text style={styles.detailLabel}>Monthly Income:</Text> {profile.monthly_income}</Text>
                         <Text style={styles.detailText}><Text style={styles.detailLabel}>Property:</Text> {profile.property}</Text>
                     </View>

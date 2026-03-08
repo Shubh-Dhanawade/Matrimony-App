@@ -33,6 +33,7 @@ const allowedColumns = [
   "profile_managed_by",
   "phone_number",
   "whatsapp_number",
+  "company_name",
 ];
 
 const filterValidData = (data) => {
