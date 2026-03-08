@@ -36,9 +36,51 @@ export const MARITAL_STATUS_OPTIONS = [
   "Widowed",
 ];
 
+export const COLOR_OPTIONS = [
+  "Very Fair",
+  "Fair",
+  "Wheatish",
+  "Wheatish Brown",
+  "Brown",
+  "Dark"
+];
+
 export const GENDER_OPTIONS = ['Male', 'Female', 'Other'];
 export const OCCUPATION_OPTIONS = ['Job', 'Business', 'Farmer', 'Private sector', 'Government sector', 'Other'];
-export const QUALIFICATION_OPTIONS = ['High School', 'Diploma', 'Bachelor', 'Master', 'PhD', 'Other'];
+export const QUALIFICATION_OPTIONS = [
+  "No Formal Education",
+  "Primary School (1st – 5th)",
+  "Middle School (6th – 8th)",
+  "10th Pass / SSC",
+  "12th Pass / HSC",
+  "ITI",
+  "Diploma / Certificate",
+  "Diploma",
+  "Graduation",
+  "B.A (Bachelor of Arts)",
+  "B.Com (Bachelor of Commerce)",
+  "B.Sc (Bachelor of Science)",
+  "B.Tech / B.E",
+  "BBA",
+  "BCA",
+  "B.Pharm",
+  "Other Bachelor Degree",
+  "Post Graduation",
+  "M.A",
+  "M.Com",
+  "M.Sc",
+  "M.Tech / M.E",
+  "MBA",
+  "MCA",
+  "M.Pharm",
+  "Other Master Degree",
+  "Higher Studies",
+  "PhD / Doctorate",
+  "Post Doctorate",
+  "Professional Course",
+  "Certificate Course",
+  "Other"
+];
 
 export const PROFILE_FOR_OPTIONS = [
   "Myself",

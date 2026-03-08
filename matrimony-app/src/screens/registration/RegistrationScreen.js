@@ -33,6 +33,7 @@ import {
   PROFILE_FOR_OPTIONS,
   OCCUPATION_OPTIONS,
   QUALIFICATION_OPTIONS,
+  COLOR_OPTIONS,
   TERMS_AND_CONDITIONS,
   PRIVACY_POLICY,
   API_BASE_URL,
@@ -66,6 +67,7 @@ const RegistrationScreen = ({ navigation, route }) => {
     qualification: "",
     occupation: "",
     profession: "",
+    company_name: "",
     monthly_income: "",
     property: "",
     caste: "",
@@ -80,6 +82,8 @@ const RegistrationScreen = ({ navigation, route }) => {
     state: "",
     district: "",
     taluka: "",
+    phone_number: "",
+    whatsapp_number: "",
   });
 
   // Location dropdown state
@@ -116,6 +120,28 @@ const RegistrationScreen = ({ navigation, route }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalData, setModalData] = useState({ title: "", content: "" });
   const [ageError, setAgeError] = useState("");
+
+  const [feet, setFeet] = useState("");
+  const [inches, setInches] = useState("");
+
+  const feetOptions = Array.from({ length: 10 }, (_, i) => ({
+    label: `${i + 1} ft`,
+    value: `${i + 1}`
+  }));
+
+  const inchOptions = Array.from({ length: 12 }, (_, i) => ({
+    label: `${i} in`,
+    value: `${i}`
+  }));
+
+  const updateHeight = (f, i) => {
+    if (!f || !i) return;
+    const heightValue = `${f}' ${i}"`;
+    setFormData(prev => ({
+      ...prev,
+      height: heightValue
+    }));
+  };
 
   const isConsentValid = Object.values(consents).every((val) => val === true);
 
@@ -420,6 +446,15 @@ const RegistrationScreen = ({ navigation, route }) => {
       const response = await api.get("/profiles/me");
       if (response.data.profile) {
         const profile = response.data.profile;
+
+        if (profile.height) {
+          const parts = profile.height.split("' ");
+          if (parts.length === 2) {
+            setFeet(parts[0]);
+            setInches(parts[1].replace('"', ''));
+          }
+        }
+
         // If profile_for is not in standard options, it's a custom 'Other' value
         if (
           profile.profile_for &&
@@ -614,11 +649,16 @@ const RegistrationScreen = ({ navigation, route }) => {
     );
 
     if (missing.length > 0) {
-      const fieldList = missing.map(({ label }) => `• ${label}`).join("\n");
+      const fieldList = missing?.map(({ label }) => `• ${label}`).join("\n");
       Alert.alert(
         t("error"),
         `${t("fill_required_fields") || "Please fill all required fields"}:\n\n${fieldList}`
       );
+      return;
+    }
+
+    if (!formData.phone_number || formData.phone_number.length !== 10) {
+      Alert.alert(t("error") || "Error", t("invalid_phone_number") || "Please enter valid phone number");
       return;
     }
 
@@ -633,6 +673,9 @@ const RegistrationScreen = ({ navigation, route }) => {
       // ── Step 2: Build profile payload WITH the final avatar_url ──────────
       const basePayload = {
         ...formData,
+        phone_number: formData.phone_number,
+        whatsapp_number: formData.whatsapp_number,
+        company_name: formData.company_name,
         avatar_url: finalAvatarUrl,         // ← includes newly uploaded URL
         monthly_income: formData.monthly_income
           ? parseInt(formData.monthly_income, 10)
@@ -781,15 +824,42 @@ const RegistrationScreen = ({ navigation, route }) => {
           placeholder={t("gender")}
           onSelect={(v) => updateField("gender", v)}
         />
-        <CustomInput
-          label={`${t("height")} *`}
-          value={formData.height}
-          onChangeText={(v) => updateField("height", v)}
-        />
-        <CustomInput
-          label={`${t("color")} *`}
+
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <View style={{ flex: 1 }}>
+            <CustomPicker
+              label={`${t("feet") || "Feet"} *`}
+              value={feet}
+              options={feetOptions}
+              placeholder="Feet"
+              onSelect={(value) => {
+                setFeet(value);
+                updateHeight(value, inches);
+              }}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <CustomPicker
+              label={`${t("inches") || "Inches"} *`}
+              value={inches}
+              options={inchOptions}
+              placeholder="Inches"
+              onSelect={(value) => {
+                setInches(value);
+                updateHeight(feet, value);
+              }}
+            />
+          </View>
+        </View>
+        <CustomPicker
+          label={t("color") || "Complexion"}
           value={formData.color}
-          onChangeText={(v) => updateField("color", v)}
+          options={COLOR_OPTIONS?.map(c => ({
+            label: c,
+            value: c
+          }))}
+          placeholder="Select Complexion"
+          onSelect={(v) => updateField("color", v)}
         />
         <CustomInput
           label={`${t("age")} *`}
@@ -851,7 +921,19 @@ const RegistrationScreen = ({ navigation, route }) => {
           />
         )}
 
-        <Text style={styles.sectionTitle}>{t("contact_location")}</Text>
+        <Text style={styles.sectionTitle}>{t("contact_location") || "Contact Details"}</Text>
+        <CustomInput
+          label={`${t("phone_number") || "Phone Number"} *`}
+          value={formData.phone_number}
+          keyboardType="phone-pad"
+          onChangeText={(v) => updateField("phone_number", v)}
+        />
+        <CustomInput
+          label={t("whatsapp_number") || "WhatsApp Number"}
+          value={formData.whatsapp_number}
+          keyboardType="phone-pad"
+          onChangeText={(v) => updateField("whatsapp_number", v)}
+        />
         <CustomInput
           label={t("birthplace")}
           value={formData.birthplace}
@@ -935,6 +1017,12 @@ const RegistrationScreen = ({ navigation, route }) => {
           label={`${t("profession")} *`}
           value={formData.profession}
           onChangeText={(v) => updateField("profession", v)}
+        />
+        <CustomInput
+          label={t("company_name") || "Company Name"}
+          value={formData.company_name}
+          onChangeText={(v) => updateField("company_name", v)}
+          placeholder="Enter Company Name"
         />
         <CustomInput
           label={`${t("monthly_income")} *`}
