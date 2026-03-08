@@ -205,8 +205,7 @@ WHERE p.user_id != ?
         ORDER BY i.id DESC
         LIMIT 1
       )
-      WHERE p.user_id != ? 
-        AND p.status = 'Approved'
+      WHERE p.user_id != ?
     `;
 
     const params = [currentUserId, currentUserId, currentUserId];
@@ -224,10 +223,8 @@ WHERE p.user_id != ?
     params.push(limit, offset);
 
     try {
-      // Use db.query instead of db.execute for better LIMIT ? OFFSET ? compatibility
-      // in some MySQL environments/prepared statements.
       const [rows] = await db.query(query, params);
-      return rows;
+      return { rows, totalCount: rows.length };
     } catch (error) {
       console.error("[SQL_ERROR] getLatest failed:", error.message);
       console.error("[SQL_ERROR] Query:", query.replace(/\s+/g, " ").trim());

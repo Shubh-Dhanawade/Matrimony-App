@@ -18,6 +18,7 @@ import UpgradeScreen from "../screens/dashboard/UpgradeScreen";
 import UserProfileScreen from "../screens/dashboard/UserProfileScreen";
 import ViewFullProfileScreen from "../screens/dashboard/ViewFullProfileScreen";
 import InvitationsScreen from "../screens/dashboard/InvitationsScreen";
+import ShortlistedScreen from "../screens/dashboard/ShortlistedScreen";
 import CustomHeader from "../components/CustomHeader";
 import api from "../services/api";
 import { COLORS } from "../utils/constants";
@@ -102,6 +103,7 @@ const MainTabs = () => {
           let iconName;
           if (route.name === "Find match") iconName = "cards-outline";
           else if (route.name === "Invitations") iconName = "email-outline";
+          else if (route.name === "Shortlist") iconName = "star-outline";
           else if (route.name === "My profile") iconName = "account-outline";
           return (
             <MaterialCommunityIcons name={iconName} size={size} color={color} />
@@ -133,6 +135,15 @@ const MainTabs = () => {
         options={{
           title: t("invitations_title"),
           tabBarLabel: t("invitations_tab"),
+        }}
+      />
+      <Tab.Screen
+        name="Shortlist"
+        component={ShortlistedScreen}
+        options={{
+          title: "My Shortlist",
+          tabBarLabel: "Shortlist",
+          headerShown: false,
         }}
       />
       <Tab.Screen

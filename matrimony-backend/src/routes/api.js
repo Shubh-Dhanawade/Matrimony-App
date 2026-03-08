@@ -9,6 +9,7 @@ const auth = require("../middleware/auth");
 const admin = require("../middleware/admin");
 
 // Location Routes (public - no auth needed)
+router.get("/ping", (req, res) => res.send("pong-success"));
 router.get("/location/states", locationController.getStates);
 router.get("/location/districts/:stateId", locationController.getDistricts);
 router.get("/location/talukas/:districtId", locationController.getTalukas);
@@ -28,6 +29,13 @@ router.get("/profiles/me", auth, profileController.getMyProfile);
 router.get("/profiles/latest", auth, profileController.getLatestProfiles);
 router.post("/profiles/interest", auth, profileController.sendInterest);
 router.post("/profiles/ignore", auth, profileController.ignoreProfile);
+router.post("/profiles/shortlist", auth, profileController.shortlistProfile);
+router.get("/profiles/shortlisted", auth, profileController.getShortlisted);
+router.delete(
+  "/profiles/shortlist/:profileUserId",
+  auth,
+  profileController.removeShortlist,
+);
 
 // Multiple Profile Photos Routes (must be before :id to avoid param conflicts)
 router.post(
