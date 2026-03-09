@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
     View,
     Text,
@@ -19,53 +19,42 @@ import { COLORS, SPACING, FONT_SIZES, IMAGE_BASE_URL } from '../../utils/constan
 import { getProfileImageUri } from '../../utils/imageUtils';
 
 const ViewFullProfileScreen = ({ navigation, route }) => {
-    const { userId } = route.params;
-    const [profile, setProfile] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+  const { userId } = route.params;
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    useEffect(() => {
-        fetchProfile();
-    }, [userId]);
+  useEffect(() => {
+    fetchProfile();
+  }, [userId]);
 
-    const fetchProfile = async () => {
-        try {
-            setLoading(true);
-            setError(null);
-            const response = await api.get(`/profiles/${userId}`);
-            // Backend may return { profile: {...} } or the object directly
-            const data = response.data?.profile ?? response.data;
-            setProfile(data);
-        } catch (err) {
-            console.error('[ViewFullProfile] Error fetching profile:', err);
-            setError('Unable to load profile. Please try again.');
-            Alert.alert('Error', 'Failed to load profile. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    if (loading) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
-                <Text style={styles.loadingText}>Loading profile…</Text>
-            </View>
-        );
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.get(`/profiles/${userId}`);
+      // Backend may return { profile: {...} } or the object directly
+      const data = response.data?.profile ?? response.data;
+      setProfile(data);
+    } catch (err) {
+      console.error("[ViewFullProfile] Error fetching profile:", err);
+      setError("Unable to load profile. Please try again.");
+      Alert.alert("Error", "Failed to load profile. Please try again.");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (error || !profile) {
-        return (
-            <SafeAreaView style={styles.errorContainer}>
-                <MaterialCommunityIcons name="account-alert-outline" size={64} color={COLORS.textSecondary} />
-                <Text style={styles.errorText}>{error ?? 'Profile not found.'}</Text>
-                <TouchableOpacity style={styles.retryBtn} onPress={fetchProfile}>
-                    <Text style={styles.retryBtnText}>Retry</Text>
-                </TouchableOpacity>
-            </SafeAreaView>
-        );
-    }
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Loading profile…</Text>
+      </View>
+    );
+  }
 
+  if (error || !profile) {
     return (
         <SafeAreaView style={styles.safeArea} edges={['bottom']}>
             <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
@@ -237,40 +226,369 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
             </ScrollView>
         </SafeAreaView>
     );
+  }
+
+  return (
+    <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* ─── Hero Header ─── */}
+        <View style={styles.heroContainer}>
+          <LinearGradient
+            colors={[COLORS.primary, "#C2185B"]}
+            style={styles.heroGradient}
+          />
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+
+          <View style={styles.avatarWrapper}>
+            <Image
+              source={{ uri: getProfileImageUri(profile.avatar_url) }}
+              style={styles.avatar}
+            />
+            {profile.is_verified && (
+              <View style={styles.verifiedBadge}>
+                <MaterialCommunityIcons
+                  name="check-decagram"
+                  size={18}
+                  color="#fff"
+                />
+              </View>
+            )}
+          </View>
+
+          <Text style={styles.heroName}>{profile.full_name}</Text>
+          {profile.age || profile.marital_status ? (
+            <Text style={styles.heroSub}>
+              {[profile.age && `${profile.age} yrs`, profile.marital_status]
+                .filter(Boolean)
+                .join(" · ")}
+            </Text>
+          ) : null}
+        </View>
+
+        {/* ─── Quick Stats ─── */}
+        <View style={styles.statsRow}>
+          <QuickStat
+            icon="human-male-height"
+            label="Height"
+            value={profile.height ?? "—"}
+          />
+          <QuickStat
+            icon="briefcase-outline"
+            label="Profession"
+            value={profile.profession ?? profile.occupation ?? "—"}
+          />
+          <QuickStat
+            icon="school-outline"
+            label="Education"
+            value={profile.qualification ?? "—"}
+          />
+        </View>
+
+        <View style={styles.sectionsWrapper}>
+          {/* 1️⃣ Basic Information */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Basic Information</Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Name:</Text> {profile.full_name}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Profile For:</Text>{" "}
+              {profile.profile_for}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Profile Managed By:</Text>{" "}
+              {profile.profile_managed_by}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Gender:</Text> {profile.gender}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Age:</Text> {profile.age}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Date of Birth:</Text>{" "}
+              {profile.dob ? new Date(profile.dob).toLocaleDateString() : "N/A"}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Height:</Text> {profile.height}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Color:</Text> {profile.color}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Manglik:</Text> {profile.manglik}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Marital Status:</Text>{" "}
+              {profile.marital_status}
+            </Text>
+          </View>
+
+          {/* 2️⃣ Family Details */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Family Details</Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Father Name:</Text>{" "}
+              {profile.father_name}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Mother Maiden Name:</Text>{" "}
+              {profile.mother_maiden_name}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Relative Surname:</Text>{" "}
+              {profile.relative_surname}
+            </Text>
+          </View>
+
+          {/* 3️⃣ Location Details */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Location</Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Birthplace:</Text>{" "}
+              {profile.birthplace}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Address:</Text> {profile.address}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>State:</Text> {profile.state}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>District:</Text>{" "}
+              {profile.district}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Taluka:</Text> {profile.taluka}
+            </Text>
+          </View>
+
+          {/* 4️⃣ Professional Details */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Professional Details</Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Qualification:</Text>{" "}
+              {profile.qualification}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Occupation:</Text>{" "}
+              {profile.occupation}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Profession:</Text>{" "}
+              {profile.profession}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Company Name:</Text>{" "}
+              {profile.company_name || "N/A"}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Monthly Income:</Text>{" "}
+              {profile.monthly_income}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Property:</Text>{" "}
+              {profile.property}
+            </Text>
+          </View>
+
+          {/* 5️⃣ Community Details */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Community Details</Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Caste:</Text> {profile.caste}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Sub Caste:</Text>{" "}
+              {profile.sub_caste}
+            </Text>
+          </View>
+
+          {/* 6️⃣ Contact Details */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Contact Details</Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Phone:</Text>{" "}
+              {profile.phone_number}
+            </Text>
+            <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>WhatsApp:</Text>{" "}
+              {profile.whatsapp_number}
+            </Text>
+          </View>
+
+          {/* 7️⃣ Partner Expectations */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Partner Expectations</Text>
+            <Text style={styles.detailText}>
+              {profile.expectations || "Not Specified"}
+            </Text>
+          </View>
+
+          {/* 8️⃣ Other Comments */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Other Comments</Text>
+            <Text style={styles.detailText}>
+              {profile.other_comments || "None"}
+            </Text>
+          </View>
+
+          {/* 9️⃣ Biodata Link */}
+          {profile.biodata_file && profile.biodata_file.trim() !== "" && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Biodata</Text>
+              <TouchableOpacity
+                style={styles.biodataBtn}
+                onPress={() =>
+                  Linking.openURL(`${IMAGE_BASE_URL}/${profile.biodata_file}`)
+                }
+              >
+                <MaterialCommunityIcons
+                  name="file-document-outline"
+                  size={24}
+                  color={COLORS.primary}
+                />
+                <Text style={styles.biodataBtnText}>View Uploaded Biodata</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* 🔟 Kundali Link */}
+          {profile.kundali_file && profile.kundali_file.trim() !== "" && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Kundali</Text>
+              <TouchableOpacity
+                style={styles.biodataBtn}
+                onPress={() =>
+                  Linking.openURL(`${IMAGE_BASE_URL}/${profile.kundali_file}`)
+                }
+              >
+                <MaterialCommunityIcons
+                  name="file-document-outline"
+                  size={24}
+                  color={COLORS.primary}
+                />
+                <Text style={styles.biodataBtnText}>View Uploaded Kundali</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* ─── Action Buttons ─── */}
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity
+            style={[
+              styles.shortlistBtn,
+              !!profile.is_shortlisted && styles.shortlistBtnDisabled,
+            ]}
+            activeOpacity={!!profile.is_shortlisted ? 1 : 0.85}
+            onPress={async () => {
+              if (!!profile.is_shortlisted) return;
+              try {
+                await api.post("/profiles/shortlist", {
+                  profileUserId: profile.user_id,
+                });
+                setProfile((prev) => ({ ...prev, is_shortlisted: true }));
+                Alert.alert("Success", "Profile added to your shortlist!");
+              } catch (err) {
+                const msg = err.response?.data?.message || err.message;
+                if (msg === "Already shortlisted") {
+                  setProfile((prev) => ({ ...prev, is_shortlisted: true }));
+                  Alert.alert(
+                    "Already Saved",
+                    "This profile is already in your shortlist.",
+                  );
+                } else {
+                  Alert.alert("Error", msg);
+                }
+              }
+            }}
+            disabled={!!profile.is_shortlisted}
+          >
+            <MaterialCommunityIcons
+              name={profile.is_shortlisted ? "star" : "star-outline"}
+              size={20}
+              color={profile.is_shortlisted ? "#FFB300" : COLORS.primary}
+            />
+            <Text
+              style={[
+                styles.shortlistBtnText,
+                profile.is_shortlisted && { color: "#999" },
+              ]}
+            >
+              {profile.is_shortlisted ? "Saved" : "Shortlist"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.interestBtn}
+            activeOpacity={0.85}
+            onPress={() =>
+              Alert.alert(
+                "Interest Sent 💌",
+                `Your interest has been sent to ${profile.full_name}.`,
+              )
+            }
+          >
+            <MaterialCommunityIcons name="heart" size={20} color="#fff" />
+            <Text style={styles.interestBtnText}>Send Interest</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.bottomSpacer} />
+      </ScrollView>
+    </SafeAreaView>
+  );
 };
 
 /* ─── Sub-components ─── */
 
 const QuickStat = ({ icon, label, value }) => (
-    <View style={styles.quickStat}>
-        <MaterialCommunityIcons name={icon} size={22} color={COLORS.primary} />
-        <Text style={styles.quickStatValue} numberOfLines={1}>{String(value)}</Text>
-        <Text style={styles.quickStatLabel}>{label}</Text>
-    </View>
+  <View style={styles.quickStat}>
+    <MaterialCommunityIcons name={icon} size={22} color={COLORS.primary} />
+    <Text style={styles.quickStatValue} numberOfLines={1}>
+      {String(value)}
+    </Text>
+    <Text style={styles.quickStatLabel}>{label}</Text>
+  </View>
 );
 
 const SectionCard = ({ title, icon, children }) => (
-    <View style={styles.card}>
-        <View style={styles.cardHeader}>
-            <MaterialCommunityIcons name={icon} size={20} color={COLORS.primary} />
-            <Text style={styles.cardTitle}>{title}</Text>
-        </View>
-        <View style={styles.cardDivider} />
-        {children}
+  <View style={styles.card}>
+    <View style={styles.cardHeader}>
+      <MaterialCommunityIcons name={icon} size={20} color={COLORS.primary} />
+      <Text style={styles.cardTitle}>{title}</Text>
     </View>
+    <View style={styles.cardDivider} />
+    {children}
+  </View>
 );
 
 const DetailRow = ({ icon, label, value }) => {
-    if (!value) return null;
-    return (
-        <View style={styles.detailRow}>
-            <View style={styles.detailIconLabel}>
-                <MaterialCommunityIcons name={icon} size={16} color={COLORS.textSecondary} />
-                <Text style={styles.detailLabel}>{label}</Text>
-            </View>
-            <Text style={styles.detailValue}>{String(value)}</Text>
-        </View>
-    );
+  if (!value) return null;
+  return (
+    <View style={styles.detailRow}>
+      <View style={styles.detailIconLabel}>
+        <MaterialCommunityIcons
+          name={icon}
+          size={16}
+          color={COLORS.textSecondary}
+        />
+        <Text style={styles.detailLabel}>{label}</Text>
+      </View>
+      <Text style={styles.detailValue}>{String(value)}</Text>
+    </View>
+  );
 };
 
 /* ─── Styles ─── */

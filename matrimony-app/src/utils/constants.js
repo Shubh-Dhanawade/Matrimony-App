@@ -42,6 +42,7 @@ export const COLOR_OPTIONS = [
   "Wheatish",
   "Wheatish Brown",
   "Brown",
+  "Dark",
 ];
 
 export const MANGLIK_OPTIONS = [
@@ -49,8 +50,15 @@ export const MANGLIK_OPTIONS = [
   { label: "No", value: "No" },
 ];
 
-export const GENDER_OPTIONS = ['Male', 'Female', 'Other'];
-export const OCCUPATION_OPTIONS = ['Job', 'Business', 'Farmer', 'Private sector', 'Government sector', 'Other'];
+export const GENDER_OPTIONS = ["Male", "Female", "Other"];
+export const OCCUPATION_OPTIONS = [
+  "Job",
+  "Business",
+  "Farmer",
+  "Private sector",
+  "Government sector",
+  "Other",
+];
 export const QUALIFICATION_OPTIONS = [
 
   "10th Pass / SSC",
@@ -87,7 +95,7 @@ export const QUALIFICATION_OPTIONS = [
   "Post Doctorate",
   "Professional Course",
   "Certificate Course",
-  "Other"
+  "Other",
 ];
 
 export const PROFILE_FOR_OPTIONS = [

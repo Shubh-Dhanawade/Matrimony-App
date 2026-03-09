@@ -1,4 +1,4 @@
-import React, { memo, useState, useRef, useCallback } from 'react';
+import React, { memo, useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,42 +11,76 @@ import {
   Platform,
   UIManager,
   FlatList,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { API_BASE_URL, COLORS, SPACING, FONT_SIZES } from '../utils/constants';
-import { getProfileImageUri } from '../utils/imageUtils';
-import { formatLastActive } from '../utils/dateUtils';
+  Alert,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { COLORS, SPACING, FONT_SIZES } from "../utils/constants";
+import { getProfileImageUri } from "../utils/imageUtils";
+import { formatLastActive } from "../utils/dateUtils";
+import api from "../services/api";
 
 // Enable LayoutAnimation for Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const { width, height } = Dimensions.get('window');
-const CARD_HEIGHT = height * 0.65;
+const { width, height } = Dimensions.get("window");
+const CARD_HEIGHT = height * 0.75;
 const CARD_WIDTH = width * 0.92;
 
-// ─── Helper: mask all name parts except the last, which shows only first letter ───
-// Example: "Om Karan Sharma" → "Om Karan S."
+// Helper: mask all name parts except the last, which shows only first letter
 const getMaskedName = (fullName) => {
-  if (!fullName) return 'Unknown';
+  if (!fullName) return "Unknown";
   const parts = fullName.trim().split(/\s+/);
   if (parts.length === 1) return `${parts[0][0]}.`;
   const lastName = parts[parts.length - 1];
-  const otherNames = parts.slice(0, -1).join(' ');
+  const otherNames = parts.slice(0, -1).join(" ");
   return `${otherNames} ${lastName[0]}.`;
 };
 
-const ProfileCard = ({ profile, isSubscribed, onUpgrade, onAction, onViewProfile, navigation }) => {
-  // STEP 4 — Two-state logic
-  const [isPreviewUnlocked, setIsPreviewUnlocked] = useState(false);
+const ProfileCard = ({
+  profile,
+  isFirst,
+  isLast,
+  isSubscribed,
+  onUpgrade,
+  onAction,
+  onViewProfile,
+  navigation,
+}) => {
   const [isFullProfileViewed, setIsFullProfileViewed] = useState(false);
+  const [isPreviewUnlockedState, setIsPreviewUnlockedState] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const flatListRef = useRef(null);
+  const contentFadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Build photos array: use profile.photos if available, fallback to avatar_url
+  // Fade in content whenever profile changes
+  React.useEffect(() => {
+    contentFadeAnim.setValue(0);
+    Animated.timing(contentFadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+      delay: 200,
+    }).start();
+  }, [profile.user_id]);
+
+  const isConnected = profile.invitation_status === "Connected";
+  const isPending = profile.invitation_status === "Pending";
+  const isPreviewUnlocked =
+    isSubscribed || isPreviewUnlockedState || isConnected;
+  const isBlurred = !isPreviewUnlocked;
+
+  const displayName =
+    isConnected || isFullProfileViewed || isSubscribed
+      ? profile.full_name
+      : getMaskedName(profile.full_name);
+
   const photos = React.useMemo(() => {
     if (profile.photos && profile.photos.length > 0) {
       return profile.photos.map((url) => getProfileImageUri(url));
@@ -54,55 +88,105 @@ const ProfileCard = ({ profile, isSubscribed, onUpgrade, onAction, onViewProfile
     return [getProfileImageUri(profile.avatar_url)];
   }, [profile.photos, profile.avatar_url]);
 
-  // Derived: is the photo blurred?
-  const isBlurred = !isPreviewUnlocked;
-
-  // ── Handlers ──────────────────────────────────────────────────────────────
-
-  // STEP 2 — Unlock Preview: remove blur, reveal "View Full Profile" button
-  const handleUnlockPreview = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsPreviewUnlocked(true);
-  };
-
-  // STEP 3 — View Full Profile: mark viewed (shows full name on card) + navigate
-  const handleViewFullProfile = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsFullProfileViewed(true);
-    if (onViewProfile) {
-      onViewProfile(profile.user_id);
+  // Handlers
+  const handleUnlockPreview = async () => {
+    try {
+      console.log("[ProfileCard] Unlocking preview...");
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      await api.post("/profiles/unlock-preview");
+      setIsPreviewUnlockedState(true);
+      Alert.alert(
+        "🎉 Preview Unlocked!",
+        "You now have access to preview all profile photos.",
+      );
+    } catch (error) {
+      console.error("[ProfileCard] ❌ Unlock error:", error);
+      Alert.alert(
+        "Error",
+        error?.response?.data?.message || "Failed to unlock preview.",
+      );
     }
   };
 
-  // Track active photo on scroll
+  const handleFollow = async () => {
+    if (profile.invitation_status !== "None") {
+      Alert.alert(
+        "Already Connected",
+        `You have already ${isPending ? "sent a follow request to" : "connected with"} this profile.`,
+      );
+      return;
+    }
+    try {
+      await api.post("/profiles/interest", { receiverId: profile.user_id });
+      Alert.alert(
+        "💌 Follow Request Sent",
+        `Your request has been sent to ${profile.full_name || "this profile"}.`,
+      );
+      if (onAction) onAction("refresh", profile);
+    } catch (err) {
+      Alert.alert(
+        "Error",
+        err?.response?.data?.message || "Failed to send follow request.",
+      );
+    }
+  };
+
+  const handleShortlist = async () => {
+    if (profile.is_shortlisted) {
+      Alert.alert(
+        "Already Shortlisted",
+        "This profile is already in your shortlist.",
+      );
+      return;
+    }
+    try {
+      await api.post("/profiles/shortlist", { profileUserId: profile.user_id });
+      Alert.alert(
+        "⭐ Shortlisted",
+        `${profile.full_name || "Profile"} has been added to your shortlist.`,
+      );
+      if (onAction) onAction("refresh", profile);
+    } catch (err) {
+      const msg = err?.response?.data?.message;
+      Alert.alert("Error", msg || "Failed to shortlist.");
+    }
+  };
+
+  const handleViewFullProfile = () => {
+    if (!isConnected) {
+      Alert.alert(
+        "Not Connected",
+        "You must follow and be accepted by this user to view their full profile.",
+      );
+      return;
+    }
+    if (onViewProfile) onViewProfile(profile.user_id);
+  };
+
   const onMomentumScrollEnd = useCallback((event) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const index = Math.round(offsetX / CARD_WIDTH);
     setActivePhotoIndex(index);
   }, []);
 
-  // Render a single gallery photo
-  const renderPhoto = useCallback(({ item }) => (
-    <Image
-      source={{ uri: item }}
-      style={styles.galleryImage}
-      blurRadius={isBlurred ? 20 : 0}
-    />
-  ), [isBlurred]);
+  const renderPhoto = useCallback(
+    ({ item }) => (
+      <Image
+        source={{ uri: item }}
+        style={styles.galleryImage}
+        blurRadius={isBlurred ? 20 : 0}
+      />
+    ),
+    [isBlurred],
+  );
 
   const keyExtractor = useCallback((_, index) => `photo-${index}`, []);
-
-  // STEP 6 — Displayed name follows state rules
-  const displayName = isFullProfileViewed
-    ? profile.full_name
-    : getMaskedName(profile.full_name);
 
   return (
     <View style={styles.cardContainer}>
       <View style={styles.card}>
         <View style={styles.imageContainer}>
-
-          {/* Horizontal Photo Gallery */}
+          {/* Photo Gallery */}
           <FlatList
             ref={flatListRef}
             data={photos}
@@ -113,14 +197,9 @@ const ProfileCard = ({ profile, isSubscribed, onUpgrade, onAction, onViewProfile
             showsHorizontalScrollIndicator={false}
             onMomentumScrollEnd={onMomentumScrollEnd}
             bounces={false}
-            getItemLayout={(_, index) => ({
-              length: CARD_WIDTH,
-              offset: CARD_WIDTH * index,
-              index,
-            })}
           />
 
-          {/* Pagination Dots */}
+          {/* Pagination */}
           {photos.length > 1 && (
             <View style={styles.paginationContainer}>
               {photos.map((_, index) => (
@@ -135,127 +214,212 @@ const ProfileCard = ({ profile, isSubscribed, onUpgrade, onAction, onViewProfile
             </View>
           )}
 
-          {/* Bottom Gradient Overlay */}
-          <LinearGradient
-            colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,1)']}
-            style={styles.gradientOverlay}
-            pointerEvents="none"
-          />
-
-          {/* Top Right "Last Active" Badge */}
-          {profile.last_active_at ? (
-            <View style={styles.lastActiveBadge}>
-              <MaterialCommunityIcons name="clock-outline" size={12} color="#fff" />
-              <Text style={styles.lastActiveText}>
-                {formatLastActive(profile.last_active_at)}
-              </Text>
-            </View>
-          ) : null}
-
-          {/* ── STEP 1: Blur overlay + Unlock Preview button ── */}
-          {!isPreviewUnlocked && (
-            <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill}>
-              <View style={styles.blurOverlay}>
-                <View style={styles.blurContent}>
+          {/* Top Info Bar */}
+          <View style={styles.topActionsRow}>
+            {/* View Full Profile (Left) */}
+            <View style={styles.topLeftActions}>
+              {isConnected && (
+                <TouchableOpacity
+                  style={styles.viewFullProfileBtn}
+                  onPress={handleViewFullProfile}
+                >
                   <MaterialCommunityIcons
-                    name="eye-off-outline"
-                    size={50}
+                    name="account-details"
+                    size={16}
                     color="#fff"
                   />
-                  <Text style={styles.blurText}>
-                    Photo visible to paid members only
+                  <Text style={styles.viewFullProfileBtnText}>
+                    Full Profile
                   </Text>
-                  <TouchableOpacity
-                    style={styles.upgradeBtn}
-                    onPress={handleUnlockPreview}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.upgradeBtnText}>Unlock Preview</Text>
-                  </TouchableOpacity>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Status Badges (Right) */}
+            <View style={styles.topRightActions}>
+              {/* Last Seen Badge */}
+              {profile.last_active_at && (
+                <View style={styles.lastActiveBadge}>
+                  <MaterialCommunityIcons
+                    name="clock-outline"
+                    size={12}
+                    color="#fff"
+                  />
+                  <Text style={styles.lastActiveText}>
+                    {formatLastActive(profile.last_active_at)}
+                  </Text>
                 </View>
+              )}
+
+              {/* Follow Badge Button */}
+              <TouchableOpacity
+                style={[
+                  styles.followBtn,
+                  (isPending || isConnected) && styles.followBtnDisabled,
+                ]}
+                onPress={handleFollow}
+                activeOpacity={0.8}
+              >
+                <MaterialCommunityIcons
+                  name={
+                    isConnected
+                      ? "check-circle"
+                      : isPending
+                        ? "clock-outline"
+                        : "heart-outline"
+                  }
+                  size={14}
+                  color="#fff"
+                />
+                <Text style={styles.followBtnText}>
+                  {isConnected ? "Connected" : isPending ? "Pending" : "Follow"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Blur Overlay */}
+          {!isPreviewUnlocked && (
+            <BlurView
+              intensity={70}
+              tint="dark"
+              style={StyleSheet.absoluteFill}
+            >
+              <View style={styles.blurOverlay}>
+                <MaterialCommunityIcons
+                  name="eye-off-outline"
+                  size={50}
+                  color="#fff"
+                />
+                <Text style={styles.blurText}>
+                  Photo visible to paid members only
+                </Text>
+                <TouchableOpacity
+                  style={styles.upgradeBtn}
+                  onPress={handleUnlockPreview}
+                >
+                  <Text style={styles.upgradeBtnText}>Unlock Preview</Text>
+                </TouchableOpacity>
               </View>
             </BlurView>
           )}
 
-          {/* ── STEP 2: View Full Profile button (after unlock, before viewed) ── */}
-          {isPreviewUnlocked && (
-            <TouchableOpacity
-              style={styles.viewProfileBtn}
-              onPress={handleViewFullProfile}
-              activeOpacity={0.85}
-            >
-              <MaterialCommunityIcons name="account-details" size={18} color="#fff" />
-              <Text style={styles.viewProfileBtnText}>View Full Profile</Text>
-            </TouchableOpacity>
-          )}
+          <LinearGradient
+            colors={["transparent", "rgba(0,0,0,0.9)"]}
+            style={styles.gradientOverlay}
+          />
 
-          {/* Details Overlay (Bottom Left) */}
-          <View style={styles.detailsContainer} pointerEvents="box-none">
+          {/* Details Overlay */}
+          <Animated.View
+            style={[styles.detailsContainer, { opacity: contentFadeAnim }]}
+          >
             <View style={styles.verifiedRow}>
               {profile.is_verified && (
                 <View style={styles.verifiedBadge}>
-                  <MaterialCommunityIcons name="check-decagram" size={12} color="#fff" />
+                  <MaterialCommunityIcons
+                    name="check-decagram"
+                    size={12}
+                    color="#fff"
+                  />
                   <Text style={styles.verifiedText}>Verified</Text>
                 </View>
               )}
-              {profile.invitation_status === 'Connected' && (
-                <Text style={styles.statusBadgeText}>🤝 Connected</Text>
+              {isConnected && (
+                <View style={styles.connectedSmallBadge}>
+                  <MaterialCommunityIcons
+                    name="handshake"
+                    size={12}
+                    color="#fff"
+                  />
+                  <Text style={styles.verifiedText}>Connected</Text>
+                </View>
               )}
             </View>
-
-            {/* Name and Age/Status */}
-            <Text style={styles.nameText} numberOfLines={1}>
-              {isPreviewUnlocked ? profile.full_name : getMaskedName(profile.full_name, profile.gender)}, {profile.age}
+            <Text style={styles.nameText}>
+              {displayName}, {profile.age}
             </Text>
-
             {profile.profile_managed_by && (
               <Text style={styles.managedByText}>
                 👤 Managed by {profile.profile_managed_by}
               </Text>
             )}
 
-            {/* Location row — always shown */}
             <View style={styles.infoRow}>
-              <MaterialCommunityIcons name="map-marker" size={14} color="#ddd" />
-              <Text style={styles.infoText}>{profile.address || 'Location Hidden'}</Text>
+              <MaterialCommunityIcons
+                name="map-marker"
+                size={14}
+                color="#ddd"
+              />
+              <Text style={styles.infoText}>
+                {profile.address || profile.birthplace || "Location"}
+              </Text>
             </View>
 
-            {/* Education row — only shown after preview unlocked */}
             {isPreviewUnlocked && (
               <View style={styles.infoRow}>
-                <MaterialCommunityIcons name="school" size={14} color="#ddd" />
-                <Text style={styles.infoText} numberOfLines={1}>
-                  {profile.qualification || 'Education not specified'}
+                <MaterialCommunityIcons
+                  name="briefcase-outline"
+                  size={14}
+                  color="#ddd"
+                />
+                <Text style={styles.infoText}>
+                  {profile.occupation ||
+                    profile.qualification ||
+                    "Not specified"}
                 </Text>
               </View>
             )}
-          </View>
 
-          <View style={styles.actionContainer} pointerEvents="box-none">
+            {isConnected && profile.mobile_number && (
+              <View style={styles.infoRow}>
+                <MaterialCommunityIcons
+                  name="phone"
+                  size={14}
+                  color="#4CAF50"
+                />
+                <Text
+                  style={[
+                    styles.infoText,
+                    { color: "#4CAF50", fontWeight: "bold" },
+                  ]}
+                >
+                  {profile.mobile_number}
+                </Text>
+              </View>
+            )}
+          </Animated.View>
+
+          {/* Action Row - Prev | Skip | Shortlist | Next */}
+          <View style={styles.actionContainer}>
+            <ActionButton
+              icon="chevron-left"
+              label="Prev"
+              color="#9E9E9E"
+              disabled={!!isFirst}
+              onPress={() => onAction("prev", profile)}
+            />
+
             <ActionButton
               icon="close"
               label="Skip"
-              color="#9E9E9E"
-              onPress={() => onAction('skip', profile)}
+              color="#FF5252"
+              onPress={() => onAction("skip", profile)}
             />
+
             <ActionButton
-              icon="star"
-              label="Shortlist"
-              color="#FF9800"
-              onPress={() => onAction('shortlist', profile)}
+              icon={profile.is_shortlisted ? "star" : "star-outline"}
+              label={profile.is_shortlisted ? "Saved" : "Shortlist"}
+              color={profile.is_shortlisted ? "#FFB300" : "#fff"}
+              onPress={handleShortlist}
             />
+
             <ActionButton
-              icon="heart"
-              label="Interest"
+              icon="chevron-right"
+              label="Next"
               color="#fff"
               isPrimary
-              onPress={() => onAction('interested', profile)}
-            />
-            <ActionButton
-              icon="message-text"
-              label="Chat"
-              color="#4CAF50"
-              onPress={() => onAction('chat', profile)}
+              disabled={!!isLast}
+              onPress={() => onAction("next", profile)}
             />
           </View>
         </View>
@@ -264,120 +428,179 @@ const ProfileCard = ({ profile, isSubscribed, onUpgrade, onAction, onViewProfile
   );
 };
 
-const ActionButton = ({ icon, label, color, onPress, isPrimary }) => {
-  const animatedValue = new Animated.Value(1);
-
+const ActionButton = ({
+  icon,
+  label,
+  color,
+  onPress,
+  isPrimary,
+  size = 52,
+  disabled = false,
+}) => {
+  const animatedValue = useRef(new Animated.Value(1)).current;
   const handlePressIn = () => {
-    Animated.spring(animatedValue, {
-      toValue: 0.85,
-      useNativeDriver: true,
-    }).start();
+    if (!disabled)
+      Animated.spring(animatedValue, {
+        toValue: 0.9,
+        useNativeDriver: true,
+      }).start();
   };
-
   const handlePressOut = () => {
-    Animated.spring(animatedValue, {
-      toValue: 1,
-      friction: 4,
-      tension: 40,
-      useNativeDriver: true,
-    }).start();
+    if (!disabled)
+      Animated.spring(animatedValue, {
+        toValue: 1,
+        friction: 4,
+        tension: 40,
+        useNativeDriver: true,
+      }).start();
   };
 
   return (
     <TouchableOpacity
-      activeOpacity={1}
+      activeOpacity={disabled ? 1 : 0.7}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      onPress={onPress}
-      style={styles.actionBtnWrapper}
+      onPress={disabled ? null : onPress}
+      style={[styles.actionBtnWrapper, disabled && { opacity: 0.3 }]}
+      disabled={disabled}
     >
-      <Animated.View style={[
-        styles.circleBtn,
-        isPrimary && styles.primaryBtn,
-        { transform: [{ scale: animatedValue }] }
-      ]}>
-        <MaterialCommunityIcons name={icon} size={28} color={isPrimary ? '#fff' : color} />
+      <Animated.View
+        style={[
+          styles.circleBtn,
+          { width: size, height: size, borderRadius: size / 2 },
+          isPrimary && styles.primaryBtn,
+          { transform: [{ scale: animatedValue }] },
+        ]}
+      >
+        <MaterialCommunityIcons
+          name={icon}
+          size={size * 0.5}
+          color={isPrimary ? "#fff" : color}
+        />
       </Animated.View>
-      <Text style={styles.actionLabel}>{label}</Text>
+      <Text
+        style={[
+          styles.actionLabel,
+          isPrimary && !disabled && { color: COLORS.primary },
+        ]}
+      >
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   cardContainer: {
-    height: CARD_HEIGHT + 30,
-    width: width,
-    paddingHorizontal: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 10,
   },
   card: {
     height: CARD_HEIGHT,
     width: CARD_WIDTH,
-    backgroundColor: '#000',
-    borderRadius: 25,
-    overflow: 'hidden',
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    backgroundColor: COLORS.surface,
+    borderRadius: 20,
+    overflow: "hidden",
+    elevation: 8,
   },
-  imageContainer: {
-    flex: 1,
-    position: 'relative',
-  },
-  galleryImage: {
-    width: CARD_WIDTH,
-    height: '100%',
-    resizeMode: 'cover',
-  },
+  imageContainer: { flex: 1, position: "relative" },
+  galleryImage: { width: CARD_WIDTH, height: "100%", resizeMode: "cover" },
 
-  // Pagination dots
   paginationContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: 12,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     zIndex: 10,
   },
   paginationDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: "rgba(255,255,255,0.4)",
     marginHorizontal: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.6)',
   },
-  paginationDotActive: {
-    backgroundColor: '#fff',
-    width: 22,
-    borderRadius: 4,
-    borderColor: '#fff',
+  paginationDotActive: { backgroundColor: "#fff", width: 22 },
+
+  topActionsRow: {
+    position: "absolute",
+    top: 15,
+    left: 15,
+    right: 15,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    zIndex: 20,
+  },
+  topLeftActions: { flexDirection: "row", alignItems: "center" },
+  topRightActions: { flexDirection: "row", alignItems: "center", gap: 8 },
+
+  lastActiveBadge: {
+    backgroundColor: "rgba(0,0,0,0.6)",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
+    borderWidth: 0.5,
+    borderColor: "rgba(255,255,255,0.3)",
+  },
+  lastActiveText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "600",
+    marginLeft: 4,
   },
 
-  // Blur overlay (STEP 1)
+  followBtn: {
+    backgroundColor: COLORS.primary,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    elevation: 6,
+  },
+  followBtnDisabled: { backgroundColor: "rgba(0,0,0,0.5)", elevation: 0 },
+  followBtnText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 12,
+    marginLeft: 5,
+  },
+
+  viewFullProfileBtn: {
+    backgroundColor: "#4CAF50",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    elevation: 6,
+  },
+  viewFullProfileBtnText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 11,
+    marginLeft: 5,
+  },
+
   blurOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  blurContent: {
-    alignItems: 'center',
-    padding: 20,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   blurText: {
-    color: '#fff',
-    fontSize: 16,
-    textAlign: 'center',
+    color: "#fff",
+    fontSize: 14,
+    textAlign: "center",
     marginVertical: 15,
-    fontWeight: '600',
+    fontWeight: "600",
+    paddingHorizontal: 20,
   },
   upgradeBtn: {
     backgroundColor: COLORS.primary,
@@ -385,164 +608,92 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 25,
   },
-  upgradeBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-
-  // Last Active Top Badge
-  lastActiveBadge: {
-    position: 'absolute',
-    top: 15,
-    right: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 16,
-    zIndex: 15, // ensures it sits above images but below popups
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  lastActiveText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
+  upgradeBtnText: { color: "#fff", fontWeight: "bold" },
 
   gradientOverlay: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    height: '45%',
+    height: "45%",
   },
-
-  // "View Full Profile" button pinned to top left (STEP 2)
-  viewProfileBtn: {
-    position: 'absolute',
-    top: 15,
-    left: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(233,30,99,0.85)', // slightly more transparent pink
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    zIndex: 20,
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.4)',
-    elevation: 5,
-    shadowColor: '#E91E63',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
-  },
-  viewProfileBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 11,
-    marginLeft: 4,
-  },
-
-  // Details overlay
-  detailsContainer: {
-    position: 'absolute',
-    bottom: 95,
-    left: 20,
-    right: 20,
-  },
+  detailsContainer: { position: "absolute", bottom: 100, left: 20, right: 20 },
   verifiedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 5,
+    gap: 6,
   },
   verifiedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginRight: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  connectedSmallBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#4CAF50",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
   },
   verifiedText: {
-    color: '#fff',
-    fontSize: 9,
-    fontWeight: 'bold',
-    marginLeft: 2,
-  },
-  statusBadgeText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  nameText: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 4,
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  managedByText: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 11,
-    marginBottom: 6,
-    fontWeight: '500',
-    fontStyle: 'italic',
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  infoText: {
-    color: '#ddd',
-    fontSize: 14,
-    marginLeft: 6,
-    fontWeight: '500',
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "bold",
+    marginLeft: 3,
   },
 
-  // Action buttons row
+  nameText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#fff",
+    textShadowColor: "rgba(0,0,0,0.5)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+    marginBottom: 2,
+  },
+  managedByText: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 12,
+    marginBottom: 8,
+    fontStyle: "italic",
+  },
+  infoRow: { flexDirection: "row", alignItems: "center", marginTop: 5 },
+  infoText: { color: "#eee", fontSize: 14, marginLeft: 6, fontWeight: "500" },
+
   actionContainer: {
-    position: 'absolute',
-    bottom: 20,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    alignItems: 'center',
+    position: "absolute",
+    bottom: 15,
+    left: 20,
+    right: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  actionBtnWrapper: {
-    alignItems: 'center',
-  },
+  actionBtnWrapper: { alignItems: "center", flex: 1 },
   circleBtn: {
-    width: 55,
-    height: 55,
-    borderRadius: 30,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    marginBottom: 5,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
   },
   primaryBtn: {
-    backgroundColor: '#E91E63',
-    transform: [{ scale: 1.1 }],
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+    elevation: 8,
   },
   actionLabel: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 10,
-    fontWeight: '700',
-    textTransform: 'uppercase',
+    fontWeight: "700",
+    marginTop: 6,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
 });
 

@@ -79,11 +79,25 @@ const Profile = {
     return result.insertId;
   },
 
-  findByUserId: async (userId) => {
-    const [rows] = await db.execute(
-      "SELECT * FROM profiles WHERE user_id = ?",
-      [userId],
-    );
+  findByUserId: async (userId, viewerId = null) => {
+    let query = `
+      SELECT p.*, u.is_subscribed, u.mobile_number,
+      (SELECT COUNT(*) FROM shortlists WHERE user_id = p.user_id) AS shortlist_count
+    `;
+    const params = [userId];
+
+    if (viewerId) {
+      query += `, (SELECT COUNT(*) FROM shortlists WHERE user_id = ? AND profile_user_id = p.user_id) > 0 AS is_shortlisted `;
+      params.unshift(viewerId);
+    }
+
+    query += `
+      FROM profiles p 
+      JOIN users u ON p.user_id = u.id 
+      WHERE p.user_id = ?
+    `;
+
+    const [rows] = await db.execute(query, params);
     return rows[0];
   },
 
@@ -110,7 +124,7 @@ JOIN users u ON u.id = p.user_id
         LIMIT 1
     )
 WHERE p.user_id != ?
-
+      AND p.status = 'Approved'
     `;
 
     const params = [currentUserId, currentUserId, currentUserId];
@@ -202,7 +216,8 @@ WHERE p.user_id != ?
           WHEN inv.status = 'Accepted' THEN 'Connected'
           WHEN inv.status = 'Pending' THEN 'Pending'
           ELSE 'None'
-        END AS invitation_status
+        END AS invitation_status,
+        (SELECT COUNT(*) FROM shortlists WHERE user_id = ? AND profile_user_id = p.user_id) > 0 AS is_shortlisted
       FROM profiles p
       JOIN users u ON u.id = p.user_id
       LEFT JOIN invitations inv ON inv.id = (
@@ -215,11 +230,11 @@ WHERE p.user_id != ?
         ORDER BY i.id DESC
         LIMIT 1
       )
-      WHERE p.user_id != ? 
+      WHERE p.user_id != ?
         AND p.status = 'Approved'
     `;
 
-    const params = [currentUserId, currentUserId, currentUserId];
+    const params = [currentUserId, currentUserId, currentUserId, currentUserId];
 
     if (minAge !== null && !isNaN(minAge)) {
       query += ` AND TIMESTAMPDIFF(YEAR, p.dob, CURDATE()) >= ?`;
@@ -234,10 +249,8 @@ WHERE p.user_id != ?
     params.push(limit, offset);
 
     try {
-      // Use db.query instead of db.execute for better LIMIT ? OFFSET ? compatibility
-      // in some MySQL environments/prepared statements.
       const [rows] = await db.query(query, params);
-      return rows;
+      return { rows, totalCount: rows.length };
     } catch (error) {
       console.error("[SQL_ERROR] getLatest failed:", error.message);
       console.error("[SQL_ERROR] Query:", query.replace(/\s+/g, " ").trim());
@@ -277,6 +290,7 @@ WHERE p.user_id != ?
           OR (i.receiver_id = ? AND i.sender_id = p.user_id)
            )
       WHERE p.user_id != ?
+        AND p.status = 'Approved'
         AND i.id IS NULL
         AND (
              p.caste = ?

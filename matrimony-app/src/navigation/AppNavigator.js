@@ -18,6 +18,7 @@ import UpgradeScreen from "../screens/dashboard/UpgradeScreen";
 import UserProfileScreen from "../screens/dashboard/UserProfileScreen";
 import ViewFullProfileScreen from "../screens/dashboard/ViewFullProfileScreen";
 import InvitationsScreen from "../screens/dashboard/InvitationsScreen";
+import ShortlistedScreen from "../screens/dashboard/ShortlistedScreen";
 import CustomHeader from "../components/CustomHeader";
 import api from "../services/api";
 import { COLORS } from "../utils/constants";
@@ -127,6 +128,7 @@ const MainTabs = () => {
           tabBarLabel: t("find_match_tab"),
         }}
       />
+
       <Tab.Screen
         name="Invitations"
         component={InvitationsScreen}
@@ -135,6 +137,7 @@ const MainTabs = () => {
           tabBarLabel: t("invitations_tab"),
         }}
       />
+
       <Tab.Screen
         name="My profile"
         component={UserProfileScreen}
@@ -182,6 +185,11 @@ const MainStack = () => {
         name="ViewFullProfile"
         component={ViewFullProfileScreen}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Shortlist"
+        component={ShortlistedScreen}
+        options={{ title: t("shortlisted_profiles") || "Shortlisted Profiles" }}
       />
     </Stack.Navigator>
   );
