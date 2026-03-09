@@ -71,7 +71,10 @@ const Profile = {
 
   findByUserId: async (userId) => {
     const [rows] = await db.execute(
-      "SELECT * FROM profiles WHERE user_id = ?",
+      `SELECT p.*, u.is_subscribed, u.mobile_number 
+       FROM profiles p 
+       JOIN users u ON p.user_id = u.id 
+       WHERE p.user_id = ?`,
       [userId],
     );
     return rows[0];
@@ -100,7 +103,7 @@ JOIN users u ON u.id = p.user_id
         LIMIT 1
     )
 WHERE p.user_id != ?
-
+      AND p.status = 'Approved'
     `;
 
     const params = [currentUserId, currentUserId, currentUserId];
@@ -206,6 +209,7 @@ WHERE p.user_id != ?
         LIMIT 1
       )
       WHERE p.user_id != ?
+        AND p.status = 'Approved'
     `;
 
     const params = [currentUserId, currentUserId, currentUserId];
@@ -264,6 +268,7 @@ WHERE p.user_id != ?
           OR (i.receiver_id = ? AND i.sender_id = p.user_id)
            )
       WHERE p.user_id != ?
+        AND p.status = 'Approved'
         AND i.id IS NULL
         AND (
              p.caste = ?

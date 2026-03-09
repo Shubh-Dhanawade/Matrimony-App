@@ -28,8 +28,8 @@ if (
 }
 
 const { width, height } = Dimensions.get("window");
-const CARD_HEIGHT = height * 0.72;
-const CARD_WIDTH = width;
+const CARD_HEIGHT = height * 0.75;
+const CARD_WIDTH = width * 0.92;
 
 // ─── Helper: mask all name parts except the last, which shows only first letter ───
 // Example: "Om Karan Sharma" → "Om Karan S."
@@ -44,20 +44,45 @@ const getMaskedName = (fullName) => {
 
 const ProfileCard = ({
   profile,
+  isFirst,
+  isLast,
   isSubscribed,
   onUpgrade,
   onAction,
   onViewProfile,
   navigation,
 }) => {
-  // Auto-unlock preview if subscribed OR already connected
-  const isConnected = profile.invitation_status === "Connected";
-  const [isPreviewUnlocked, setIsPreviewUnlocked] = useState(
-    isSubscribed || isConnected,
-  );
   const [isFullProfileViewed, setIsFullProfileViewed] = useState(false);
+  const [isPreviewUnlockedState, setIsPreviewUnlockedState] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const flatListRef = useRef(null);
+  const contentFadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Fade in content whenever profile changes
+  React.useEffect(() => {
+    contentFadeAnim.setValue(0);
+    Animated.timing(contentFadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+      delay: 200, // delay slightly so card is already sliding in
+    }).start();
+  }, [profile.user_id]);
+
+  // Auto-unlock preview if subscribed OR already connected
+  const isConnected = profile.invitation_status === "Connected";
+
+  // Derived: is the preview unlocked? (Always true for subscribers/connected)
+  const isPreviewUnlocked = isSubscribed;
+
+  // Derived: is the photo blurred?
+  const isBlurred = !isPreviewUnlocked;
+
+  // STEP 6 — Displayed name: full name if connected, subscribed, or fully viewed, else masked
+  const displayName =
+    isConnected || isFullProfileViewed || isSubscribed
+      ? profile.full_name
+      : getMaskedName(profile.full_name);
 
   console.log(
     `[ProfileCard] Profile: ${profile.full_name}, Status: ${profile.invitation_status}, Subscribed: ${isSubscribed}`,
@@ -71,15 +96,12 @@ const ProfileCard = ({
     return [getProfileImageUri(profile.avatar_url)];
   }, [profile.photos, profile.avatar_url]);
 
-  // Derived: is the photo blurred? Subscribed and connected users see full photo
-  const isBlurred = !isPreviewUnlocked;
-
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   // Unlock Preview: remove blur
   const handleUnlockPreview = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsPreviewUnlocked(true);
+    setIsPreviewUnlockedState(true);
   };
 
   // STEP 3 — View Full Profile: mark viewed (shows full name on card) + navigate
@@ -111,12 +133,6 @@ const ProfileCard = ({
   );
 
   const keyExtractor = useCallback((_, index) => `photo-${index}`, []);
-
-  // STEP 6 — Displayed name: full name if connected or fully viewed, else masked
-  const displayName =
-    isConnected || isFullProfileViewed
-      ? profile.full_name
-      : getMaskedName(profile.full_name);
 
   return (
     <View style={styles.cardContainer}>
@@ -157,7 +173,11 @@ const ProfileCard = ({
 
           {/* Bottom Gradient Overlay */}
           <LinearGradient
-            colors={["transparent", "rgba(0,0,0,0.5)", "rgba(0,0,0,1)"]}
+            colors={[
+              "transparent",
+              "rgba(255, 255, 255, 0.5)",
+              "rgba(0,0,0,1)",
+            ]}
             style={styles.gradientOverlay}
             pointerEvents="none"
           />
@@ -205,24 +225,30 @@ const ProfileCard = ({
             </BlurView>
           )}
 
-          {/* ── STEP 2: View Full Profile button (after unlock, before viewed) ── */}
-          {isPreviewUnlocked && (
-            <TouchableOpacity
-              style={styles.viewProfileBtn}
-              onPress={handleViewFullProfile}
-              activeOpacity={0.85}
-            >
-              <MaterialCommunityIcons
-                name="account-details"
-                size={18}
-                color="#fff"
-              />
-              <Text style={styles.viewProfileBtnText}>View Full Profile</Text>
-            </TouchableOpacity>
-          )}
+          {/* ── STEP 2: View Full Profile button (after unlock, before viewed, NOT for subscribers) ── */}
+          {isPreviewUnlocked &&
+            !isFullProfileViewed &&
+            !isConnected &&
+            !isSubscribed && (
+              <TouchableOpacity
+                style={styles.viewProfileBtn}
+                onPress={handleViewFullProfile}
+                activeOpacity={0.85}
+              >
+                <MaterialCommunityIcons
+                  name="account-details"
+                  size={18}
+                  color="#fff"
+                />
+                <Text style={styles.viewProfileBtnText}>View Full Profile</Text>
+              </TouchableOpacity>
+            )}
 
           {/* Details Overlay (Bottom Left) */}
-          <View style={styles.detailsContainer} pointerEvents="box-none">
+          <Animated.View
+            style={[styles.detailsContainer, { opacity: contentFadeAnim }]}
+            pointerEvents="box-none"
+          >
             <View style={styles.verifiedRow}>
               {profile.is_verified && (
                 <View style={styles.verifiedBadge}>
@@ -303,31 +329,37 @@ const ProfileCard = ({
                 </Text>
               </View>
             ) : null}
-          </View>
+          </Animated.View>
 
-          {/* ── Action Buttons: Skip (left) + Interested (right) ── */}
-          {/* Skip button - bottom left */}
-          <View style={styles.skipContainer} pointerEvents="box-none">
-            <TouchableOpacity
-              activeOpacity={1}
+          {/* ── Action Buttons ── */}
+          <View style={styles.actionContainer} pointerEvents="box-none">
+            <ActionButton
+              icon="chevron-left"
+              label="Prev"
+              color="#757575"
+              disabled={isFirst}
+              onPress={() => onAction("prev", profile)}
+            />
+            <ActionButton
+              icon="close"
+              label="Skip"
+              color="#FF5252"
               onPress={() => onAction("skip", profile)}
-              style={styles.skipBtn}
-            >
-              <MaterialCommunityIcons name="close" size={26} color="#9E9E9E" />
-              <Text style={styles.skipLabel}>SKIP</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Interested button - bottom right */}
-          <View style={styles.interestedContainer} pointerEvents="box-none">
-            <TouchableOpacity
-              activeOpacity={1}
+            />
+            <ActionButton
+              icon="star"
+              label="Shortlist"
+              color="#FFB300"
               onPress={() => onAction("shortlist", profile)}
-              style={styles.interestedBtn}
-            >
-              <MaterialCommunityIcons name="star" size={30} color="#fff" />
-              <Text style={styles.interestedLabel}>Short List</Text>
-            </TouchableOpacity>
+            />
+            <ActionButton
+              icon="chevron-right"
+              label="Next"
+              color="#fff"
+              isPrimary
+              disabled={isLast}
+              onPress={() => onAction("next", profile)}
+            />
           </View>
         </View>
       </View>
@@ -335,17 +367,27 @@ const ProfileCard = ({
   );
 };
 
-const ActionButton = ({ icon, label, color, onPress, isPrimary }) => {
+const ActionButton = ({
+  icon,
+  label,
+  color,
+  onPress,
+  isPrimary,
+  size = 52,
+  disabled = false,
+}) => {
   const animatedValue = new Animated.Value(1);
 
   const handlePressIn = () => {
+    if (disabled) return;
     Animated.spring(animatedValue, {
-      toValue: 0.85,
+      toValue: 0.9,
       useNativeDriver: true,
     }).start();
   };
 
   const handlePressOut = () => {
+    if (disabled) return;
     Animated.spring(animatedValue, {
       toValue: 1,
       friction: 4,
@@ -356,44 +398,59 @@ const ActionButton = ({ icon, label, color, onPress, isPrimary }) => {
 
   return (
     <TouchableOpacity
-      activeOpacity={1}
+      activeOpacity={disabled ? 1 : 0.7}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      onPress={onPress}
-      style={styles.actionBtnWrapper}
+      onPress={disabled ? null : onPress}
+      style={[styles.actionBtnWrapper, disabled && { opacity: 0.4 }]}
+      disabled={disabled}
     >
       <Animated.View
         style={[
           styles.circleBtn,
+          { width: size, height: size, borderRadius: size / 2 },
           isPrimary && styles.primaryBtn,
+          disabled && {
+            backgroundColor: "rgba(255,255,255,0.1)",
+            elevation: 0,
+          },
           { transform: [{ scale: animatedValue }] },
         ]}
       >
         <MaterialCommunityIcons
           name={icon}
-          size={28}
-          color={isPrimary ? "#fff" : color}
+          size={size * 0.5}
+          color={
+            disabled ? "rgba(255,255,255,0.2)" : isPrimary ? "#fff" : color
+          }
         />
       </Animated.View>
-      <Text style={styles.actionLabel}>{label}</Text>
+      <Text
+        style={[
+          styles.actionLabel,
+          isPrimary && !disabled && { color: COLORS.primary },
+          disabled && { color: "rgba(255,255,255,0.2)" },
+        ]}
+      >
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   cardContainer: {
-    height: CARD_HEIGHT,
-    width: CARD_WIDTH,
     justifyContent: "center",
     alignItems: "center",
+    paddingVertical: 10,
   },
   card: {
     height: CARD_HEIGHT,
     width: CARD_WIDTH,
     backgroundColor: COLORS.surface,
-    borderRadius: 0,
+    borderRadius: 20,
     overflow: "hidden",
-    elevation: 10,
+    elevation: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -592,91 +649,42 @@ const styles = StyleSheet.create({
   },
 
   // Action buttons
-  skipContainer: {
-    position: "absolute",
-    bottom: 28,
-    left: 20,
+  actionContainer: {
+    paddingHorizontal: 12,
+    paddingBottom: 5,
+    marginTop: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  skipBtn: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: "#fff",
+
+  actionBtnWrapper: {
+    alignItems: "center",
     justifyContent: "center",
-    alignItems: "center",
-    elevation: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    marginBottom: 4,
   },
-  skipLabel: {
-    color: "#fff",
-    fontSize: 9,
-    fontWeight: "700",
-    textAlign: "center",
-    textTransform: "uppercase",
-    marginTop: 2,
-    textShadowColor: "rgba(0,0,0,0.6)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  interestedContainer: {
-    position: "absolute",
-    bottom: 28,
-    right: 20,
-    alignItems: "center",
-  },
-  interestedBtn: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: COLORS.primary,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 8,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    marginBottom: 4,
-  },
-  interestedLabel: {
-    color: "#fff",
-    fontSize: 9,
-    fontWeight: "700",
-    textAlign: "center",
-    textTransform: "uppercase",
-    marginTop: 2,
-    textShadowColor: "rgba(0,0,0,0.4)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  // Legacy ActionButton (kept for compatibility)
   circleBtn: {
-    width: 55,
-    height: 55,
-    borderRadius: 30,
     backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
-    elevation: 6,
+    elevation: 5,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    marginBottom: 5,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    marginBottom: 8,
   },
   primaryBtn: {
-    backgroundColor: "#E91E63",
-    transform: [{ scale: 1.1 }],
+    backgroundColor: COLORS.primary,
+    elevation: 8,
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.4,
   },
   actionLabel: {
-    color: "#fff",
-    fontSize: 10,
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 9,
     fontWeight: "700",
     textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
 });
 

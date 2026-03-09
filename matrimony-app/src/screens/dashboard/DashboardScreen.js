@@ -40,6 +40,7 @@ const DashboardScreen = ({ navigation }) => {
   const [suggested, setSuggested] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const swiperRef = React.useRef(null);
 
   const [filters, setFilters] = useState({
     ageMin: "",
@@ -276,19 +277,25 @@ const DashboardScreen = ({ navigation }) => {
                   profile={card}
                   isSubscribed={card.is_subscribed === 1}
                   onUpgrade={() => navigation.navigate("Upgrade")}
+                  isFirst={profiles.indexOf(card) === 0}
+                  isLast={profiles.indexOf(card) === profiles.length - 1}
                   onViewProfile={(userId) =>
                     navigation.navigate("ViewFullProfile", { userId })
                   }
                   onAction={(action, p) => {
-                    if (action === "interested")
-                      handleSwipedRight(profiles.indexOf(p));
-                    else if (action === "skip")
-                      handleSwipedLeft(profiles.indexOf(p));
+                    if (action === "shortlist" || action === "next") {
+                      swiperRef.current?.swipeRight();
+                    } else if (action === "skip") {
+                      swiperRef.current?.swipeLeft();
+                    } else if (action === "prev") {
+                      swiperRef.current?.swipeBack();
+                    }
                   }}
                 />
               )}
               onSwipedLeft={handleSwipedLeft}
               onSwipedRight={handleSwipedRight}
+              ref={swiperRef}
               cardIndex={0}
               backgroundColor={"transparent"}
               stackSize={3}

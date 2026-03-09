@@ -29,11 +29,15 @@ const ProfilesFeedScreen = ({ navigation }) => {
   const [profiles, setProfiles] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(
+    Number(user?.is_subscribed) === 1,
+  );
 
   // Animation
   const translateX = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
+  const scale = useRef(new Animated.Value(1)).current;
+  const rotate = useRef(new Animated.Value(0)).current;
   const busy = useRef(false); // prevents double-taps during animation
 
   // ── Load all profiles on mount ─────────────────────────────────────
@@ -55,7 +59,14 @@ const ProfilesFeedScreen = ({ navigation }) => {
         setProfiles(profileList);
 
         const userProfile = meRes.data?.profile;
-        setIsSubscribed(userProfile ? userProfile.is_subscribed === 1 : false);
+        const subStatus =
+          Number(userProfile?.is_subscribed) === 1 ||
+          Number(user?.is_subscribed) === 1;
+
+        console.log(
+          `[FEED] Viewer status - Me: ${Number(user?.is_subscribed)}, Profile: ${Number(userProfile?.is_subscribed)}, Result: ${subStatus}`,
+        );
+        setIsSubscribed(subStatus);
 
         console.log(`[FEED] Loaded ${profileList.length} profiles`);
 
@@ -80,13 +91,19 @@ const ProfilesFeedScreen = ({ navigation }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Preload next card image after navigation ───────────────────────
+  // ── Preload next card images (up to 3) for zero-waiting ──────────────
   const prefetchNext = useCallback(
     (nextIdx) => {
       const p = profiles[nextIdx + 1];
       if (!p) return;
-      const uri = getProfileImageUri(p.photos?.[0] || p.avatar_url);
-      if (uri) Image.prefetch(uri).catch(() => {});
+      const uris = [
+        getProfileImageUri(p.avatar_url),
+        ...(p.photos || []).map((url) => getProfileImageUri(url)),
+      ].slice(0, 3);
+
+      uris.forEach((uri) => {
+        if (uri) Image.prefetch(uri).catch(() => {});
+      });
     },
     [profiles],
   );
@@ -95,30 +112,64 @@ const ProfilesFeedScreen = ({ navigation }) => {
   const animate = useCallback(
     (direction, onSwap) => {
       // direction: 1 = Next (slide left), -1 = Previous (slide right)
+      if (busy.current) return;
+      busy.current = true;
+
+      // Stage 1: Current card slides out/shrinks
       Animated.parallel([
         Animated.timing(translateX, {
-          toValue: -direction * (width / 2.5),
-          duration: 160,
+          toValue: -direction * (width * 1.1),
+          duration: 250,
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
           toValue: 0,
-          duration: 160,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scale, {
+          toValue: 0.9,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(rotate, {
+          toValue: -direction * 15, // rotate slightly as it leaves
+          duration: 250,
           useNativeDriver: true,
         }),
       ]).start(() => {
-        translateX.setValue(direction * (width / 2.5));
+        // Swap data
         onSwap();
+
+        // Stage 2: Reset position for entry (from the opposite side)
+        translateX.setValue(direction * (width * 1.1));
+        rotate.setValue(direction * 15);
+        scale.setValue(0.85);
+        opacity.setValue(0);
+
+        // Stage 3: New card slides in/pops up
         Animated.parallel([
           Animated.spring(translateX, {
             toValue: 0,
-            friction: 7,
+            friction: 8,
+            tension: 40,
+            useNativeDriver: true,
+          }),
+          Animated.spring(scale, {
+            toValue: 1,
+            friction: 6,
             tension: 50,
+            useNativeDriver: true,
+          }),
+          Animated.spring(rotate, {
+            toValue: 0,
+            friction: 8,
+            tension: 30,
             useNativeDriver: true,
           }),
           Animated.timing(opacity, {
             toValue: 1,
-            duration: 180,
+            duration: 300,
             useNativeDriver: true,
           }),
         ]).start(() => {
@@ -126,7 +177,7 @@ const ProfilesFeedScreen = ({ navigation }) => {
         });
       });
     },
-    [translateX, opacity],
+    [translateX, opacity, scale, rotate],
   );
 
   // ── Next ───────────────────────────────────────────────────────────
@@ -134,7 +185,7 @@ const ProfilesFeedScreen = ({ navigation }) => {
     if (busy.current) return;
     const next = currentIndex + 1;
     if (next >= profiles.length) return;
-    busy.current = true;
+
     animate(1, () => setCurrentIndex(next));
     prefetchNext(next);
   }, [currentIndex, profiles.length, animate, prefetchNext]);
@@ -142,7 +193,7 @@ const ProfilesFeedScreen = ({ navigation }) => {
   // ── Previous ───────────────────────────────────────────────────────
   const goPrev = useCallback(() => {
     if (busy.current || currentIndex === 0) return;
-    busy.current = true;
+
     animate(-1, () => setCurrentIndex(currentIndex - 1));
   }, [currentIndex, animate]);
 
@@ -150,11 +201,23 @@ const ProfilesFeedScreen = ({ navigation }) => {
   const handleAction = useCallback(
     async (type, profile) => {
       try {
-        if (type === "skip") {
-          await api.post("/profiles/ignore", { receiverId: profile.user_id });
-          setProfiles((prev) =>
-            prev.filter((p) => p.user_id !== profile.user_id),
-          );
+        if (type === "prev") {
+          goPrev();
+        } else if (type === "next") {
+          goNext();
+        } else if (type === "skip") {
+          animate(1, async () => {
+            try {
+              await api.post("/profiles/ignore", {
+                receiverId: profile.user_id,
+              });
+              setProfiles((prev) =>
+                prev.filter((p) => p.user_id !== profile.user_id),
+              );
+            } catch (err) {
+              console.error("Skip error:", err);
+            }
+          });
         } else if (type === "shortlist") {
           const payload = { profileUserId: profile.user_id };
           console.log("[FEED_SHORTLIST] Sending payload:", payload);
@@ -251,16 +314,31 @@ const ProfilesFeedScreen = ({ navigation }) => {
         </View>
       </View>
 
-      {/* Animated card */}
+      {/* Animated card Stack */}
       <View style={styles.cardArea}>
+        {/* Active card (Current) */}
         <Animated.View
           style={[
             styles.cardAnimated,
-            { transform: [{ translateX }], opacity },
+            {
+              opacity,
+              transform: [
+                { translateX },
+                { scale },
+                {
+                  rotate: rotate.interpolate({
+                    inputRange: [-10, 0, 10],
+                    outputRange: ["-10deg", "0deg", "10deg"],
+                  }),
+                },
+              ],
+            },
           ]}
         >
           <ProfileCard
             profile={currentProfile}
+            isFirst={currentIndex === 0}
+            isLast={currentIndex >= profiles.length - 1}
             isSubscribed={isSubscribed}
             onUpgrade={() => navigation.navigate("Upgrade")}
             onAction={handleAction}
@@ -270,58 +348,6 @@ const ProfilesFeedScreen = ({ navigation }) => {
             navigation={navigation}
           />
         </Animated.View>
-      </View>
-
-      {/* Navigation bar */}
-      <View style={styles.navBar}>
-        {/* Previous */}
-        <TouchableOpacity
-          style={[styles.navBtn, isFirst && styles.navBtnOff]}
-          onPress={goPrev}
-          disabled={isFirst}
-          activeOpacity={0.8}
-        >
-          <MaterialCommunityIcons
-            name="chevron-left"
-            size={26}
-            color={isFirst ? "rgba(0,0,0,0.2)" : "#fff"}
-          />
-          <Text style={[styles.navLabel, isFirst && styles.navLabelOff]}>
-            PREVIOUS
-          </Text>
-        </TouchableOpacity>
-
-        {/* Dots */}
-        <View style={styles.dots}>
-          {Array.from({ length: Math.min(total, 7) }, (_, i) => {
-            const half = Math.floor(7 / 2);
-            const start = Math.max(0, Math.min(total - 7, currentIndex - half));
-            const idx = start + i;
-            return (
-              <View
-                key={i}
-                style={[styles.dot, idx === currentIndex && styles.dotOn]}
-              />
-            );
-          })}
-        </View>
-
-        {/* Next */}
-        <TouchableOpacity
-          style={[styles.navBtn, isLast && styles.navBtnOff]}
-          onPress={goNext}
-          disabled={isLast}
-          activeOpacity={0.8}
-        >
-          <MaterialCommunityIcons
-            name="chevron-right"
-            size={26}
-            color={isLast ? "rgba(0,0,0,0.2)" : "#fff"}
-          />
-          <Text style={[styles.navLabel, isLast && styles.navLabelOff]}>
-            NEXT
-          </Text>
-        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );

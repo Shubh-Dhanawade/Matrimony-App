@@ -66,6 +66,7 @@ const Shortlist = {
            ORDER BY i.id DESC LIMIT 1
          )
          WHERE s.user_id = ?
+           AND p.status = 'Approved'
          ORDER BY s.created_at DESC`,
         [userId, userId, userId],
       );

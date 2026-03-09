@@ -16,6 +16,7 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 import api from "../../services/api";
 import { COLORS, SPACING, FONT_SIZES } from "../../utils/constants";
 import { getProfileImageUri } from "../../utils/imageUtils";
+import { useAuth } from "../../context/AuthContext";
 
 const STATUS_CONFIG = {
   None: {
@@ -42,9 +43,12 @@ const STATUS_CONFIG = {
 };
 
 const ShortlistedScreen = ({ navigation }) => {
+  const { user } = useAuth();
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const isSubscribed = Number(user?.is_subscribed) === 1;
 
   const fetchShortlisted = useCallback(async () => {
     try {
@@ -183,8 +187,10 @@ const ShortlistedScreen = ({ navigation }) => {
         {/* Profile Info */}
         <View style={styles.info}>
           <Text style={styles.name} numberOfLines={1}>
-            {isConnected ? item.full_name : maskName(item.full_name)},{" "}
-            {item.age}
+            {isConnected || isSubscribed
+              ? item.full_name
+              : maskName(item.full_name)}
+            , {item.age}
           </Text>
           <View style={styles.metaRow}>
             <MaterialCommunityIcons name="map-marker" size={13} color="#999" />

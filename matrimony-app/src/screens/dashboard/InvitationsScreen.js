@@ -16,6 +16,7 @@ import api from "../../services/api";
 import { COLORS, SPACING, FONT_SIZES } from "../../utils/constants";
 import { getProfileImageUri } from "../../utils/imageUtils";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../../context/AuthContext";
 
 const STATUS_COLORS = {
   Pending: { bg: "#FFF9C4", text: "#F57F17", icon: "clock-outline" },
@@ -26,10 +27,22 @@ const STATUS_COLORS = {
 
 const InvitationsScreen = ({ navigation }) => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [invitations, setInvitations] = useState({ sent: [], received: [] });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("received"); // 'received' | 'sent'
+
+  const isSubscribed = Number(user?.is_subscribed) === 1;
+
+  const maskName = (fullName) => {
+    if (!fullName) return "Member";
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 1) return `${parts[0][0]}.`;
+    const last = parts[parts.length - 1];
+    const rest = parts.slice(0, -1).join(" ");
+    return `${rest} ${last[0]}.`;
+  };
 
   const fetchInvitations = useCallback(async () => {
     try {
@@ -115,7 +128,11 @@ const InvitationsScreen = ({ navigation }) => {
             )}
           </View>
           <View style={styles.cardInfo}>
-            <Text style={styles.name}>{item.full_name || "Member"}</Text>
+            <Text style={styles.name}>
+              {isAccepted || isSubscribed
+                ? item.full_name
+                : maskName(item.full_name)}
+            </Text>
             <Text style={styles.meta}>
               {item.age ? `${item.age} yrs` : ""}
               {item.age && item.marital_status ? " · " : ""}

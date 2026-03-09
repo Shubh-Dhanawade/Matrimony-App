@@ -17,6 +17,7 @@ router.get("/location/talukas/:districtId", locationController.getTalukas);
 // Auth Routes
 router.post("/auth/register", authController.register);
 router.post("/auth/login", authController.login);
+router.get("/auth/me", auth, authController.getMe);
 
 const upload = require("../middleware/multer");
 

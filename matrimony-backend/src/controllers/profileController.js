@@ -169,6 +169,10 @@ const profileController = {
       if (!profile) {
         return res.status(404).json({ message: "Profile not found" });
       }
+      // Only allow viewing approved profiles (except for own profile via different endpoint)
+      if (profile.status !== "Approved") {
+        return res.status(404).json({ message: "Profile not found" });
+      }
       res.json({ profile });
     } catch (error) {
       console.error("Error in getProfileById:", error);
