@@ -11,6 +11,7 @@ import {
   PermissionsAndroid,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useTranslation } from "react-i18next";
@@ -37,6 +38,7 @@ import {
   TERMS_AND_CONDITIONS,
   PRIVACY_POLICY,
   API_BASE_URL,
+  MANGLIK_OPTIONS,
 } from "../../utils/constants";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getProfileImageUri } from "../../utils/imageUtils";
@@ -60,6 +62,7 @@ const RegistrationScreen = ({ navigation, route }) => {
     gender: "",
     height: "",
     color: "",
+    manglik: "No",
     age: "",
     marital_status: "",
     address: "",
@@ -84,6 +87,8 @@ const RegistrationScreen = ({ navigation, route }) => {
     taluka: "",
     phone_number: "",
     whatsapp_number: "",
+    biodata_file: "",
+    kundali_file: "",
   });
 
   // Location dropdown state
@@ -99,6 +104,8 @@ const RegistrationScreen = ({ navigation, route }) => {
   const [fetching, setFetching] = useState(isEdit);
   const [initialData, setInitialData] = useState(null);
   const [pickedImage, setPickedImage] = useState(null);
+  const [pickedBiodata, setPickedBiodata] = useState(null);
+  const [pickedKundali, setPickedKundali] = useState(null);
   const isSaved = useRef(false);
 
   // Multiple Photos State
@@ -179,7 +186,7 @@ const RegistrationScreen = ({ navigation, route }) => {
     const unsubscribe = navigation.addListener("beforeRemove", (e) => {
       const hasChanges =
         initialData && JSON.stringify(formData) !== JSON.stringify(initialData);
-      const hasPickedImage = !!pickedImage;
+      const hasPickedImage = !!pickedImage || !!pickedBiodata || !!pickedKundali;
 
       if ((!hasChanges && !hasPickedImage) || isSaved.current) {
         return;
@@ -578,6 +585,38 @@ const RegistrationScreen = ({ navigation, route }) => {
     }
   };
 
+  const pickBiodataFile = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["image/*", "application/pdf"],
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setPickedBiodata(result.assets[0]);
+        updateField("biodata_file", result.assets[0].uri);
+      }
+    } catch (err) {
+      console.error("[BIODATA] Picker error:", err);
+      Alert.alert(t("error"), t("action_failed"));
+    }
+  };
+
+  const pickKundaliFile = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["image/*", "application/pdf"],
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setPickedKundali(result.assets[0]);
+        updateField("kundali_file", result.assets[0].uri);
+      }
+    } catch (err) {
+      console.error("[KUNDALI] Picker error:", err);
+      Alert.alert(t("error"), t("action_failed"));
+    }
+  };
+
   const uploadProfileImage = async () => {
     if (!pickedImage) return null;
 
@@ -613,6 +652,77 @@ const RegistrationScreen = ({ navigation, route }) => {
     const data = await response.json();
     console.log('[UPLOAD_IMAGE] Success:', data.imageUrl);
     return data.imageUrl;
+  };
+
+  const uploadBiodataImage = async () => {
+    if (!pickedBiodata) return null;
+
+    const formData = new FormData();
+    const uri = pickedBiodata.uri;
+
+    // Extract file info accurately or supply defaults, needed for uploading
+    const mimeType = pickedBiodata.mimeType || "application/pdf";
+    const name = pickedBiodata.name || `biodata_${Date.now()}`;
+
+    formData.append('biodata', {
+      uri,
+      name,
+      type: mimeType,
+    });
+
+    const token = await AsyncStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/upload/biodata`, {
+      method: 'POST',
+      headers: {
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      console.error('[UPLOAD_BIODATA] Server error:', errData);
+      throw new Error(errData.message || 'Biodata upload failed');
+    }
+
+    const data = await response.json();
+    console.log('[UPLOAD_BIODATA] Success:', data.biodataUrl);
+    return data.biodataUrl;
+  };
+
+  const uploadKundaliImage = async () => {
+    if (!pickedKundali) return null;
+
+    const formData = new FormData();
+    const uri = pickedKundali.uri;
+
+    const mimeType = pickedKundali.mimeType || "application/pdf";
+    const name = pickedKundali.name || `kundali_${Date.now()}`;
+
+    formData.append('kundali', {
+      uri,
+      name,
+      type: mimeType,
+    });
+
+    const token = await AsyncStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/upload/kundali`, {
+      method: 'POST',
+      headers: {
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      console.error('[UPLOAD_KUNDALI] Server error:', errData);
+      throw new Error(errData.message || 'Kundali upload failed');
+    }
+
+    const data = await response.json();
+    console.log('[UPLOAD_KUNDALI] Success:', data.kundaliUrl);
+    return data.kundaliUrl;
   };
 
   const handleSave = async () => {
@@ -670,6 +780,16 @@ const RegistrationScreen = ({ navigation, route }) => {
         finalAvatarUrl = await uploadProfileImage();
       }
 
+      let finalBiodataUrl = formData.biodata_file;
+      if (pickedBiodata) {
+        finalBiodataUrl = await uploadBiodataImage();
+      }
+
+      let finalKundaliUrl = formData.kundali_file;
+      if (pickedKundali) {
+        finalKundaliUrl = await uploadKundaliImage();
+      }
+
       // ── Step 2: Build profile payload WITH the final avatar_url ──────────
       const basePayload = {
         ...formData,
@@ -677,9 +797,12 @@ const RegistrationScreen = ({ navigation, route }) => {
         whatsapp_number: formData.whatsapp_number,
         company_name: formData.company_name,
         avatar_url: finalAvatarUrl,         // ← includes newly uploaded URL
+        biodata_file: finalBiodataUrl,
+        kundali_file: finalKundaliUrl,
         monthly_income: formData.monthly_income
           ? parseInt(formData.monthly_income, 10)
           : 0,
+        manglik: formData.manglik,
         profile_for:
           formData.profile_for === 'Other'
             ? formData.other_profile_for
@@ -787,26 +910,26 @@ const RegistrationScreen = ({ navigation, route }) => {
             : t("registration_title_create")}
         </Text>
 
-        <Text style={styles.sectionTitle}>{t("basic_info")}</Text>
+        <Text style={styles.sectionTitle}>Basic Information</Text>
 
-        <Text style={styles.sectionTitle}>{t("personal_details")}</Text>
+        <Text style={styles.sectionTitle}>Personal Details</Text>
         <CustomInput
-          label={`${t("full_name")} *`}
+          label="Full Name *"
           value={formData.full_name}
           onChangeText={(v) => updateField("full_name", v)}
         />
         <CustomInput
-          label={t("father_name")}
+          label="Father's Name"
           value={formData.father_name}
           onChangeText={(v) => updateField("father_name", v)}
         />
         <CustomInput
-          label={t("mother_maiden_name")}
+          label="Mother's Maiden Name"
           value={formData.mother_maiden_name}
           onChangeText={(v) => updateField("mother_maiden_name", v)}
         />
         <CustomDatePicker
-          label={`${t("dob")} *`}
+          label="Date of Birth *"
           value={formData.dob}
           onDateChange={handleDateChange}
           error={ageError}
@@ -814,21 +937,21 @@ const RegistrationScreen = ({ navigation, route }) => {
         />
 
         <CustomPicker
-          label={`${t("gender")} *`}
+          label="Gender *"
           value={formData.gender}
           options={[
-            { label: t("gender_male"), value: "Male" },
-            { label: t("gender_female"), value: "Female" },
-            { label: t("gender_other"), value: "Other" },
+            { label: "Male", value: "Male" },
+            { label: "Female", value: "Female" },
+            { label: "Other", value: "Other" },
           ]}
-          placeholder={t("gender")}
+          placeholder="Select Gender"
           onSelect={(v) => updateField("gender", v)}
         />
 
         <View style={{ flexDirection: "row", gap: 10 }}>
           <View style={{ flex: 1 }}>
             <CustomPicker
-              label={`${t("feet") || "Feet"} *`}
+              label="Feet *"
               value={feet}
               options={feetOptions}
               placeholder="Feet"
@@ -840,7 +963,7 @@ const RegistrationScreen = ({ navigation, route }) => {
           </View>
           <View style={{ flex: 1 }}>
             <CustomPicker
-              label={`${t("inches") || "Inches"} *`}
+              label="Inches *"
               value={inches}
               options={inchOptions}
               placeholder="Inches"
@@ -852,7 +975,7 @@ const RegistrationScreen = ({ navigation, route }) => {
           </View>
         </View>
         <CustomPicker
-          label={t("color") || "Complexion"}
+          label="Complexion"
           value={formData.color}
           options={COLOR_OPTIONS?.map(c => ({
             label: c,
@@ -862,7 +985,7 @@ const RegistrationScreen = ({ navigation, route }) => {
           onSelect={(v) => updateField("color", v)}
         />
         <CustomInput
-          label={`${t("age")} *`}
+          label="Age *"
           value={formData.age ? String(formData.age) : ""}
           onChangeText={() => { }} // read-only: auto-calculated from DOB
           editable={false}
@@ -870,77 +993,84 @@ const RegistrationScreen = ({ navigation, route }) => {
         />
 
         <CustomPicker
-          label={`${t("marital_status")} *`}
+          label="Marital Status *"
           value={formData.marital_status}
           options={[
-            { label: t("marital_single"), value: "Single" },
-            { label: t("marital_married"), value: "Married" },
-            { label: t("marital_divorced"), value: "Divorced" },
-            { label: t("marital_widowed"), value: "Widowed" },
+            { label: "Single", value: "Single" },
+            { label: "Married", value: "Married" },
+            { label: "Divorced", value: "Divorced" },
+            { label: "Widowed", value: "Widowed" },
           ]}
-          placeholder={t("marital_status")}
+          placeholder="Select Marital Status"
           onSelect={(v) => updateField("marital_status", v)}
         />
 
         <CustomPicker
-          label={`${t("profile_for")} *`}
+          label="Manglik"
+          value={formData.manglik}
+          options={MANGLIK_OPTIONS}
+          placeholder="Select Manglik"
+          onSelect={(v) => updateField("manglik", v)}
+        />
+
+        <CustomPicker
+          label="Creating Profile For *"
           value={formData.profile_for}
           options={[
-            { label: t("profile_for_myself"), value: "Myself" },
-            { label: t("profile_for_son"), value: "Son" },
-            { label: t("profile_for_daughter"), value: "Daughter" },
-            { label: t("profile_for_brother"), value: "Brother" },
-            { label: t("profile_for_sister"), value: "Sister" },
-            { label: t("profile_for_other"), value: "Other" },
+            { label: "Myself", value: "Myself" },
+            { label: "Son", value: "Son" },
+            { label: "Daughter", value: "Daughter" },
+            { label: "Brother", value: "Brother" },
+            { label: "Sister", value: "Sister" },
+            { label: "Other", value: "Other" },
           ]}
-          placeholder={t("profile_for")}
+          placeholder="Select Profile For"
           onSelect={(v) => updateField("profile_for", v)}
         />
 
         <CustomPicker
-          label={t("profile_managed_by") || "Profile Managed By"}
+          label="Profile Managed By"
           value={formData.profile_managed_by}
           options={[
-            { label: t("managed_by_self") || "Self", value: "Self" },
-            { label: t("managed_by_parents") || "Parents", value: "Parents" },
-            { label: t("managed_by_brother") || "Brother", value: "Brother" },
-            { label: t("managed_by_sister") || "Sister", value: "Sister" },
-            { label: t("managed_by_relative") || "Relative", value: "Relative" },
-            { label: t("managed_by_friend") || "Friend", value: "Friend" },
+            { label: "Self", value: "self" },
+            { label: "Parents", value: "parents" },
+            { label: "Brother", value: "brother" },
+            { label: "Sister", value: "sister" },
+            { label: "Guardian", value: "guardian" },
           ]}
-          placeholder={t("select_manager") || "Select Manager"}
+          placeholder="Select Manager"
           onSelect={(v) => updateField("profile_managed_by", v)}
         />
 
         {formData.profile_for === "Other" && (
           <CustomInput
-            label={`${t("specify_relation")} *`}
+            label="Specify Relation *"
             value={formData.other_profile_for}
             onChangeText={(v) => updateField("other_profile_for", v)}
             placeholder="e.g. Friend, Cousin"
           />
         )}
 
-        <Text style={styles.sectionTitle}>{t("contact_location") || "Contact Details"}</Text>
+        <Text style={styles.sectionTitle}>Contact & Location</Text>
         <CustomInput
-          label={`${t("phone_number") || "Phone Number"} *`}
+          label="Phone Number *"
           value={formData.phone_number}
           keyboardType="phone-pad"
           onChangeText={(v) => updateField("phone_number", v)}
         />
         <CustomInput
-          label={t("whatsapp_number") || "WhatsApp Number"}
+          label="WhatsApp Number"
           value={formData.whatsapp_number}
           keyboardType="phone-pad"
           onChangeText={(v) => updateField("whatsapp_number", v)}
         />
         <CustomInput
-          label={t("birthplace")}
+          label="Birthplace"
           value={formData.birthplace}
           onChangeText={(v) => updateField("birthplace", v)}
         />
         <CustomInput
-          label={t("full_address")}
+          label="Full Address"
           value={formData.address}
           onChangeText={(v) => updateField("address", v)}
           multiline
@@ -949,24 +1079,20 @@ const RegistrationScreen = ({ navigation, route }) => {
 
         {/* State Dropdown */}
         <CustomPicker
-          label={t("state")}
+          label="State"
           value={formData.state}
           options={states.map((s) => ({ label: s.name, value: s.name }))}
-          placeholder={loadingStates ? t("loading") + "..." : t("select_state")}
+          placeholder={loadingStates ? "Loading..." : "Select State"}
           onSelect={handleStateSelect}
         />
 
         {/* District Dropdown */}
         <CustomPicker
-          label={t("district")}
+          label="District"
           value={formData.district}
           options={districts.map((d) => ({ label: d.name, value: d.name }))}
           placeholder={
-            !formData.state
-              ? t("select_state_first")
-              : loadingDistricts
-                ? t("loading") + "..."
-                : t("select_district")
+            !formData.state ? "Select State First" : loadingDistricts ? "Loading..." : "Select District"
           }
           onSelect={handleDistrictSelect}
           disabled={!formData.state || loadingDistricts}
@@ -974,17 +1100,11 @@ const RegistrationScreen = ({ navigation, route }) => {
 
         {/* Taluka Dropdown */}
         <CustomPicker
-          label={t("taluka")}
+          label="Taluka"
           value={formData.taluka}
           options={talukas.map((tk) => ({ label: tk.name, value: tk.name }))}
           placeholder={
-            !formData.district
-              ? t("select_district_first")
-              : loadingTalukas
-                ? t("loading") + "..."
-                : talukas.length === 0
-                  ? t("no_talukas")
-                  : t("select_taluka")
+            !formData.district ? "Select District First" : loadingTalukas ? "Loading..." : talukas.length === 0 ? "No Talukas Found" : "Select Taluka"
           }
           onSelect={handleTalukaSelect}
           disabled={
@@ -992,70 +1112,70 @@ const RegistrationScreen = ({ navigation, route }) => {
           }
         />
 
-        <Text style={styles.sectionTitle}>{t("professional_details")}</Text>
+        <Text style={styles.sectionTitle}>Professional Details</Text>
         <CustomPicker
-          label={`${t("qualification")} *`}
+          label="Qualification *"
           value={formData.qualification}
           options={QUALIFICATION_OPTIONS.map((opt) => ({
             label: opt,
             value: opt,
           }))}
-          placeholder={t("Qualification") || "Select Qualification"}
+          placeholder="Select Qualification"
           onSelect={(v) => updateField("qualification", v)}
         />
         <CustomPicker
-          label={`${t("occupation")} *`}
+          label="Occupation *"
           value={formData.occupation}
           options={OCCUPATION_OPTIONS.map((opt) => ({
             label: opt,
             value: opt,
           }))}
-          placeholder={t("Occupation") || "Select Occupation"}
+          placeholder="Select Occupation"
           onSelect={(v) => updateField("occupation", v)}
         />
         <CustomInput
-          label={`${t("profession")} *`}
+          label="Profession *"
           value={formData.profession}
           onChangeText={(v) => updateField("profession", v)}
         />
         <CustomInput
-          label={t("company_name") || "Company Name"}
+          label="Company Name / Business Name"
           value={formData.company_name}
           onChangeText={(v) => updateField("company_name", v)}
           placeholder="Enter Company Name"
         />
         <CustomInput
-          label={`${t("monthly_income")} *`}
+          label="Monthly Income *"
           value={formData.monthly_income}
           onChangeText={(v) => updateField("monthly_income", v)}
           keyboardType="numeric"
         />
         <CustomInput
-          label={`${t("property")} *`}
+          label="Property Details *"
           value={formData.property}
           onChangeText={(v) => updateField("property", v)}
         />
 
-        <Text style={styles.sectionTitle}>{t("community_details")}</Text>
+        <Text style={styles.sectionTitle}>Community Details</Text>
         <CustomInput
-          label={t("caste")}
+          label="Caste"
           value={formData.caste}
           onChangeText={(v) => updateField("caste", v)}
         />
         <CustomInput
-          label={t("sub_caste")}
+          label="Sub Caste"
           value={formData.sub_caste}
           onChangeText={(v) => updateField("sub_caste", v)}
         />
         <CustomInput
-          label={t("relative_surname")}
+          label="Relative Surname"
           value={formData.relative_surname}
           onChangeText={(v) => updateField("relative_surname", v)}
         />
 
-        <Text style={styles.sectionTitle}>{t("expectations_photo")}</Text>
+        <Text style={styles.sectionTitle}>Partner Expectations & Photos</Text>
         <CustomInput
-          label={t("partner_expectations")}
+          label="Partner Expectations"
           value={formData.expectations}
           onChangeText={(v) => updateField("expectations", v)}
           multiline
@@ -1063,13 +1183,13 @@ const RegistrationScreen = ({ navigation, route }) => {
         />
 
         <View style={styles.photoSection}>
-          <Text style={styles.label}>{t("profile_photo")}</Text>
+          <Text style={styles.label}>Profile Photo</Text>
           <View style={styles.photoButtons}>
             <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
-              <Text style={styles.photoButtonText}>{t("take_photo")}</Text>
+              <Text style={styles.photoButtonText}>Take Photo</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
-              <Text style={styles.photoButtonText}>{t("from_gallery")}</Text>
+              <Text style={styles.photoButtonText}>Pick from Gallery</Text>
             </TouchableOpacity>
           </View>
 
@@ -1100,10 +1220,52 @@ const RegistrationScreen = ({ navigation, route }) => {
         </View>
 
         {/* ═══════════════════════════════════════════ */}
+        {/*  BIODATA UPLOAD SECTION                    */}
+        {/* ═══════════════════════════════════════════ */}
+        <View style={styles.biodataSection}>
+          <Text style={styles.label}>Biodata Upload</Text>
+          <TouchableOpacity style={styles.uploadButton} onPress={pickBiodataFile}>
+            <MaterialCommunityIcons name="file-document-outline" size={24} color={COLORS.primary} />
+            <Text style={styles.uploadButtonText}>
+              {pickedBiodata || (formData.biodata_file && formData.biodata_file.trim() !== '') ? "Change Biodata (PDF/Image)" : "Upload Biodata (PDF/Image)"}
+            </Text>
+          </TouchableOpacity>
+          {(pickedBiodata || (formData.biodata_file && formData.biodata_file.trim() !== '')) && (
+            <View style={styles.biodataUploadedRow}>
+              <MaterialCommunityIcons name="check-circle" size={16} color={COLORS.success} />
+              <Text style={styles.biodataUploadedText}>
+                {pickedBiodata ? pickedBiodata.name : "Biodata currently saved"}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* ═══════════════════════════════════════════ */}
+        {/*  KUNDALI UPLOAD SECTION                    */}
+        {/* ═══════════════════════════════════════════ */}
+        <View style={styles.biodataSection}>
+          <Text style={styles.label}>Upload Kundali</Text>
+          <TouchableOpacity style={styles.uploadButton} onPress={pickKundaliFile}>
+            <MaterialCommunityIcons name="file-document-outline" size={24} color={COLORS.primary} />
+            <Text style={styles.uploadButtonText}>
+              {pickedKundali || (formData.kundali_file && formData.kundali_file.trim() !== '') ? "Change Kundali (PDF/Image)" : "Upload Kundali (PDF/Image)"}
+            </Text>
+          </TouchableOpacity>
+          {(pickedKundali || (formData.kundali_file && formData.kundali_file.trim() !== '')) && (
+            <View style={styles.biodataUploadedRow}>
+              <MaterialCommunityIcons name="check-circle" size={16} color={COLORS.success} />
+              <Text style={styles.biodataUploadedText}>
+                {pickedKundali ? pickedKundali.name : "Kundali currently saved"}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* ═══════════════════════════════════════════ */}
         {/*  MULTIPLE PROFILE PHOTOS SECTION           */}
         {/* ═══════════════════════════════════════════ */}
         <View style={styles.multiPhotoSection}>
-          <Text style={styles.sectionTitle}>{t("profile_photo")}</Text>
+          <Text style={styles.sectionTitle}>Profile Photo</Text>
           <Text style={styles.multiPhotoSubtitle}>
             {t("profile_photos_limit", { count: existingPhotos.length })}
           </Text>
@@ -1347,6 +1509,37 @@ const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: "#CCCCCC",
     opacity: 0.6,
+  },
+  biodataSection: {
+    marginBottom: SPACING.md,
+    marginTop: SPACING.sm,
+  },
+  uploadButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    padding: SPACING.md,
+    borderRadius: 8,
+    gap: SPACING.sm,
+  },
+  uploadButtonText: {
+    color: COLORS.primary,
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+  biodataUploadedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: SPACING.sm,
+    gap: 4
+  },
+  biodataUploadedText: {
+    fontSize: 12,
+    color: COLORS.success,
   },
 
   // ═══════════════════════════════════════════

@@ -34,6 +34,9 @@ const allowedColumns = [
   "phone_number",
   "whatsapp_number",
   "company_name",
+  "manglik",
+  "biodata_file",
+  "kundali_file",
 ];
 
 const filterValidData = (data) => {
@@ -42,11 +45,18 @@ const filterValidData = (data) => {
     if (allowedColumns.includes(key)) {
       let value = data[key];
 
-      // Clean avatar_url to store only relative path
-      if (key === "avatar_url" && value && typeof value === "string") {
+      // Clean avatar_url and biodata_file to store only relative path
+      if ((key === "avatar_url" || key === "biodata_file" || key === "kundali_file") && value && typeof value === "string") {
         const uploadsIndex = value.indexOf("uploads/");
         if (uploadsIndex !== -1) {
           value = value.substring(uploadsIndex);
+        }
+      }
+
+      // Prevent crashing: Do not insert empty strings into ENUM columns
+      if (typeof value === "string" && value.trim() === "") {
+        if (["manglik", "gender", "marital_status", "status", "profile_for", "profile_managed_by"].includes(key)) {
+          return; // Skip adding this field
         }
       }
 

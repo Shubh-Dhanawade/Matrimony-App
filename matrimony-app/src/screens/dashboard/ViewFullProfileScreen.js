@@ -9,12 +9,13 @@ import {
     TouchableOpacity,
     Alert,
     StatusBar,
+    Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import api from '../../services/api';
-import { COLORS, SPACING, FONT_SIZES } from '../../utils/constants';
+import { COLORS, SPACING, FONT_SIZES, IMAGE_BASE_URL } from '../../utils/constants';
 import { getProfileImageUri } from '../../utils/imageUtils';
 
 const ViewFullProfileScreen = ({ navigation, route }) => {
@@ -127,6 +128,7 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
                         <Text style={styles.detailText}><Text style={styles.detailLabel}>Date of Birth:</Text> {profile.dob ? new Date(profile.dob).toLocaleDateString() : 'N/A'}</Text>
                         <Text style={styles.detailText}><Text style={styles.detailLabel}>Height:</Text> {profile.height}</Text>
                         <Text style={styles.detailText}><Text style={styles.detailLabel}>Color:</Text> {profile.color}</Text>
+                        <Text style={styles.detailText}><Text style={styles.detailLabel}>Manglik:</Text> {profile.manglik}</Text>
                         <Text style={styles.detailText}><Text style={styles.detailLabel}>Marital Status:</Text> {profile.marital_status}</Text>
                     </View>
 
@@ -184,6 +186,34 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
                         <Text style={styles.sectionTitle}>Other Comments</Text>
                         <Text style={styles.detailText}>{profile.other_comments || 'None'}</Text>
                     </View>
+
+                    {/* 9️⃣ Biodata Link */}
+                    {profile.biodata_file && profile.biodata_file.trim() !== '' && (
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>Biodata</Text>
+                            <TouchableOpacity
+                                style={styles.biodataBtn}
+                                onPress={() => Linking.openURL(`${IMAGE_BASE_URL}/${profile.biodata_file}`)}
+                            >
+                                <MaterialCommunityIcons name="file-document-outline" size={24} color={COLORS.primary} />
+                                <Text style={styles.biodataBtnText}>View Uploaded Biodata</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    {/* 🔟 Kundali Link */}
+                    {profile.kundali_file && profile.kundali_file.trim() !== '' && (
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>Kundali</Text>
+                            <TouchableOpacity
+                                style={styles.biodataBtn}
+                                onPress={() => Linking.openURL(`${IMAGE_BASE_URL}/${profile.kundali_file}`)}
+                            >
+                                <MaterialCommunityIcons name="file-document-outline" size={24} color={COLORS.primary} />
+                                <Text style={styles.biodataBtnText}>View Uploaded Kundali</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
 
                 {/* ─── Action Buttons ─── */}
@@ -448,6 +478,23 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 16,
         marginLeft: 8,
+    },
+    biodataBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: COLORS.surface,
+        borderWidth: 1,
+        borderColor: COLORS.primary,
+        paddingVertical: 12,
+        borderRadius: 8,
+        marginTop: SPACING.sm,
+        gap: 8,
+    },
+    biodataBtnText: {
+        color: COLORS.primary,
+        fontWeight: 'bold',
+        fontSize: 14,
     },
 
     bottomSpacer: {

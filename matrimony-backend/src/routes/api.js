@@ -53,6 +53,20 @@ router.post(
   profileController.uploadImage,
 );
 
+router.post(
+  "/upload/biodata",
+  auth,
+  upload.single("biodata"),
+  profileController.uploadBiodata,
+);
+
+router.post(
+  "/upload/kundali",
+  auth,
+  upload.single("kundali"),
+  profileController.uploadKundali,
+);
+
 // Invitation Routes
 router.post("/invitations", auth, invitationController.sendInvitation);
 router.get("/invitations", auth, invitationController.getInvitations);
