@@ -26,8 +26,8 @@ export const FONT_SIZES = {
   xxl: 32,
 };
 
-export const API_BASE_URL = "http://192.168.0.106:5472/api"; // Standard Android Emulator IP for localhost
-export const IMAGE_BASE_URL = "http://192.168.0.106:5472";
+export const API_BASE_URL = "http://192.168.0.100:5472/api"; // Standard Android Emulator IP for localhost
+export const IMAGE_BASE_URL = "http://192.168.0.100:5472";
 
 export const MARITAL_STATUS_OPTIONS = [
   "Single",
@@ -42,15 +42,17 @@ export const COLOR_OPTIONS = [
   "Wheatish",
   "Wheatish Brown",
   "Brown",
-  "Dark"
+];
+
+export const MANGLIK_OPTIONS = [
+  { label: "Yes", value: "Yes" },
+  { label: "No", value: "No" },
 ];
 
 export const GENDER_OPTIONS = ['Male', 'Female', 'Other'];
 export const OCCUPATION_OPTIONS = ['Job', 'Business', 'Farmer', 'Private sector', 'Government sector', 'Other'];
 export const QUALIFICATION_OPTIONS = [
-  "No Formal Education",
-  "Primary School (1st – 5th)",
-  "Middle School (6th – 8th)",
+
   "10th Pass / SSC",
   "12th Pass / HSC",
   "ITI",
@@ -64,7 +66,6 @@ export const QUALIFICATION_OPTIONS = [
   "BBA",
   "BCA",
   "B.Pharm",
-  "Other Bachelor Degree",
   "Post Graduation",
   "M.A",
   "M.Com",
@@ -73,7 +74,14 @@ export const QUALIFICATION_OPTIONS = [
   "MBA",
   "MCA",
   "M.Pharm",
-  "Other Master Degree",
+  "MBBS",
+  "BAMS",
+  "BHMS",
+  "Bsc Nursing",
+  "Msc Nursing",
+  "Bsc Optometry",
+  "Bsc Physiotherapy",
+  "Bsc Paramedical",
   "Higher Studies",
   "PhD / Doctorate",
   "Post Doctorate",
