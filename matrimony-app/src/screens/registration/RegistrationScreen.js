@@ -88,7 +88,9 @@ const RegistrationScreen = ({ navigation, route }) => {
     phone_number: "",
     whatsapp_number: "",
     biodata_file: "",
+    biodata_name: "",
     kundali_file: "",
+    kundali_name: "",
   });
 
   // Location dropdown state
@@ -341,9 +343,12 @@ const RegistrationScreen = ({ navigation, route }) => {
       selectedMultipleImages.length,
     );
 
-    const maxNew = 5 - existingPhotos.length;
+    const MAX_PHOTOS = 3;
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+    const maxNew = MAX_PHOTOS - existingPhotos.length;
     if (maxNew <= 0) {
-      Alert.alert(t("error"), t("profile_photos_limit", { count: 5 }));
+      Alert.alert(t("error"), t("profile_photos_limit", { count: MAX_PHOTOS }));
       return;
     }
 
@@ -360,7 +365,7 @@ const RegistrationScreen = ({ navigation, route }) => {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsMultipleSelection: true,
-        selectionLimit: Math.min(maxNew, 5 - selectedMultipleImages.length),
+        selectionLimit: Math.min(maxNew, MAX_PHOTOS - selectedMultipleImages.length),
         quality: 0.8,
         orderedSelection: true,
       });
@@ -374,7 +379,16 @@ const RegistrationScreen = ({ navigation, route }) => {
 
       if (result.assets && result.assets.length > 0) {
         console.log("[MULTI_PHOTO] Selected", result.assets.length, "images");
-        const newImages = result.assets.map((asset) => ({
+
+        const validImages = result.assets.filter(asset => {
+          if (asset.fileSize && asset.fileSize > MAX_FILE_SIZE) {
+            Alert.alert("File Too Large", "Each photo must be less than 5MB.");
+            return false;
+          }
+          return true;
+        });
+
+        const newImages = validImages.slice(0, maxNew).map((asset) => ({
           uri: asset.uri,
           type: asset.mimeType || asset.type || "image/jpeg",
           fileName:
@@ -382,7 +396,7 @@ const RegistrationScreen = ({ navigation, route }) => {
             `photo_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`,
         }));
         setSelectedMultipleImages((prev) =>
-          [...prev, ...newImages].slice(0, maxNew),
+          [...prev, ...newImages]
         );
       } else {
         console.log("[MULTI_PHOTO] No assets in result");
@@ -592,8 +606,13 @@ const RegistrationScreen = ({ navigation, route }) => {
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setPickedBiodata(result.assets[0]);
-        updateField("biodata_file", result.assets[0].uri);
+        const file = result.assets[0];
+        setPickedBiodata(file);
+        setFormData(prev => ({
+          ...prev,
+          biodata_file: file.uri,
+          biodata_name: file.name
+        }));
       }
     } catch (err) {
       console.error("[BIODATA] Picker error:", err);
@@ -608,8 +627,13 @@ const RegistrationScreen = ({ navigation, route }) => {
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setPickedKundali(result.assets[0]);
-        updateField("kundali_file", result.assets[0].uri);
+        const file = result.assets[0];
+        setPickedKundali(file);
+        setFormData(prev => ({
+          ...prev,
+          kundali_file: file.uri,
+          kundali_name: file.name
+        }));
       }
     } catch (err) {
       console.error("[KUNDALI] Picker error:", err);
@@ -1222,43 +1246,63 @@ const RegistrationScreen = ({ navigation, route }) => {
         {/* ═══════════════════════════════════════════ */}
         {/*  BIODATA UPLOAD SECTION                    */}
         {/* ═══════════════════════════════════════════ */}
-        <View style={styles.biodataSection}>
-          <Text style={styles.label}>Biodata Upload</Text>
-          <TouchableOpacity style={styles.uploadButton} onPress={pickBiodataFile}>
+        <View style={styles.uploadBox}>
+          <Text style={styles.label}>Upload Biodata</Text>
+          <TouchableOpacity style={styles.uploadButtonLegacy} onPress={pickBiodataFile}>
             <MaterialCommunityIcons name="file-document-outline" size={24} color={COLORS.primary} />
-            <Text style={styles.uploadButtonText}>
-              {pickedBiodata || (formData.biodata_file && formData.biodata_file.trim() !== '') ? "Change Biodata (PDF/Image)" : "Upload Biodata (PDF/Image)"}
-            </Text>
+            <Text style={styles.uploadButtonText}>Select Biodata (PDF / Image)</Text>
           </TouchableOpacity>
-          {(pickedBiodata || (formData.biodata_file && formData.biodata_file.trim() !== '')) && (
-            <View style={styles.biodataUploadedRow}>
-              <MaterialCommunityIcons name="check-circle" size={16} color={COLORS.success} />
-              <Text style={styles.biodataUploadedText}>
-                {pickedBiodata ? pickedBiodata.name : "Biodata currently saved"}
+          {(formData.biodata_file && formData.biodata_file.trim() !== '') ? (
+            <View style={styles.filePreview}>
+              <MaterialCommunityIcons name="file-check" size={20} color={COLORS.success} />
+              <Text style={styles.fileName} numberOfLines={1}>
+                {formData.biodata_name || (pickedBiodata ? pickedBiodata.name : "Uploaded Biodata")}
               </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setPickedBiodata(null);
+                  setFormData(prev => ({
+                    ...prev,
+                    biodata_file: "",
+                    biodata_name: ""
+                  }));
+                }}
+              >
+                <Text style={styles.removeText}>Remove</Text>
+              </TouchableOpacity>
             </View>
-          )}
+          ) : null}
         </View>
 
         {/* ═══════════════════════════════════════════ */}
         {/*  KUNDALI UPLOAD SECTION                    */}
         {/* ═══════════════════════════════════════════ */}
-        <View style={styles.biodataSection}>
+        <View style={styles.uploadBox}>
           <Text style={styles.label}>Upload Kundali</Text>
-          <TouchableOpacity style={styles.uploadButton} onPress={pickKundaliFile}>
+          <TouchableOpacity style={styles.uploadButtonLegacy} onPress={pickKundaliFile}>
             <MaterialCommunityIcons name="file-document-outline" size={24} color={COLORS.primary} />
-            <Text style={styles.uploadButtonText}>
-              {pickedKundali || (formData.kundali_file && formData.kundali_file.trim() !== '') ? "Change Kundali (PDF/Image)" : "Upload Kundali (PDF/Image)"}
-            </Text>
+            <Text style={styles.uploadButtonText}>Select Kundali (PDF / Image)</Text>
           </TouchableOpacity>
-          {(pickedKundali || (formData.kundali_file && formData.kundali_file.trim() !== '')) && (
-            <View style={styles.biodataUploadedRow}>
-              <MaterialCommunityIcons name="check-circle" size={16} color={COLORS.success} />
-              <Text style={styles.biodataUploadedText}>
-                {pickedKundali ? pickedKundali.name : "Kundali currently saved"}
+          {(formData.kundali_file && formData.kundali_file.trim() !== '') ? (
+            <View style={styles.filePreview}>
+              <MaterialCommunityIcons name="file-check" size={20} color={COLORS.success} />
+              <Text style={styles.fileName} numberOfLines={1}>
+                {formData.kundali_name || (pickedKundali ? pickedKundali.name : "Uploaded Kundali")}
               </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setPickedKundali(null);
+                  setFormData(prev => ({
+                    ...prev,
+                    kundali_file: "",
+                    kundali_name: ""
+                  }));
+                }}
+              >
+                <Text style={styles.removeText}>Remove</Text>
+              </TouchableOpacity>
             </View>
-          )}
+          ) : null}
         </View>
 
         {/* ═══════════════════════════════════════════ */}
@@ -1267,7 +1311,7 @@ const RegistrationScreen = ({ navigation, route }) => {
         <View style={styles.multiPhotoSection}>
           <Text style={styles.sectionTitle}>Profile Photo</Text>
           <Text style={styles.multiPhotoSubtitle}>
-            {t("profile_photos_limit", { count: existingPhotos.length })}
+            Maximum 3 photos allowed • Each photo up to 5MB
           </Text>
 
           {/* Existing Photos */}
@@ -1658,6 +1702,53 @@ const styles = StyleSheet.create({
   readOnlyInput: {
     backgroundColor: "#f0f0f0",
     color: "#888",
+  },
+  uploadBox: {
+    marginTop: 15,
+    padding: 15,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  uploadButtonLegacy: {
+    flexDirection: "row",
+    padding: 12,
+    backgroundColor: "#f2f2f2",
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  filePreview: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 12,
+    backgroundColor: "#f9f9f9",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#eee"
+  },
+  fileName: {
+    fontSize: 14,
+    color: "#333",
+    flex: 1,
+    marginLeft: 8,
+  },
+  removeText: {
+    color: "red",
+    fontWeight: "bold",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
 });
 

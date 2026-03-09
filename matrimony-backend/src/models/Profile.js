@@ -46,13 +46,7 @@ const filterValidData = (data) => {
       let value = data[key];
 
       // Clean avatar_url and biodata_file to store only relative path
-      if (
-        (key === "avatar_url" ||
-          key === "biodata_file" ||
-          key === "kundali_file") &&
-        value &&
-        typeof value === "string"
-      ) {
+      if ((key === "avatar_url" || key === "biodata_file" || key === "kundali_file") && value && typeof value === "string") {
         const uploadsIndex = value.indexOf("uploads/");
         if (uploadsIndex !== -1) {
           value = value.substring(uploadsIndex);
@@ -61,16 +55,7 @@ const filterValidData = (data) => {
 
       // Prevent crashing: Do not insert empty strings into ENUM columns
       if (typeof value === "string" && value.trim() === "") {
-        if (
-          [
-            "manglik",
-            "gender",
-            "marital_status",
-            "status",
-            "profile_for",
-            "profile_managed_by",
-          ].includes(key)
-        ) {
+        if (["manglik", "gender", "marital_status", "status", "profile_for", "profile_managed_by"].includes(key)) {
           return; // Skip adding this field
         }
       }

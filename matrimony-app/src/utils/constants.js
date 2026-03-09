@@ -26,8 +26,8 @@ export const FONT_SIZES = {
   xxl: 32,
 };
 
-export const API_BASE_URL = "http://192.168.0.101:5472/api"; // Updated to match Expo's active IP
-export const IMAGE_BASE_URL = "http://192.168.0.101:5472";
+export const API_BASE_URL = "http://192.168.0.100:5472/api"; // Standard Android Emulator IP for localhost
+export const IMAGE_BASE_URL = "http://192.168.0.100:5472";
 
 export const MARITAL_STATUS_OPTIONS = [
   "Single",
@@ -43,6 +43,11 @@ export const COLOR_OPTIONS = [
   "Wheatish Brown",
   "Brown",
   "Dark",
+];
+
+export const MANGLIK_OPTIONS = [
+  { label: "Yes", value: "Yes" },
+  { label: "No", value: "No" },
 ];
 
 export const GENDER_OPTIONS = ["Male", "Female", "Other"];

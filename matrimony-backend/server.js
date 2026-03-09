@@ -33,5 +33,5 @@ const HOST = "0.0.0.0"; // Bind to all interfaces so Android device on LAN can c
 
 app.listen(PORT, HOST, () => {
   // console.log(`Server is running on http://${HOST}:${PORT}`);
-  console.log(`Access from device: http://192.168.0.101:${PORT}`);
+  console.log(`Access from device: http://192.168.0.100:${PORT}`);
 });

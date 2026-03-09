@@ -232,6 +232,40 @@ const profileController = {
     }
   },
 
+  uploadBiodata: async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      const relativePath = `uploads/biodata/${req.file.filename}`;
+      res.status(200).json({
+        message: 'Biodata uploaded successfully',
+        biodataUrl: relativePath,
+        filename: req.file.filename
+      });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  },
+
+  uploadKundali: async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      const relativePath = `uploads/kundali/${req.file.filename}`;
+      res.status(200).json({
+        message: 'Kundali uploaded successfully',
+        kundaliUrl: relativePath,
+        filename: req.file.filename
+      });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  },
+
   getLatestProfiles: async (req, res) => {
     try {
       const currentUserId = req.user.id;
