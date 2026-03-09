@@ -89,44 +89,6 @@ const ShortlistedScreen = ({ navigation }) => {
     fetchShortlisted();
   };
 
-  const handleFollow = async (profile) => {
-    if (profile.invitation_status !== "None") {
-      Alert.alert(
-        "Already Connected",
-        `You have already ${profile.invitation_status === "Pending" ? "sent a follow request to" : "connected with"} this profile.`,
-      );
-      return;
-    }
-    try {
-      console.log(
-        `[SHORTLIST_SCREEN] Sending follow request to user ${profile.user_id}...`,
-      );
-      await api.post("/profiles/interest", { receiverId: profile.user_id });
-      console.log(`[SHORTLIST_SCREEN] ✅ Follow request sent successfully`);
-      Alert.alert(
-        "💌 Follow Request Sent",
-        `Your request has been sent to ${profile.full_name || "this profile"}. You will be notified when they respond.`,
-        [{ text: "OK" }],
-      );
-      // Re-fetch to update button state
-      fetchShortlisted();
-    } catch (err) {
-      console.error(`[SHORTLIST_SCREEN] ❌ Follow error:`, err);
-      const msg = err?.response?.data?.message;
-      if (msg === "You have already sent interest to this person") {
-        Alert.alert(
-          "Already Sent",
-          "You have already sent a follow request to this profile.",
-        );
-      } else {
-        Alert.alert(
-          "Error",
-          msg || "Failed to send follow request. Please try again.",
-        );
-      }
-    }
-  };
-
   const handleRemove = (profile) => {
     Alert.alert(
       "Remove from Shortlist",
@@ -224,32 +186,35 @@ const ShortlistedScreen = ({ navigation }) => {
 
         {/* Actions column */}
         <View style={styles.actionsCol}>
-          {/* Follow / Connected / Pending button */}
+          {/* View Profile button - Enabled only when Connected */}
           <TouchableOpacity
-            style={[styles.followBtn, { backgroundColor: statusConf.bg }]}
-            onPress={() => handleFollow(item)}
-            disabled={statusConf.disabled}
+            style={[
+              styles.viewBtn,
+              invStatus !== "Connected" && styles.viewBtnDisabled,
+            ]}
+            onPress={() => {
+              if (invStatus === "Connected") {
+                navigation.navigate("ViewFullProfile", {
+                  userId: item.user_id,
+                });
+              } else {
+                Alert.alert(
+                  "Not Connected",
+                  "You must follow and be accepted by this user to view their full profile.",
+                );
+              }
+            }}
+            disabled={invStatus !== "Connected"}
             activeOpacity={0.8}
           >
-            <MaterialCommunityIcons
-              name={statusConf.icon}
-              size={15}
-              color={statusConf.color}
-            />
-            <Text style={[styles.followBtnText, { color: statusConf.color }]}>
-              {statusConf.label}
+            <Text
+              style={[
+                styles.viewBtnText,
+                invStatus !== "Connected" && styles.viewBtnDisabledText,
+              ]}
+            >
+              {invStatus === "Connected" ? "View Profile" : "Follow First"}
             </Text>
-          </TouchableOpacity>
-
-          {/* View Profile button (always shown) */}
-          <TouchableOpacity
-            style={styles.viewBtn}
-            onPress={() =>
-              navigation.navigate("ViewFullProfile", { userId: item.user_id })
-            }
-            activeOpacity={0.8}
-          >
-            <Text style={styles.viewBtnText}>View</Text>
           </TouchableOpacity>
 
           {/* Remove from shortlist */}
@@ -446,6 +411,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.primary,
     fontWeight: "600",
+  },
+  viewBtnDisabled: {
+    borderColor: "#ccc",
+    opacity: 0.6,
+  },
+  viewBtnDisabledText: {
+    color: "#999",
   },
   removeBtn: {
     padding: 4,

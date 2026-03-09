@@ -32,6 +32,7 @@ router.post("/profiles/interest", auth, profileController.sendInterest);
 router.post("/profiles/ignore", auth, profileController.ignoreProfile);
 router.post("/profiles/shortlist", auth, profileController.shortlistProfile);
 router.get("/profiles/shortlisted", auth, profileController.getShortlisted);
+router.post("/profiles/unlock-preview", auth, profileController.unlockPreview);
 router.delete(
   "/profiles/shortlist/:profileUserId",
   auth,
@@ -60,6 +61,20 @@ router.post(
   auth,
   upload.single("image"),
   profileController.uploadImage,
+);
+
+router.post(
+  "/upload/biodata",
+  auth,
+  upload.single("biodata"),
+  profileController.uploadBiodata,
+);
+
+router.post(
+  "/upload/kundali",
+  auth,
+  upload.single("kundali"),
+  profileController.uploadKundali,
 );
 
 // Invitation Routes

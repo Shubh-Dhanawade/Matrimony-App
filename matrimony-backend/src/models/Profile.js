@@ -34,6 +34,9 @@ const allowedColumns = [
   "phone_number",
   "whatsapp_number",
   "company_name",
+  "manglik",
+  "biodata_file",
+  "kundali_file",
 ];
 
 const filterValidData = (data) => {
@@ -42,11 +45,33 @@ const filterValidData = (data) => {
     if (allowedColumns.includes(key)) {
       let value = data[key];
 
-      // Clean avatar_url to store only relative path
-      if (key === "avatar_url" && value && typeof value === "string") {
+      // Clean avatar_url and biodata_file to store only relative path
+      if (
+        (key === "avatar_url" ||
+          key === "biodata_file" ||
+          key === "kundali_file") &&
+        value &&
+        typeof value === "string"
+      ) {
         const uploadsIndex = value.indexOf("uploads/");
         if (uploadsIndex !== -1) {
           value = value.substring(uploadsIndex);
+        }
+      }
+
+      // Prevent crashing: Do not insert empty strings into ENUM columns
+      if (typeof value === "string" && value.trim() === "") {
+        if (
+          [
+            "manglik",
+            "gender",
+            "marital_status",
+            "status",
+            "profile_for",
+            "profile_managed_by",
+          ].includes(key)
+        ) {
+          return; // Skip adding this field
         }
       }
 
@@ -69,14 +94,25 @@ const Profile = {
     return result.insertId;
   },
 
-  findByUserId: async (userId) => {
-    const [rows] = await db.execute(
-      `SELECT p.*, u.is_subscribed, u.mobile_number 
-       FROM profiles p 
-       JOIN users u ON p.user_id = u.id 
-       WHERE p.user_id = ?`,
-      [userId],
-    );
+  findByUserId: async (userId, viewerId = null) => {
+    let query = `
+      SELECT p.*, u.is_subscribed, u.mobile_number,
+      (SELECT COUNT(*) FROM shortlists WHERE user_id = p.user_id) AS shortlist_count
+    `;
+    const params = [userId];
+
+    if (viewerId) {
+      query += `, (SELECT COUNT(*) FROM shortlists WHERE user_id = ? AND profile_user_id = p.user_id) > 0 AS is_shortlisted `;
+      params.unshift(viewerId);
+    }
+
+    query += `
+      FROM profiles p 
+      JOIN users u ON p.user_id = u.id 
+      WHERE p.user_id = ?
+    `;
+
+    const [rows] = await db.execute(query, params);
     return rows[0];
   },
 
@@ -195,7 +231,8 @@ WHERE p.user_id != ?
           WHEN inv.status = 'Accepted' THEN 'Connected'
           WHEN inv.status = 'Pending' THEN 'Pending'
           ELSE 'None'
-        END AS invitation_status
+        END AS invitation_status,
+        (SELECT COUNT(*) FROM shortlists WHERE user_id = ? AND profile_user_id = p.user_id) > 0 AS is_shortlisted
       FROM profiles p
       JOIN users u ON u.id = p.user_id
       LEFT JOIN invitations inv ON inv.id = (
@@ -212,7 +249,7 @@ WHERE p.user_id != ?
         AND p.status = 'Approved'
     `;
 
-    const params = [currentUserId, currentUserId, currentUserId];
+    const params = [currentUserId, currentUserId, currentUserId, currentUserId];
 
     if (minAge !== null && !isNaN(minAge)) {
       query += ` AND TIMESTAMPDIFF(YEAR, p.dob, CURDATE()) >= ?`;

@@ -238,6 +238,12 @@ const ProfilesFeedScreen = ({ navigation }) => {
               },
             ],
           );
+        } else if (type === "refresh") {
+          // Re-fetch all to get latest statuses (like shortlisted, invitation_status)
+          const feedRes = await api.get("/profiles/latest");
+          const data = feedRes.data;
+          const profileList = Array.isArray(data) ? data : data.profiles || [];
+          setProfiles(profileList);
         }
       } catch (error) {
         console.error(`[FEED] Action ${type} error:`, error);

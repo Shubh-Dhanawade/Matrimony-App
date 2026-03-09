@@ -289,6 +289,8 @@ const DashboardScreen = ({ navigation }) => {
                       swiperRef.current?.swipeLeft();
                     } else if (action === "prev") {
                       swiperRef.current?.swipeBack();
+                    } else if (action === "refresh") {
+                      fetchData();
                     }
                   }}
                 />

@@ -44,8 +44,8 @@ const CustomPicker = ({
             (!value || disabled) && styles.placeholderText,
           ]}
         >
-          {!disabled && typeof options[0] === "object"
-            ? options.find((o) => o.value === value)?.label || placeholder
+          {!disabled && options && options.length > 0 && typeof options[0] === "object"
+            ? options.find((o) => o && o.value === value)?.label || placeholder
             : !disabled && value
               ? value
               : placeholder}

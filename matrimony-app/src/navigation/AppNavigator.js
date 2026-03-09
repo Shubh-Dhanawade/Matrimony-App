@@ -103,7 +103,6 @@ const MainTabs = () => {
           let iconName;
           if (route.name === "Find match") iconName = "cards-outline";
           else if (route.name === "Invitations") iconName = "email-outline";
-          else if (route.name === "Shortlist") iconName = "star-outline";
           else if (route.name === "My profile") iconName = "account-outline";
           return (
             <MaterialCommunityIcons name={iconName} size={size} color={color} />
@@ -129,6 +128,7 @@ const MainTabs = () => {
           tabBarLabel: t("find_match_tab"),
         }}
       />
+
       <Tab.Screen
         name="Invitations"
         component={InvitationsScreen}
@@ -137,15 +137,7 @@ const MainTabs = () => {
           tabBarLabel: t("invitations_tab"),
         }}
       />
-      <Tab.Screen
-        name="Shortlist"
-        component={ShortlistedScreen}
-        options={{
-          title: "My Shortlist",
-          tabBarLabel: "Shortlist",
-          headerShown: false,
-        }}
-      />
+
       <Tab.Screen
         name="My profile"
         component={UserProfileScreen}
@@ -193,6 +185,11 @@ const MainStack = () => {
         name="ViewFullProfile"
         component={ViewFullProfileScreen}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Shortlist"
+        component={ShortlistedScreen}
+        options={{ title: t("shortlisted_profiles") || "Shortlisted Profiles" }}
       />
     </Stack.Navigator>
   );

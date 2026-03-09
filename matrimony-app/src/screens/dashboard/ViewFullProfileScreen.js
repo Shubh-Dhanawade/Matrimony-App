@@ -9,12 +9,18 @@ import {
   TouchableOpacity,
   Alert,
   StatusBar,
+  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import api from "../../services/api";
-import { COLORS, SPACING, FONT_SIZES } from "../../utils/constants";
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  IMAGE_BASE_URL,
+} from "../../utils/constants";
 import { getProfileImageUri } from "../../utils/imageUtils";
 
 const ViewFullProfileScreen = ({ navigation, route }) => {
@@ -167,6 +173,9 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
               <Text style={styles.detailLabel}>Color:</Text> {profile.color}
             </Text>
             <Text style={styles.detailText}>
+              <Text style={styles.detailLabel}>Manglik:</Text> {profile.manglik}
+            </Text>
+            <Text style={styles.detailText}>
               <Text style={styles.detailLabel}>Marital Status:</Text>{" "}
               {profile.marital_status}
             </Text>
@@ -280,10 +289,94 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
               {profile.other_comments || "None"}
             </Text>
           </View>
+
+          {/* 9️⃣ Biodata Link */}
+          {profile.biodata_file && profile.biodata_file.trim() !== "" && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Biodata</Text>
+              <TouchableOpacity
+                style={styles.biodataBtn}
+                onPress={() =>
+                  Linking.openURL(`${IMAGE_BASE_URL}/${profile.biodata_file}`)
+                }
+              >
+                <MaterialCommunityIcons
+                  name="file-document-outline"
+                  size={24}
+                  color={COLORS.primary}
+                />
+                <Text style={styles.biodataBtnText}>View Uploaded Biodata</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* 🔟 Kundali Link */}
+          {profile.kundali_file && profile.kundali_file.trim() !== "" && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Kundali</Text>
+              <TouchableOpacity
+                style={styles.biodataBtn}
+                onPress={() =>
+                  Linking.openURL(`${IMAGE_BASE_URL}/${profile.kundali_file}`)
+                }
+              >
+                <MaterialCommunityIcons
+                  name="file-document-outline"
+                  size={24}
+                  color={COLORS.primary}
+                />
+                <Text style={styles.biodataBtnText}>View Uploaded Kundali</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* ─── Action Buttons ─── */}
         <View style={styles.actionsContainer}>
+          <TouchableOpacity
+            style={[
+              styles.shortlistBtn,
+              !!profile.is_shortlisted && styles.shortlistBtnDisabled,
+            ]}
+            activeOpacity={!!profile.is_shortlisted ? 1 : 0.85}
+            onPress={async () => {
+              if (!!profile.is_shortlisted) return;
+              try {
+                await api.post("/profiles/shortlist", {
+                  profileUserId: profile.user_id,
+                });
+                setProfile((prev) => ({ ...prev, is_shortlisted: true }));
+                Alert.alert("Success", "Profile added to your shortlist!");
+              } catch (err) {
+                const msg = err.response?.data?.message || err.message;
+                if (msg === "Already shortlisted") {
+                  setProfile((prev) => ({ ...prev, is_shortlisted: true }));
+                  Alert.alert(
+                    "Already Saved",
+                    "This profile is already in your shortlist.",
+                  );
+                } else {
+                  Alert.alert("Error", msg);
+                }
+              }
+            }}
+            disabled={!!profile.is_shortlisted}
+          >
+            <MaterialCommunityIcons
+              name={profile.is_shortlisted ? "star" : "star-outline"}
+              size={20}
+              color={profile.is_shortlisted ? "#FFB300" : COLORS.primary}
+            />
+            <Text
+              style={[
+                styles.shortlistBtnText,
+                profile.is_shortlisted && { color: "#999" },
+              ]}
+            >
+              {profile.is_shortlisted ? "Saved" : "Shortlist"}
+            </Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.interestBtn}
             activeOpacity={0.85}
@@ -529,10 +622,13 @@ const styles = StyleSheet.create({
 
   // Actions
   actionsContainer: {
+    flexDirection: "row",
     marginHorizontal: SPACING.md,
     marginTop: SPACING.sm,
+    alignItems: "center",
   },
   interestBtn: {
+    flex: 1.5,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -550,6 +646,45 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
     marginLeft: 8,
+  },
+  shortlistBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+    paddingVertical: 14,
+    borderRadius: 30,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    marginRight: 12,
+  },
+  shortlistBtnDisabled: {
+    borderColor: "#eee",
+    backgroundColor: "#f9f9f9",
+  },
+  shortlistBtnText: {
+    color: COLORS.primary,
+    fontWeight: "600",
+    fontSize: 15,
+    marginLeft: 8,
+  },
+  biodataBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: SPACING.sm,
+    gap: 8,
+  },
+  biodataBtnText: {
+    color: COLORS.primary,
+    fontWeight: "bold",
+    fontSize: 14,
   },
 
   bottomSpacer: {

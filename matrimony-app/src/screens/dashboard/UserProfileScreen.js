@@ -93,9 +93,31 @@ const UserProfileScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.statsRow}>
-        <StatBox label={t("interests")} value="12" icon="heart-outline" />
-        <StatBox label={t("shortlists")} value="5" icon="star-outline" />
-        <StatBox label={t("views")} value="45" icon="eye-outline" />
+        <TouchableOpacity
+          style={styles.shortlistCartBtn}
+          onPress={() => navigation.navigate("Shortlist")}
+          activeOpacity={0.8}
+        >
+          <View style={styles.cartIconContainer}>
+            <MaterialCommunityIcons name="star" size={28} color="#fff" />
+            <View style={styles.cartBadge}>
+              <Text style={styles.cartBadgeText}>
+                {profile?.shortlist_count || "0"}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.cartTextContainer}>
+            <Text style={styles.cartTitle}>Shortlisted Profiles</Text>
+            <Text style={styles.cartSub}>
+              View and manage your saved profiles
+            </Text>
+          </View>
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={24}
+            color={COLORS.primary}
+          />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.sectionContainer}>
@@ -149,12 +171,17 @@ const UserProfileScreen = ({ navigation }) => {
   );
 };
 
-const StatBox = ({ label, value, icon }) => (
-  <View style={styles.statBox}>
+const StatBox = ({ label, value, icon, onPress }) => (
+  <TouchableOpacity
+    style={styles.statBox}
+    onPress={onPress}
+    disabled={!onPress}
+    activeOpacity={0.7}
+  >
     <MaterialCommunityIcons name={icon} size={24} color={COLORS.primary} />
     <Text style={styles.statValue}>{value}</Text>
     <Text style={styles.statLabel}>{label}</Text>
-  </View>
+  </TouchableOpacity>
 );
 
 const MenuItem = ({ icon, label, onPress, color = "#333" }) => (
@@ -200,11 +227,64 @@ const styles = StyleSheet.create({
   name: { fontSize: 24, fontWeight: "bold", color: "#333" },
   status: { fontSize: 16, color: COLORS.textSecondary, marginTop: 5 },
   statsRow: {
-    flexDirection: "row",
+    paddingHorizontal: SPACING.md,
+    marginTop: 15,
+    marginBottom: 5,
+  },
+  shortlistCartBtn: {
     backgroundColor: "#fff",
-    paddingVertical: 20,
-    marginTop: 10,
-    justifyContent: "space-around",
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 15,
+    borderRadius: 16,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  cartIconContainer: {
+    width: 50,
+    height: 50,
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 15,
+  },
+  cartBadge: {
+    position: "absolute",
+    top: -5,
+    right: -5,
+    backgroundColor: "#FFB300",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 4,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
+  cartBadgeText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "bold",
+  },
+  cartTextContainer: {
+    flex: 1,
+  },
+  cartTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  cartSub: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
   statBox: { alignItems: "center" },
   statValue: { fontSize: 18, fontWeight: "bold", color: "#333", marginTop: 5 },

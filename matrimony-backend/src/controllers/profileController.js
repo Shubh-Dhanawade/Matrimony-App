@@ -2,6 +2,7 @@ const Profile = require("../models/Profile");
 const ProfileImage = require("../models/ProfileImage");
 const Invitation = require("../models/Invitation");
 const Shortlist = require("../models/Shortlist");
+const User = require("../models/User");
 const fs = require("fs");
 const path = require("path");
 
@@ -164,8 +165,9 @@ const profileController = {
   getProfileById: async (req, res) => {
     try {
       const { id } = req.params;
-      console.log(`Fetching profile for user ID: ${id}`);
-      const profile = await Profile.findByUserId(id);
+      const viewerId = req.user.id;
+      console.log(`Fetching profile for user ID: ${id}, Viewer: ${viewerId}`);
+      const profile = await Profile.findByUserId(id, viewerId);
       if (!profile) {
         return res.status(404).json({ message: "Profile not found" });
       }
@@ -189,6 +191,40 @@ const profileController = {
       res.status(200).json({
         message: "Image uploaded successfully",
         imageUrl: `uploads/${req.file.filename}`, // Return relative path
+        filename: req.file.filename,
+      });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  },
+
+  uploadBiodata: async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const relativePath = `uploads/biodata/${req.file.filename}`;
+      res.status(200).json({
+        message: "Biodata uploaded successfully",
+        biodataUrl: relativePath,
+        filename: req.file.filename,
+      });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  },
+
+  uploadKundali: async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const relativePath = `uploads/kundali/${req.file.filename}`;
+      res.status(200).json({
+        message: "Kundali uploaded successfully",
+        kundaliUrl: relativePath,
         filename: req.file.filename,
       });
     } catch (error) {
@@ -463,6 +499,30 @@ const profileController = {
       res.status(200).json({ message: "Photo deleted successfully" });
     } catch (error) {
       console.error("[PHOTO_DELETE_ERROR]", error);
+      res.status(500).json({ message: error.message });
+    }
+  },
+
+  unlockPreview: async (req, res) => {
+    try {
+      const userId = req.user.id;
+
+      console.log(`[UNLOCK_PREVIEW] User ${userId} unlocking preview...`);
+      const success = await User.updateSubscription(userId, true);
+
+      if (!success) {
+        return res
+          .status(500)
+          .json({ message: "Failed to update subscription" });
+      }
+
+      console.log(`[UNLOCK_PREVIEW] ✅ User ${userId} subscribed successfully`);
+      res.status(200).json({
+        message: "Preview unlocked successfully",
+        is_subscribed: 1,
+      });
+    } catch (error) {
+      console.error("[UNLOCK_PREVIEW_ERROR]", error);
       res.status(500).json({ message: error.message });
     }
   },
