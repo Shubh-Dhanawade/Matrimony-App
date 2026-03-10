@@ -26,6 +26,7 @@ import AdminDashboard from "../screens/dashboard/AdminDashboard";
 import PendingProfiles from "../screens/dashboard/PendingProfiles";
 import ManageProfiles from "../screens/dashboard/ManageProfiles";
 import ManageUsers from "../screens/dashboard/ManageUsers";
+import MembershipManagement from "../screens/dashboard/MembershipManagement";
 import ProfilesFeedScreen from "../screens/dashboard/ProfilesFeedScreen";
 
 const Stack = createNativeStackNavigator();
@@ -90,6 +91,11 @@ const AdminStack = () => (
       name="ManageUsers"
       component={ManageUsers}
       options={{ title: "Manage Users" }}
+    />
+    <Stack.Screen
+      name="MembershipManagement"
+      component={MembershipManagement}
+      options={{ title: "Paid Memberships" }}
     />
   </Stack.Navigator>
 );

@@ -81,8 +81,8 @@ const Profile = {
 
   findByUserId: async (userId, viewerId = null) => {
     let query = `
-      SELECT p.*, u.is_subscribed, u.mobile_number,
-      (SELECT COUNT(*) FROM shortlists WHERE user_id = p.user_id) AS shortlist_count
+      SELECT p.*, u.is_subscribed, u.is_paid, u.mobile_number,
+      (SELECT COUNT(*) FROM shortlists s JOIN profiles sp ON s.profile_user_id = sp.user_id WHERE s.user_id = p.user_id AND sp.status = 'Approved') AS shortlist_count
     `;
     const params = [userId];
 
@@ -107,6 +107,7 @@ const Profile = {
      SELECT 
     p.*,
     u.mobile_number,
+    u.is_paid,
     TIMESTAMPDIFF(YEAR, p.dob, CURDATE()) AS age,
     inv.status AS invitation_status,
     inv.sender_id AS inv_sender_id,
@@ -210,6 +211,7 @@ WHERE p.user_id != ?
       SELECT 
         p.*,
         u.is_subscribed,
+        u.is_paid,
         u.mobile_number,
         TIMESTAMPDIFF(YEAR, p.dob, CURDATE()) AS age,
         CASE 

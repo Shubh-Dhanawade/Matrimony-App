@@ -15,6 +15,14 @@ const Invitation = {
     return result.insertId;
   },
 
+  cancel: async (user1, user2) => {
+    const [result] = await db.execute(
+      "DELETE FROM invitations WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)",
+      [user1, user2, user2, user1]
+    );
+    return result.affectedRows > 0;
+  },
+
   updateStatus: async (invitationId, status, receiverId) => {
     const [result] = await db.execute(
       "UPDATE invitations SET status = ? WHERE id = ? AND receiver_id = ?",

@@ -167,12 +167,21 @@ const profileController = {
       const { id } = req.params;
       const viewerId = req.user.id;
       console.log(`Fetching profile for user ID: ${id}, Viewer: ${viewerId}`);
+
+      const authUser = await User.findById(viewerId);
+      if (!authUser || Number(authUser.is_paid) !== 1) {
+        // Exception: users can always view their own profile
+        if (Number(viewerId) !== Number(id)) {
+          return res.status(403).json({ message: "Only paid users can access this feature." });
+        }
+      }
+
       const profile = await Profile.findByUserId(id, viewerId);
       if (!profile) {
         return res.status(404).json({ message: "Profile not found" });
       }
       // Only allow viewing approved profiles (except for own profile via different endpoint)
-      if (profile.status !== "Approved") {
+      if (profile.status !== "Approved" && Number(viewerId) !== Number(id)) {
         return res.status(404).json({ message: "Profile not found" });
       }
       res.json({ profile });
@@ -312,6 +321,11 @@ const profileController = {
       const { receiverId } = req.body;
       const senderId = req.user.id;
 
+      const authUser = await User.findById(senderId);
+      if (!authUser || Number(authUser.is_paid) !== 1) {
+        return res.status(403).json({ message: "Only paid users can access this feature." });
+      }
+
       if (!receiverId) {
         return res.status(400).json({ message: "Receiver ID is required" });
       }
@@ -334,6 +348,27 @@ const profileController = {
       res
         .status(500)
         .json({ message: error.message || "Internal server error" });
+    }
+  },
+
+  removeInterest: async (req, res) => {
+    try {
+      const { receiverId } = req.params;
+      const senderId = req.user.id;
+
+      if (!receiverId) {
+        return res.status(400).json({ message: "Receiver ID is required" });
+      }
+
+      const success = await Invitation.cancel(senderId, receiverId);
+      if (!success) {
+        return res.status(404).json({ message: "Invitation not found or already cancelled." });
+      }
+
+      res.status(200).json({ message: "Interest withdrawn successfully." });
+    } catch (error) {
+      console.error("[CANCEL_INTEREST_ERROR]", error);
+      res.status(500).json({ message: error.message || "Internal server error" });
     }
   },
 

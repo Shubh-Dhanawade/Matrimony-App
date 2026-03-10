@@ -275,7 +275,8 @@ const DashboardScreen = ({ navigation }) => {
               renderCard={(card) => (
                 <ProfileCard
                   profile={card}
-                  isSubscribed={card.is_subscribed === 1}
+                  isSubscribed={card.is_paid === 1 || card.is_subscribed === 1}
+                  isPaid={card.is_paid === 1 || card.is_subscribed === 1}
                   onUpgrade={() => navigation.navigate("Upgrade")}
                   isFirst={profiles.indexOf(card) === 0}
                   isLast={profiles.indexOf(card) === profiles.length - 1}
