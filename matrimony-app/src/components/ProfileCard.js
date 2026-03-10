@@ -16,6 +16,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { useTranslation } from "react-i18next";
 import { COLORS, SPACING, FONT_SIZES } from "../utils/constants";
 import { getProfileImageUri } from "../utils/imageUtils";
 import { formatLastActive } from "../utils/dateUtils";
@@ -33,14 +34,11 @@ const { width, height } = Dimensions.get("window");
 const CARD_HEIGHT = height * 0.75;
 const CARD_WIDTH = width * 0.92;
 
-// Helper: mask all name parts except the last, which shows only first letter
+// Helper: mask all name parts except the first name for unpaid users
 const getMaskedName = (fullName) => {
   if (!fullName) return "Unknown";
   const parts = fullName.trim().split(/\s+/);
-  if (parts.length === 1) return `${parts[0][0]}.`;
-  const lastName = parts[parts.length - 1];
-  const otherNames = parts.slice(0, -1).join(" ");
-  return `${otherNames} ${lastName[0]}.`;
+  return parts[0]; // strictly return the first name ONLY
 };
 
 const ProfileCard = ({
@@ -52,9 +50,10 @@ const ProfileCard = ({
   onAction,
   onViewProfile,
   navigation,
+  isPaid,
 }) => {
+  const { t } = useTranslation();
   const [isFullProfileViewed, setIsFullProfileViewed] = useState(false);
-  const [isPreviewUnlockedState, setIsPreviewUnlockedState] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const flatListRef = useRef(null);
   const contentFadeAnim = useRef(new Animated.Value(0)).current;
@@ -72,12 +71,11 @@ const ProfileCard = ({
 
   const isConnected = profile.invitation_status === "Connected";
   const isPending = profile.invitation_status === "Pending";
-  const isPreviewUnlocked =
-    isSubscribed || isPreviewUnlockedState || isConnected;
+  const isPreviewUnlocked = isPaid || isConnected;
   const isBlurred = !isPreviewUnlocked;
 
   const displayName =
-    isConnected || isFullProfileViewed || isSubscribed
+    isConnected || isPaid
       ? profile.full_name
       : getMaskedName(profile.full_name);
 
@@ -89,22 +87,13 @@ const ProfileCard = ({
   }, [profile.photos, profile.avatar_url]);
 
   // Handlers
-  const handleUnlockPreview = async () => {
-    try {
-      console.log("[ProfileCard] Unlocking preview...");
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      await api.post("/profiles/unlock-preview");
-      setIsPreviewUnlockedState(true);
-      Alert.alert(
-        "🎉 Preview Unlocked!",
-        "You now have access to preview all profile photos.",
-      );
-    } catch (error) {
-      console.error("[ProfileCard] ❌ Unlock error:", error);
-      Alert.alert(
-        "Error",
-        error?.response?.data?.message || "Failed to unlock preview.",
-      );
+  const handleUnlockPreview = () => {
+    Alert.alert(
+      "Upgrade Required",
+      "Only available for paid users. Please upgrade your plan."
+    );
+    if (onUpgrade) {
+      onUpgrade();
     }
   };
 
@@ -132,31 +121,63 @@ const ProfileCard = ({
   };
 
   const handleShortlist = async () => {
-    if (profile.is_shortlisted) {
-      Alert.alert(
-        "Already Shortlisted",
-        "This profile is already in your shortlist.",
-      );
-      return;
-    }
     try {
-      await api.post("/profiles/shortlist", { profileUserId: profile.user_id });
-      Alert.alert(
-        "⭐ Shortlisted",
-        `${profile.full_name || "Profile"} has been added to your shortlist.`,
-      );
+      if (profile.is_shortlisted) {
+        // Toggle OFF (Unshortlist)
+        await api.delete(`/profiles/shortlist/${profile.user_id}`);
+        Alert.alert(
+          "Removed",
+          `${profile.full_name || "Profile"} has been removed from your shortlist.`
+        );
+      } else {
+        // Toggle ON (Shortlist)
+        await api.post("/profiles/shortlist", { profileUserId: profile.user_id });
+        Alert.alert(
+          "⭐ Saved",
+          `${profile.full_name || "Profile"} has been added to your shortlist.`
+        );
+      }
       if (onAction) onAction("refresh", profile);
     } catch (err) {
       const msg = err?.response?.data?.message;
-      Alert.alert("Error", msg || "Failed to shortlist.");
+      Alert.alert("Error", msg || "Failed to update shortlist.");
     }
+  };
+
+  const handleUnfollow = async () => {
+    Alert.alert(
+      "Cancel Request",
+      `Are you sure you want to withdraw your interest from ${profile.full_name || "this user"}?`,
+      [
+        { text: "No", style: "cancel" },
+        {
+          text: "Yes, Withdraw",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await api.delete(`/profiles/interest/${profile.user_id}`);
+              Alert.alert(
+                "Request Cancelled",
+                `You have withdrawn your interest.`
+              );
+              if (onAction) onAction("refresh", profile);
+            } catch (err) {
+              Alert.alert(
+                "Error",
+                err?.response?.data?.message || "Failed to cancel request."
+              );
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleViewFullProfile = () => {
     if (!isConnected) {
       Alert.alert(
-        "Not Connected",
-        "You must follow and be accepted by this user to view their full profile.",
+        "Locked",
+        "Follow this profile and wait for acceptance to view the full profile.",
       );
       return;
     }
@@ -218,21 +239,26 @@ const ProfileCard = ({
           <View style={styles.topActionsRow}>
             {/* View Full Profile (Left) */}
             <View style={styles.topLeftActions}>
-              {isConnected && (
-                <TouchableOpacity
-                  style={styles.viewFullProfileBtn}
-                  onPress={handleViewFullProfile}
-                >
-                  <MaterialCommunityIcons
-                    name="account-details"
-                    size={16}
-                    color="#fff"
-                  />
-                  <Text style={styles.viewFullProfileBtnText}>
-                    Full Profile
-                  </Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                style={[
+                  styles.viewFullProfileBtn,
+                  !isConnected && styles.viewFullProfileBtnLocked
+                ]}
+                onPress={handleViewFullProfile}
+                activeOpacity={0.8}
+              >
+                <MaterialCommunityIcons
+                  name={isConnected ? "account-details" : "lock"}
+                  size={16}
+                  color={isConnected ? "#fff" : "rgba(255,255,255,0.7)"}
+                />
+                <Text style={[
+                  styles.viewFullProfileBtnText,
+                  !isConnected && { color: "rgba(255,255,255,0.7)" }
+                ]}>
+                  {t("full_profile")}
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {/* Status Badges (Right) */}
@@ -252,29 +278,31 @@ const ProfileCard = ({
               )}
 
               {/* Follow Badge Button */}
-              <TouchableOpacity
-                style={[
-                  styles.followBtn,
-                  (isPending || isConnected) && styles.followBtnDisabled,
-                ]}
-                onPress={handleFollow}
-                activeOpacity={0.8}
-              >
-                <MaterialCommunityIcons
-                  name={
-                    isConnected
-                      ? "check-circle"
-                      : isPending
-                        ? "clock-outline"
-                        : "heart-outline"
-                  }
-                  size={14}
-                  color="#fff"
-                />
-                <Text style={styles.followBtnText}>
-                  {isConnected ? "Connected" : isPending ? "Pending" : "Follow"}
-                </Text>
-              </TouchableOpacity>
+              {isPaid && (
+                <TouchableOpacity
+                  style={[
+                    styles.followBtn,
+                    (isPending || isConnected) && styles.followBtnDisabled,
+                  ]}
+                  onPress={isPending || isConnected ? handleUnfollow : handleFollow}
+                  activeOpacity={0.8}
+                >
+                  <MaterialCommunityIcons
+                    name={
+                      isConnected
+                        ? "check-circle"
+                        : isPending
+                          ? "clock-outline"
+                          : "heart-outline"
+                    }
+                    size={14}
+                    color="#fff"
+                  />
+                  <Text style={styles.followBtnText}>
+                    {isConnected ? t("unfollow") : isPending ? t("cancel_request") : t("follow")}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
@@ -292,13 +320,13 @@ const ProfileCard = ({
                   color="#fff"
                 />
                 <Text style={styles.blurText}>
-                  Photo visible to paid members only
+                  {t("photo_visible_paid_only")}
                 </Text>
                 <TouchableOpacity
                   style={styles.upgradeBtn}
                   onPress={handleUnlockPreview}
                 >
-                  <Text style={styles.upgradeBtnText}>Unlock Preview</Text>
+                  <Text style={styles.upgradeBtnText}>{t("unlock_preview")}</Text>
                 </TouchableOpacity>
               </View>
             </BlurView>
@@ -321,7 +349,7 @@ const ProfileCard = ({
                     size={12}
                     color="#fff"
                   />
-                  <Text style={styles.verifiedText}>Verified</Text>
+                  <Text style={styles.verifiedText}>{t("verified")}</Text>
                 </View>
               )}
               {isConnected && (
@@ -331,7 +359,7 @@ const ProfileCard = ({
                     size={12}
                     color="#fff"
                   />
-                  <Text style={styles.verifiedText}>Connected</Text>
+                  <Text style={styles.verifiedText}>{t("connected")}</Text>
                 </View>
               )}
             </View>
@@ -340,7 +368,7 @@ const ProfileCard = ({
             </Text>
             {profile.profile_managed_by && (
               <Text style={styles.managedByText}>
-                👤 Managed by {profile.profile_managed_by}
+                👤 {t("profile_managed_by")}: {t(profile.profile_managed_by) || profile.profile_managed_by}
               </Text>
             )}
 
@@ -351,7 +379,7 @@ const ProfileCard = ({
                 color="#ddd"
               />
               <Text style={styles.infoText}>
-                {profile.address || profile.birthplace || "Location"}
+                {profile.address || profile.birthplace || t("location")}
               </Text>
             </View>
 
@@ -365,7 +393,7 @@ const ProfileCard = ({
                 <Text style={styles.infoText}>
                   {profile.occupation ||
                     profile.qualification ||
-                    "Not specified"}
+                    t("not_specified")}
                 </Text>
               </View>
             )}
@@ -393,7 +421,7 @@ const ProfileCard = ({
           <View style={styles.actionContainer}>
             <ActionButton
               icon="chevron-left"
-              label="Prev"
+              label={t("prev")}
               color="#9E9E9E"
               disabled={!!isFirst}
               onPress={() => onAction("prev", profile)}
@@ -401,21 +429,21 @@ const ProfileCard = ({
 
             <ActionButton
               icon="close"
-              label="Skip"
+              label={t("skip")}
               color="#FF5252"
               onPress={() => onAction("skip", profile)}
             />
 
             <ActionButton
               icon={profile.is_shortlisted ? "star" : "star-outline"}
-              label={profile.is_shortlisted ? "Saved" : "Shortlist"}
+              label={profile.is_shortlisted ? t("saved") : t("shortlist")}
               color={profile.is_shortlisted ? "#FFB300" : "#fff"}
               onPress={handleShortlist}
             />
 
             <ActionButton
               icon="chevron-right"
-              label="Next"
+              label={t("next")}
               color="#fff"
               isPrimary
               disabled={!!isLast}
@@ -580,6 +608,12 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     elevation: 6,
+  },
+  viewFullProfileBtnLocked: {
+    backgroundColor: "rgba(0,0,0,0.5)",
+    elevation: 0,
+    borderWidth: 0.5,
+    borderColor: "rgba(255,255,255,0.3)",
   },
   viewFullProfileBtnText: {
     color: "#fff",

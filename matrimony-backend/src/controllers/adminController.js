@@ -9,7 +9,9 @@ const adminController = {
           (SELECT COUNT(*) FROM profiles) as totalProfiles,
           (SELECT COUNT(*) FROM profiles WHERE status = 'Pending') as pendingProfiles,
           (SELECT COUNT(*) FROM profiles WHERE status = 'Approved') as approvedProfiles,
-          (SELECT COUNT(*) FROM profiles WHERE status = 'Rejected') as rejectedProfiles
+          (SELECT COUNT(*) FROM profiles WHERE status = 'Rejected') as rejectedProfiles,
+          (SELECT COUNT(*) FROM users WHERE role != 'admin' AND is_paid = 1) as totalPaidUsers,
+          (SELECT COUNT(*) FROM users WHERE role != 'admin' AND is_paid = 0) as totalUnpaidUsers
       `;
 
       const [rows] = await db.execute(query);
@@ -114,10 +116,12 @@ const adminController = {
         u.mobile_number,
         u.role,
         u.is_blocked,
+        u.is_paid,
         u.created_at,
         p.full_name,
         p.address,
-        p.birthplace
+        p.birthplace,
+        p.status AS profile_status
       FROM users u
       LEFT JOIN profiles p ON u.id = p.user_id
       WHERE u.role != 'admin'
@@ -158,6 +162,27 @@ const adminController = {
 
       res.json({ message: `User ${is_blocked ? 'blocked' : 'unblocked'} successfully` });
     } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  },
+
+  togglePaidStatus: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { is_paid } = req.body;
+
+      const [result] = await db.execute(
+        'UPDATE users SET is_paid = ? WHERE id = ?',
+        [is_paid ? 1 : 0, id]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.json({ message: `User membership status updated to ${is_paid ? 'Paid' : 'Unpaid'}` });
+    } catch (error) {
+      console.error('togglePaidStatus Error:', error);
       res.status(500).json({ message: error.message });
     }
   }

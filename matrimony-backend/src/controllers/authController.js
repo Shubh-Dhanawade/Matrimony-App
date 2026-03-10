@@ -39,7 +39,7 @@ const authController = {
 
       res.status(201).json({
         token,
-        user: { id: userId, mobileNumber, role, is_subscribed: 0 },
+        user: { id: userId, mobileNumber, role, is_subscribed: 0, is_paid: 0 },
       });
     } catch (error) {
       console.error("Registration error:", error);
@@ -91,6 +91,7 @@ const authController = {
           mobileNumber: user.mobile_number,
           role: user.role,
           is_subscribed: user.is_subscribed,
+          is_paid: user.is_paid,
         },
       });
     } catch (error) {
@@ -111,6 +112,7 @@ const authController = {
           mobileNumber: user.mobile_number,
           role: user.role,
           is_subscribed: user.is_subscribed,
+          is_paid: user.is_paid,
         },
       });
     } catch (error) {
@@ -129,7 +131,7 @@ const authController = {
         userId,
       ]);
       const [rows] = await db.execute(
-        "SELECT id, mobile_number, role, is_blocked, is_subscribed FROM users WHERE id = ?",
+        "SELECT id, mobile_number, role, is_blocked, is_subscribed, is_paid FROM users WHERE id = ?",
         [userId],
       );
       res.json({ message: "Upgraded successfully", user: rows[0] });

@@ -29,6 +29,7 @@ router.get("/profiles/suggested", auth, profileController.getSuggestedMatches);
 router.get("/profiles/me", auth, profileController.getMyProfile);
 router.get("/profiles/latest", auth, profileController.getLatestProfiles);
 router.post("/profiles/interest", auth, profileController.sendInterest);
+router.delete("/profiles/interest/:receiverId", auth, profileController.removeInterest);
 router.post("/profiles/ignore", auth, profileController.ignoreProfile);
 router.post("/profiles/shortlist", auth, profileController.shortlistProfile);
 router.get("/profiles/shortlisted", auth, profileController.getShortlisted);
@@ -99,6 +100,7 @@ router.patch(
   adminController.toggleBlockUser,
 );
 router.delete("/admin/users/:id", auth, admin, adminController.deleteUser);
+router.patch("/admin/users/:id/paid", auth, admin, adminController.togglePaidStatus);
 router.patch("/admin/users/me/subscribe", auth, authController.simulateUpgrade);
 
 module.exports = router;

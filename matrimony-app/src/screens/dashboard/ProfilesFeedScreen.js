@@ -11,6 +11,7 @@ import {
   Animated,
   Image,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useTranslation } from "react-i18next";
@@ -24,14 +25,15 @@ const { width } = Dimensions.get("window");
 
 const ProfilesFeedScreen = ({ navigation }) => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   const [profiles, setProfiles] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [isSubscribed, setIsSubscribed] = useState(
-    Number(user?.is_subscribed) === 1,
-  );
+  const isPaid =
+    Number(user?.is_paid) === 1 ||
+    Number(user?.is_subscribed) === 1;
+  const [isSubscribed, setIsSubscribed] = useState(isPaid); // Renamed to reflect combined status
 
   // Animation
   const translateX = useRef(new Animated.Value(0)).current;
@@ -60,11 +62,13 @@ const ProfilesFeedScreen = ({ navigation }) => {
 
         const userProfile = meRes.data?.profile;
         const subStatus =
+          Number(userProfile?.is_paid) === 1 ||
+          Number(user?.is_paid) === 1 ||
           Number(userProfile?.is_subscribed) === 1 ||
           Number(user?.is_subscribed) === 1;
 
         console.log(
-          `[FEED] Viewer status - Me: ${Number(user?.is_subscribed)}, Profile: ${Number(userProfile?.is_subscribed)}, Result: ${subStatus}`,
+          `[FEED] Viewer status - Me: ${Number(user?.is_paid)}, Profile: ${Number(userProfile?.is_paid)}, Result: ${subStatus}`,
         );
         setIsSubscribed(subStatus);
 
@@ -75,7 +79,7 @@ const ProfilesFeedScreen = ({ navigation }) => {
           const nextImg = getProfileImageUri(
             profileList[1]?.photos?.[0] || profileList[1]?.avatar_url,
           );
-          if (nextImg) Image.prefetch(nextImg).catch(() => {});
+          if (nextImg) Image.prefetch(nextImg).catch(() => { });
         }
       } catch (e) {
         console.error("[FEED] Load error:", e.response?.data || e.message);
@@ -102,10 +106,19 @@ const ProfilesFeedScreen = ({ navigation }) => {
       ].slice(0, 3);
 
       uris.forEach((uri) => {
-        if (uri) Image.prefetch(uri).catch(() => {});
+        if (uri) Image.prefetch(uri).catch(() => { });
       });
     },
     [profiles],
+  );
+
+  // ── Reload user data silently when this tab gains focus ─────────────
+  useFocusEffect(
+    useCallback(() => {
+      // Background thread pull of the latest `is_paid` value from DB
+      refreshUser();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
   );
 
   // ── Smooth transition animation ────────────────────────────────────
@@ -345,7 +358,8 @@ const ProfilesFeedScreen = ({ navigation }) => {
             profile={currentProfile}
             isFirst={currentIndex === 0}
             isLast={currentIndex >= profiles.length - 1}
-            isSubscribed={isSubscribed}
+            isSubscribed={isPaid}
+            isPaid={isPaid}
             onUpgrade={() => navigation.navigate("Upgrade")}
             onAction={handleAction}
             onViewProfile={(userId) =>

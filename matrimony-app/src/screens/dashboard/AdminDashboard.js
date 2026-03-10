@@ -64,6 +64,8 @@ const AdminDashboard = ({ navigation }) => {
         <StatCard title="Pending Profiles" value={stats?.pendingProfiles || 0} color="#e67e22" />
         <StatCard title="Approved Profiles" value={stats?.approvedProfiles || 0} color="#2ecc71" />
         <StatCard title="Rejected Profiles" value={stats?.rejectedProfiles || 0} color="#e74c3c" />
+        <StatCard title="Paid Users" value={stats?.totalPaidUsers || 0} color="#f1c40f" />
+        <StatCard title="Unpaid Users" value={stats?.totalUnpaidUsers || 0} color="#95a5a6" />
       </View>
 
       <View style={styles.managementSection}>
@@ -92,6 +94,14 @@ const AdminDashboard = ({ navigation }) => {
           >
             <Text style={styles.cardTitle}>Manage Users</Text>
             <Text style={styles.cardSub}>Deactivate or Reset Profiles</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate('MembershipManagement')}
+          >
+            <Text style={styles.cardTitle}>Paid Memberships</Text>
+            <Text style={styles.cardSub}>Toggle User Access</Text>
           </TouchableOpacity>
         </View>
       </View>

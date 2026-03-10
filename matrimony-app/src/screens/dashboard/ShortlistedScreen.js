@@ -48,7 +48,7 @@ const ShortlistedScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const isSubscribed = Number(user?.is_subscribed) === 1;
+  const isPaid = Number(user?.is_paid) === 1 || Number(user?.is_subscribed) === 1;
 
   const fetchShortlisted = useCallback(async () => {
     try {
@@ -149,7 +149,7 @@ const ShortlistedScreen = ({ navigation }) => {
         {/* Profile Info */}
         <View style={styles.info}>
           <Text style={styles.name} numberOfLines={1}>
-            {isConnected || isSubscribed
+            {isConnected || isPaid
               ? item.full_name
               : maskName(item.full_name)}
             , {item.age}

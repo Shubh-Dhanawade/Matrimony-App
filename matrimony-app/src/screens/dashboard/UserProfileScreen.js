@@ -87,7 +87,7 @@ const UserProfileScreen = ({ navigation }) => {
               { fontStyle: "italic", fontSize: 13, marginTop: 2 },
             ]}
           >
-            Managed by {profile.profile_managed_by}
+            {t("profile_managed_by")}: {t(profile.profile_managed_by) || profile.profile_managed_by}
           </Text>
         )}
       </View>
@@ -107,9 +107,9 @@ const UserProfileScreen = ({ navigation }) => {
             </View>
           </View>
           <View style={styles.cartTextContainer}>
-            <Text style={styles.cartTitle}>Shortlisted Profiles</Text>
+            <Text style={styles.cartTitle}>{t("shortlisted_profiles")}</Text>
             <Text style={styles.cartSub}>
-              View and manage your saved profiles
+              {t("manage_saved_profiles")}
             </Text>
           </View>
           <MaterialCommunityIcons
@@ -129,10 +129,10 @@ const UserProfileScreen = ({ navigation }) => {
           {t("contact_details") || "Contact Details"}
         </Text>
         <Text style={styles.contactText}>
-          📞 Phone: {profile?.phone_number || "N/A"}
+          📞 {t("phone_number_req") ? t("phone_number_req").replace(' *', '') : "Phone"}: {profile?.phone_number || "N/A"}
         </Text>
         <Text style={styles.contactText}>
-          💬 WhatsApp: {profile?.whatsapp_number || "N/A"}
+          💬 {t("whatsapp_number") ? t("whatsapp_number").replace(' Number', '').replace(' number', '') : "WhatsApp"}: {profile?.whatsapp_number || "N/A"}
         </Text>
       </View>
 
@@ -145,7 +145,7 @@ const UserProfileScreen = ({ navigation }) => {
         <MenuItem
           icon="shield-check-outline"
           label={t("account_security")}
-          onPress={() => {}}
+          onPress={() => { }}
         />
         {Number(user?.is_subscribed) !== 1 && (
           <MenuItem
@@ -158,7 +158,7 @@ const UserProfileScreen = ({ navigation }) => {
         <MenuItem
           icon="help-circle-outline"
           label={t("help_support")}
-          onPress={() => {}}
+          onPress={() => { }}
         />
         <MenuItem
           icon="logout"

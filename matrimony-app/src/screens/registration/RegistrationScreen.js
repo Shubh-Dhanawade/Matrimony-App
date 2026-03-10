@@ -936,49 +936,46 @@ const RegistrationScreen = ({ navigation, route }) => {
 
         <Text style={styles.sectionTitle}>Basic Information</Text>
 
-        <Text style={styles.sectionTitle}>Personal Details</Text>
+        <Text style={styles.sectionTitle}>{t("personal_details")}</Text>
         <CustomInput
-          label="Full Name *"
+          label={`${t("full_name")} *`}
           value={formData.full_name}
           onChangeText={(v) => updateField("full_name", v)}
         />
         <CustomInput
-          label="Father's Name"
+          label={t("father_name")}
           value={formData.father_name}
           onChangeText={(v) => updateField("father_name", v)}
         />
         <CustomInput
-          label="Mother's Maiden Name"
+          label={t("mother_maiden_name")}
           value={formData.mother_maiden_name}
           onChangeText={(v) => updateField("mother_maiden_name", v)}
         />
         <CustomDatePicker
-          label="Date of Birth *"
+          label={`${t("dob")} *`}
           value={formData.dob}
-          onDateChange={handleDateChange}
-          error={ageError}
-          maximumDate={new Date()}
+          onDateChange={(date) => updateField("dob", date)}
         />
-
         <CustomPicker
-          label="Gender *"
+          label={`${t("gender")} *`}
           value={formData.gender}
           options={[
-            { label: "Male", value: "Male" },
-            { label: "Female", value: "Female" },
-            { label: "Other", value: "Other" },
+            { label: t("gender_male"), value: "Male" },
+            { label: t("gender_female"), value: "Female" },
+            { label: t("gender_other"), value: "Other" },
           ]}
-          placeholder="Select Gender"
+          placeholder={t("select_gender")}
           onSelect={(v) => updateField("gender", v)}
         />
 
         <View style={{ flexDirection: "row", gap: 10 }}>
           <View style={{ flex: 1 }}>
             <CustomPicker
-              label="Feet *"
+              label={`${t("feet")} *`}
               value={feet}
               options={feetOptions}
-              placeholder="Feet"
+              placeholder={t("feet")}
               onSelect={(value) => {
                 setFeet(value);
                 updateHeight(value, inches);
@@ -987,10 +984,10 @@ const RegistrationScreen = ({ navigation, route }) => {
           </View>
           <View style={{ flex: 1 }}>
             <CustomPicker
-              label="Inches *"
+              label={`${t("inches")} *`}
               value={inches}
               options={inchOptions}
-              placeholder="Inches"
+              placeholder={t("inches")}
               onSelect={(value) => {
                 setInches(value);
                 updateHeight(feet, value);
@@ -999,102 +996,106 @@ const RegistrationScreen = ({ navigation, route }) => {
           </View>
         </View>
         <CustomPicker
-          label="Complexion"
+          label={t("complexion")}
           value={formData.color}
           options={COLOR_OPTIONS?.map(c => ({
-            label: c,
+            label: t(c) || c,
             value: c
           }))}
-          placeholder="Select Complexion"
+          placeholder={t("select_complexion")}
           onSelect={(v) => updateField("color", v)}
         />
         <CustomInput
-          label="Age *"
-          value={formData.age ? String(formData.age) : ""}
-          onChangeText={() => { }} // read-only: auto-calculated from DOB
-          editable={false}
-          inputStyle={styles.readOnlyInput}
+          label={`${t("age")} *`}
+          value={formData.age?.toString()}
+          keyboardType="numeric"
+          onChangeText={(v) => updateField("age", v)}
+          maxLength={2}
         />
 
         <CustomPicker
-          label="Marital Status *"
+          label={`${t("marital_status")} *`}
           value={formData.marital_status}
           options={[
-            { label: "Single", value: "Single" },
-            { label: "Married", value: "Married" },
-            { label: "Divorced", value: "Divorced" },
-            { label: "Widowed", value: "Widowed" },
+            { label: t("marital_single"), value: "Single" },
+            { label: t("marital_married"), value: "Married" },
+            { label: t("marital_divorced"), value: "Divorced" },
+            { label: t("marital_widowed"), value: "Widowed" },
           ]}
-          placeholder="Select Marital Status"
+          placeholder={t("select_marital_status")}
           onSelect={(v) => updateField("marital_status", v)}
         />
 
         <CustomPicker
-          label="Manglik"
+          label={t("manglik")}
           value={formData.manglik}
-          options={MANGLIK_OPTIONS}
-          placeholder="Select Manglik"
+          options={MANGLIK_OPTIONS.map(opt => ({
+            label: t(`manglik_${opt.value.toLowerCase()}`) || t(opt.value) || opt.label,
+            value: opt.value
+          }))}
+          placeholder={t("select_manglik")}
           onSelect={(v) => updateField("manglik", v)}
         />
 
         <CustomPicker
-          label="Creating Profile For *"
+          label={`${t("profile_for")} *`}
           value={formData.profile_for}
           options={[
-            { label: "Myself", value: "Myself" },
-            { label: "Son", value: "Son" },
-            { label: "Daughter", value: "Daughter" },
-            { label: "Brother", value: "Brother" },
-            { label: "Sister", value: "Sister" },
-            { label: "Other", value: "Other" },
+            { label: t("profile_for_myself"), value: "Myself" },
+            { label: t("profile_for_son"), value: "Son" },
+            { label: t("profile_for_daughter"), value: "Daughter" },
+            { label: t("profile_for_brother"), value: "Brother" },
+            { label: t("profile_for_sister"), value: "Sister" },
+            { label: t("profile_for_other"), value: "Other" },
           ]}
-          placeholder="Select Profile For"
+          placeholder={t("select_profile_for")}
           onSelect={(v) => updateField("profile_for", v)}
         />
 
         <CustomPicker
-          label="Profile Managed By"
+          label={t("profile_managed_by")}
           value={formData.profile_managed_by}
           options={[
-            { label: "Self", value: "self" },
-            { label: "Parents", value: "parents" },
-            { label: "Brother", value: "brother" },
-            { label: "Sister", value: "sister" },
-            { label: "Guardian", value: "guardian" },
+            { label: t("Self"), value: "self" },
+            { label: t("Parents"), value: "parents" },
+            { label: t("Brother"), value: "brother" },
+            { label: t("Sister"), value: "sister" },
+            { label: t("Guardian"), value: "guardian" },
           ]}
-          placeholder="Select Manager"
+          placeholder={t("select_manager") || "Select Manager"}
           onSelect={(v) => updateField("profile_managed_by", v)}
         />
 
         {formData.profile_for === "Other" && (
           <CustomInput
-            label="Specify Relation *"
-            value={formData.other_profile_for}
-            onChangeText={(v) => updateField("other_profile_for", v)}
-            placeholder="e.g. Friend, Cousin"
+            label={`${t("specify_relation")} *`}
+            value={formData.specify_relation}
+            onChangeText={(v) => updateField("specify_relation", v)}
+            placeholder={t("relation_placeholder")}
           />
         )}
 
-        <Text style={styles.sectionTitle}>Contact & Location</Text>
+        <Text style={styles.sectionTitle}>{t("contact_location")}</Text>
         <CustomInput
-          label="Phone Number *"
+          label={t("phone_number_req")}
           value={formData.phone_number}
           keyboardType="phone-pad"
           onChangeText={(v) => updateField("phone_number", v)}
+          maxLength={10}
         />
         <CustomInput
-          label="WhatsApp Number"
+          label={t("whatsapp_number")}
           value={formData.whatsapp_number}
           keyboardType="phone-pad"
           onChangeText={(v) => updateField("whatsapp_number", v)}
         />
         <CustomInput
-          label="Birthplace"
+          label={t("birthplace")}
           value={formData.birthplace}
           onChangeText={(v) => updateField("birthplace", v)}
         />
         <CustomInput
-          label="Full Address"
+          label={t("full_address")}
           value={formData.address}
           onChangeText={(v) => updateField("address", v)}
           multiline
@@ -1103,20 +1104,20 @@ const RegistrationScreen = ({ navigation, route }) => {
 
         {/* State Dropdown */}
         <CustomPicker
-          label="State"
+          label={t("state")}
           value={formData.state}
           options={states.map((s) => ({ label: s.name, value: s.name }))}
-          placeholder={loadingStates ? "Loading..." : "Select State"}
+          placeholder={loadingStates ? t("loading") : t("select_state")}
           onSelect={handleStateSelect}
         />
 
         {/* District Dropdown */}
         <CustomPicker
-          label="District"
+          label={t("district")}
           value={formData.district}
           options={districts.map((d) => ({ label: d.name, value: d.name }))}
           placeholder={
-            !formData.state ? "Select State First" : loadingDistricts ? "Loading..." : "Select District"
+            !formData.state ? t("select_state_first") : loadingDistricts ? t("loading") : t("select_district")
           }
           onSelect={handleDistrictSelect}
           disabled={!formData.state || loadingDistricts}
@@ -1124,11 +1125,11 @@ const RegistrationScreen = ({ navigation, route }) => {
 
         {/* Taluka Dropdown */}
         <CustomPicker
-          label="Taluka"
+          label={t("taluka")}
           value={formData.taluka}
           options={talukas.map((tk) => ({ label: tk.name, value: tk.name }))}
           placeholder={
-            !formData.district ? "Select District First" : loadingTalukas ? "Loading..." : talukas.length === 0 ? "No Talukas Found" : "Select Taluka"
+            !formData.district ? t("select_district_first") : loadingTalukas ? t("loading") : talukas.length === 0 ? t("no_talukas") : t("select_taluka")
           }
           onSelect={handleTalukaSelect}
           disabled={
@@ -1136,70 +1137,70 @@ const RegistrationScreen = ({ navigation, route }) => {
           }
         />
 
-        <Text style={styles.sectionTitle}>Professional Details</Text>
+        <Text style={styles.sectionTitle}>{t("professional_details")}</Text>
         <CustomPicker
-          label="Qualification *"
+          label={`${t("qualification")} *`}
           value={formData.qualification}
           options={QUALIFICATION_OPTIONS.map((opt) => ({
             label: opt,
             value: opt,
           }))}
-          placeholder="Select Qualification"
+          placeholder={t("select_qualification")}
           onSelect={(v) => updateField("qualification", v)}
         />
         <CustomPicker
-          label="Occupation *"
+          label={`${t("occupation")} *`}
           value={formData.occupation}
           options={OCCUPATION_OPTIONS.map((opt) => ({
             label: opt,
             value: opt,
           }))}
-          placeholder="Select Occupation"
+          placeholder={t("select_occupation")}
           onSelect={(v) => updateField("occupation", v)}
         />
         <CustomInput
-          label="Profession *"
+          label={`${t("profession")} *`}
           value={formData.profession}
           onChangeText={(v) => updateField("profession", v)}
         />
         <CustomInput
-          label="Company Name / Business Name"
+          label={t("business_name")}
           value={formData.company_name}
           onChangeText={(v) => updateField("company_name", v)}
-          placeholder="Enter Company Name"
+          placeholder={t("company_name_placeholder")}
         />
         <CustomInput
-          label="Monthly Income *"
+          label={`${t("monthly_income")} *`}
           value={formData.monthly_income}
           onChangeText={(v) => updateField("monthly_income", v)}
           keyboardType="numeric"
         />
         <CustomInput
-          label="Property Details *"
+          label={`${t("property_details")} *`}
           value={formData.property}
           onChangeText={(v) => updateField("property", v)}
         />
 
-        <Text style={styles.sectionTitle}>Community Details</Text>
+        <Text style={styles.sectionTitle}>{t("community_details")}</Text>
         <CustomInput
-          label="Caste"
+          label={t("caste")}
           value={formData.caste}
           onChangeText={(v) => updateField("caste", v)}
         />
         <CustomInput
-          label="Sub Caste"
+          label={t("sub_caste")}
           value={formData.sub_caste}
           onChangeText={(v) => updateField("sub_caste", v)}
         />
         <CustomInput
-          label="Relative Surname"
+          label={t("relative_surname")}
           value={formData.relative_surname}
           onChangeText={(v) => updateField("relative_surname", v)}
         />
 
-        <Text style={styles.sectionTitle}>Partner Expectations & Photos</Text>
+        <Text style={styles.sectionTitle}>{t("partner_expectations_photo")}</Text>
         <CustomInput
-          label="Partner Expectations"
+          label={t("partner_expectations")}
           value={formData.expectations}
           onChangeText={(v) => updateField("expectations", v)}
           multiline
@@ -1207,13 +1208,13 @@ const RegistrationScreen = ({ navigation, route }) => {
         />
 
         <View style={styles.photoSection}>
-          <Text style={styles.label}>Profile Photo</Text>
+          <Text style={styles.label}>{t("profile_photo")}</Text>
           <View style={styles.photoButtons}>
             <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
-              <Text style={styles.photoButtonText}>Take Photo</Text>
+              <Text style={styles.photoButtonText}>{t("take_photo")}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
-              <Text style={styles.photoButtonText}>Pick from Gallery</Text>
+              <Text style={styles.photoButtonText}>{t("from_gallery")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -1247,16 +1248,16 @@ const RegistrationScreen = ({ navigation, route }) => {
         {/*  BIODATA UPLOAD SECTION                    */}
         {/* ═══════════════════════════════════════════ */}
         <View style={styles.uploadBox}>
-          <Text style={styles.label}>Upload Biodata</Text>
+          <Text style={styles.label}>{t("biodata_upload")}</Text>
           <TouchableOpacity style={styles.uploadButtonLegacy} onPress={pickBiodataFile}>
             <MaterialCommunityIcons name="file-document-outline" size={24} color={COLORS.primary} />
-            <Text style={styles.uploadButtonText}>Select Biodata (PDF / Image)</Text>
+            <Text style={styles.uploadButtonText}>{t("select_biodata")}</Text>
           </TouchableOpacity>
           {(formData.biodata_file && formData.biodata_file.trim() !== '') ? (
             <View style={styles.filePreview}>
               <MaterialCommunityIcons name="file-check" size={20} color={COLORS.success} />
               <Text style={styles.fileName} numberOfLines={1}>
-                {formData.biodata_name || (pickedBiodata ? pickedBiodata.name : "Uploaded Biodata")}
+                {formData.biodata_name || (pickedBiodata ? pickedBiodata.name : t("uploaded_biodata"))}
               </Text>
               <TouchableOpacity
                 onPress={() => {
@@ -1278,16 +1279,16 @@ const RegistrationScreen = ({ navigation, route }) => {
         {/*  KUNDALI UPLOAD SECTION                    */}
         {/* ═══════════════════════════════════════════ */}
         <View style={styles.uploadBox}>
-          <Text style={styles.label}>Upload Kundali</Text>
+          <Text style={styles.label}>{t("kundali_upload")}</Text>
           <TouchableOpacity style={styles.uploadButtonLegacy} onPress={pickKundaliFile}>
             <MaterialCommunityIcons name="file-document-outline" size={24} color={COLORS.primary} />
-            <Text style={styles.uploadButtonText}>Select Kundali (PDF / Image)</Text>
+            <Text style={styles.uploadButtonText}>{t("select_kundali")}</Text>
           </TouchableOpacity>
           {(formData.kundali_file && formData.kundali_file.trim() !== '') ? (
             <View style={styles.filePreview}>
               <MaterialCommunityIcons name="file-check" size={20} color={COLORS.success} />
               <Text style={styles.fileName} numberOfLines={1}>
-                {formData.kundali_name || (pickedKundali ? pickedKundali.name : "Uploaded Kundali")}
+                {formData.kundali_name || (pickedKundali ? pickedKundali.name : t("uploaded_kundali"))}
               </Text>
               <TouchableOpacity
                 onPress={() => {
@@ -1309,9 +1310,9 @@ const RegistrationScreen = ({ navigation, route }) => {
         {/*  MULTIPLE PROFILE PHOTOS SECTION           */}
         {/* ═══════════════════════════════════════════ */}
         <View style={styles.multiPhotoSection}>
-          <Text style={styles.sectionTitle}>Profile Photo</Text>
+          <Text style={styles.sectionTitle}>{t("profile_photo")}</Text>
           <Text style={styles.multiPhotoSubtitle}>
-            Maximum 3 photos allowed • Each photo up to 5MB
+            {t("select_up_to_3_photos")}
           </Text>
 
           {/* Existing Photos */}
@@ -1459,7 +1460,7 @@ const RegistrationScreen = ({ navigation, route }) => {
         />
 
         <CustomButton
-          title={isEdit ? t("update_profile") : t("save_profile")}
+          title={isEdit ? t("update_profile") : t("create_profile")}
           onPress={handleSave}
           loading={loading}
           disabled={!isConsentValid}

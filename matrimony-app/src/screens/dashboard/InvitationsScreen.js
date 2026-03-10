@@ -33,7 +33,7 @@ const InvitationsScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("received"); // 'received' | 'sent'
 
-  const isSubscribed = Number(user?.is_subscribed) === 1;
+  const isPaid = Number(user?.is_paid) === 1 || Number(user?.is_subscribed) === 1;
 
   const maskName = (fullName) => {
     if (!fullName) return "Member";
@@ -129,7 +129,7 @@ const InvitationsScreen = ({ navigation }) => {
           </View>
           <View style={styles.cardInfo}>
             <Text style={styles.name}>
-              {isAccepted || isSubscribed
+              {isAccepted || isPaid
                 ? item.full_name
                 : maskName(item.full_name)}
             </Text>

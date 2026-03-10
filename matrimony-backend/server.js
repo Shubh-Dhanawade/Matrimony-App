@@ -29,9 +29,9 @@ app.get("/", (req, res) => {
 
 // Port and Host
 const PORT = process.env.PORT || 5472;
-const HOST = "0.0.0.0"; // Bind to all interfaces so Android device on LAN can connect
+// const HOST = "0.0.0.0"; // Bind to all interfaces so Android device on LAN can connect
 
-app.listen(PORT, HOST, () => {
+app.listen(PORT, () => {
   // console.log(`Server is running on http://${HOST}:${PORT}`);
   console.log(`Access from device: http://192.168.0.100:${PORT}`);
 });
