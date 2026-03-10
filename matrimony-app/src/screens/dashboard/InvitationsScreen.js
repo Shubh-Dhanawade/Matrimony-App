@@ -35,13 +35,8 @@ const InvitationsScreen = ({ navigation }) => {
 
   const isPaid = Number(user?.is_paid) === 1 || Number(user?.is_subscribed) === 1;
 
-  const maskName = (fullName) => {
-    if (!fullName) return "Member";
-    const parts = fullName.trim().split(/\s+/);
-    if (parts.length === 1) return `${parts[0][0]}.`;
-    const last = parts[parts.length - 1];
-    const rest = parts.slice(0, -1).join(" ");
-    return `${rest} ${last[0]}.`;
+  const maskName = (profileId) => {
+    return `User ${profileId || "Unknown"}`;
   };
 
   const fetchInvitations = useCallback(async () => {
@@ -131,7 +126,7 @@ const InvitationsScreen = ({ navigation }) => {
             <Text style={styles.name}>
               {isAccepted || isPaid
                 ? item.full_name
-                : maskName(item.full_name)}
+                : maskName(item.other_user_id)}
             </Text>
             <Text style={styles.meta}>
               {item.age ? `${item.age} yrs` : ""}
