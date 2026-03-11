@@ -196,6 +196,8 @@
     "inches": "इंच",
     "phone_number": "फोन नंबर",
     "phone_number_req": "फोन नंबर *",
+    "parents_phone_number": "पालकांचा फोन नंबर",
+    "parents_phone": "पालकांचा फोन",
     "Very Fair": "खूप गोरा",
     "Fair": "गोरा",
     "Wheatish": "गहूवर्णीय",
@@ -260,5 +262,6 @@
     "location": "स्थान",
     "family_details": "कुटुंबाचे तपशील",
     "other_details": "इतर तपशील",
-    "partner_expectations_photo": "अपेक्षा आणि फोटो"
+    "partner_expectations_photo": "अपेक्षा आणि फोटो",
+    "contact_details": "संपर्क तपशील"
 }

@@ -12,6 +12,8 @@ import {
   Modal,
   TextInput,
   Dimensions,
+  Platform,
+  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
@@ -355,7 +357,11 @@ const DashboardScreen = ({ navigation }) => {
 };
 
 export const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.background },
+  root: { 
+    flex: 1, 
+    backgroundColor: COLORS.background,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, 
+  },
   header: {
     backgroundColor: COLORS.surface,
     paddingHorizontal: SPACING.md,

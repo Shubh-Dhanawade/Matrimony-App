@@ -101,10 +101,10 @@ npm install
 Find this line:
 
 ```javascript
-export const API_BASE_URL = "http://192.168.0.100:5472/api";
+export const API_BASE_URL = "http://192.168.0.176:5472/api";
 ```
 
-**⚠️ IMPORTANT:** Replace `192.168.0.100` with your actual machine IP if different:
+**⚠️ IMPORTANT:** Replace `192.168.0.176` with your actual machine IP if different:
 
 - Windows: Run `ipconfig` → find `IPv4 Address`
 - Mac/Linux: Run `ifconfig` → find inet address
