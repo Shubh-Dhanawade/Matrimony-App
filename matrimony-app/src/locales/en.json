@@ -196,6 +196,8 @@
     "inches": "Inches",
     "phone_number": "Phone Number",
     "phone_number_req": "Phone Number *",
+    "parents_phone_number": "Parent's Phone Number",
+    "parents_phone": "Parent's Phone",
     "Very Fair": "Very Fair",
     "Fair": "Fair",
     "Wheatish": "Wheatish",
@@ -260,5 +262,6 @@
     "location": "Location",
     "family_details": "Family Details",
     "other_details": "Other Details",
-    "partner_expectations_photo": "Expectations & Photo"
+    "partner_expectations_photo": "Expectations & Photo",
+    "contact_details": "Contact Details"
 }

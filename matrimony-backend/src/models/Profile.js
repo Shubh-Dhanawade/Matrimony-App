@@ -32,6 +32,7 @@ const allowedColumns = [
   "age",
   "profile_managed_by",
   "phone_number",
+  "parents_phone_number",
   "whatsapp_number",
   "company_name",
   "manglik",

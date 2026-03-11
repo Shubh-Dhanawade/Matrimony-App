@@ -10,6 +10,7 @@ import {
   Alert,
   StatusBar,
   Linking,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -58,7 +59,7 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
 
   if (error || !profile) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
         <ScrollView
           style={styles.container}
@@ -163,6 +164,9 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Contact Details</Text>
               <Text style={styles.detailText}><Text style={styles.detailLabel}>Phone:</Text> {profile.phone_number}</Text>
+              {profile.parents_phone_number ? (
+                <Text style={styles.detailText}><Text style={styles.detailLabel}>Parent's Phone:</Text> {profile.parents_phone_number}</Text>
+              ) : null}
               <Text style={styles.detailText}><Text style={styles.detailLabel}>{t("whatsapp")}:</Text> {profile.whatsapp_number}</Text>
             </View>
 
@@ -329,24 +333,6 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
             </Text>
           </View>
 
-          {/* Quick Stats */}
-          <View style={styles.statsContainer}>
-            <View style={styles.statBox}>
-              <MaterialCommunityIcons name="human-male-height" size={24} color={COLORS.primary} />
-              <Text style={styles.statValue}>{profile.height}</Text>
-              <Text style={styles.statLabel}>{t("height")}</Text>
-            </View>
-            <View style={[styles.statBox, styles.statBoxBorder]}>
-              <MaterialCommunityIcons name="briefcase" size={24} color={COLORS.primary} />
-              <Text style={styles.statValue} numberOfLines={1}>{profile.profession || 'N/A'}</Text>
-              <Text style={styles.statLabel}>{t("profession")}</Text>
-            </View>
-            <View style={styles.statBox}>
-              <MaterialCommunityIcons name="school" size={24} color={COLORS.primary} />
-              <Text style={styles.statValue} numberOfLines={1}>{profile.qualification || 'N/A'}</Text>
-              <Text style={styles.statLabel}>{t("education")}</Text>
-            </View>
-          </View>
           {/* 3️⃣ Location Details */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t("location")}</Text>
@@ -417,6 +403,12 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
               <Text style={styles.detailLabel}>{t("phone")}:</Text>{" "}
               {profile.phone_number}
             </Text>
+            {profile.parents_phone_number ? (
+              <Text style={styles.detailText}>
+                <Text style={styles.detailLabel}>{t("parents_phone") || "Parent's Phone"}:</Text>{" "}
+                {profile.parents_phone_number}
+              </Text>
+            ) : null}
             <Text style={styles.detailText}>
               <Text style={styles.detailLabel}>{t("whatsapp")}:</Text>{" "}
               {profile.whatsapp_number}
@@ -593,6 +585,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: COLORS.background,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {
     flex: 1,
@@ -653,7 +646,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: SPACING.md,
+    top: Platform.OS === 'android' ? SPACING.md + StatusBar.currentHeight : SPACING.xl,
     left: SPACING.md,
     width: 40,
     height: 40,
