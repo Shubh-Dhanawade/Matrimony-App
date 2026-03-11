@@ -28,6 +28,7 @@ import ManageProfiles from "../screens/dashboard/ManageProfiles";
 import ManageUsers from "../screens/dashboard/ManageUsers";
 import MembershipManagement from "../screens/dashboard/MembershipManagement";
 import ProfilesFeedScreen from "../screens/dashboard/ProfilesFeedScreen";
+import AdminUserListScreen from "../screens/dashboard/AdminUserListScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -96,6 +97,11 @@ const AdminStack = () => (
       name="MembershipManagement"
       component={MembershipManagement}
       options={{ title: "Paid Memberships" }}
+    />
+    <Stack.Screen
+      name="AdminUserList"
+      component={AdminUserListScreen}
+      options={{ title: "Total Users" }}
     />
   </Stack.Navigator>
 );

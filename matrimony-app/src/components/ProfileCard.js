@@ -35,10 +35,8 @@ const CARD_HEIGHT = height * 0.75;
 const CARD_WIDTH = width * 0.92;
 
 // Helper: mask all name parts except the first name for unpaid users
-const getMaskedName = (fullName) => {
-  if (!fullName) return "Unknown";
-  const parts = fullName.trim().split(/\s+/);
-  return parts[0]; // strictly return the first name ONLY
+const getMaskedName = (profileId) => {
+  return `User ${profileId || "Unknown"}`; 
 };
 
 const ProfileCard = ({
@@ -77,7 +75,7 @@ const ProfileCard = ({
   const displayName =
     isConnected || isPaid
       ? profile.full_name
-      : getMaskedName(profile.full_name);
+      : getMaskedName(profile.user_id);
 
   const photos = React.useMemo(() => {
     if (profile.photos && profile.photos.length > 0) {
@@ -101,21 +99,21 @@ const ProfileCard = ({
     if (profile.invitation_status !== "None") {
       Alert.alert(
         "Already Connected",
-        `You have already ${isPending ? "sent a follow request to" : "connected with"} this profile.`,
+        `You have already ${isPending ? "sent an interest to" : "connected with"} this profile.`,
       );
       return;
     }
     try {
       await api.post("/profiles/interest", { receiverId: profile.user_id });
       Alert.alert(
-        "💌 Follow Request Sent",
+        "💌 Interest Sent",
         `Your request has been sent to ${profile.full_name || "this profile"}.`,
       );
       if (onAction) onAction("refresh", profile);
     } catch (err) {
       Alert.alert(
         "Error",
-        err?.response?.data?.message || "Failed to send follow request.",
+        err?.response?.data?.message || "Failed to send interest.",
       );
     }
   };
@@ -177,7 +175,7 @@ const ProfileCard = ({
     if (!isConnected) {
       Alert.alert(
         "Locked",
-        "Follow this profile and wait for acceptance to view the full profile.",
+        "Send an interest to this profile and wait for acceptance to view the full profile.",
       );
       return;
     }
@@ -261,7 +259,6 @@ const ProfileCard = ({
               </TouchableOpacity>
             </View>
 
-            {/* Status Badges (Right) */}
             <View style={styles.topRightActions}>
               {/* Last Seen Badge */}
               {profile.last_active_at && (
@@ -275,33 +272,6 @@ const ProfileCard = ({
                     {formatLastActive(profile.last_active_at)}
                   </Text>
                 </View>
-              )}
-
-              {/* Follow Badge Button */}
-              {isPaid && (
-                <TouchableOpacity
-                  style={[
-                    styles.followBtn,
-                    (isPending || isConnected) && styles.followBtnDisabled,
-                  ]}
-                  onPress={isPending || isConnected ? handleUnfollow : handleFollow}
-                  activeOpacity={0.8}
-                >
-                  <MaterialCommunityIcons
-                    name={
-                      isConnected
-                        ? "check-circle"
-                        : isPending
-                          ? "clock-outline"
-                          : "heart-outline"
-                    }
-                    size={14}
-                    color="#fff"
-                  />
-                  <Text style={styles.followBtnText}>
-                    {isConnected ? t("unfollow") : isPending ? t("cancel_request") : t("follow")}
-                  </Text>
-                </TouchableOpacity>
               )}
             </View>
           </View>
@@ -425,20 +395,37 @@ const ProfileCard = ({
               color="#9E9E9E"
               disabled={!!isFirst}
               onPress={() => onAction("prev", profile)}
+              size={52}
             />
 
-            <ActionButton
-              icon="close"
-              label={t("skip")}
-              color="#FF5252"
-              onPress={() => onAction("skip", profile)}
-            />
+            {isPaid && (
+              <ActionButton
+                icon={
+                  isConnected
+                    ? "check-circle"
+                    : isPending
+                    ? "clock-outline"
+                    : "heart-outline"
+                }
+                label={
+                  isConnected
+                    ? t("remove_interest")
+                    : isPending
+                    ? t("cancel_request")
+                    : t("send_interest")
+                }
+                color={isConnected ? "#4CAF50" : isPending ? "#FF9800" : "#E91E63"}
+                onPress={isPending || isConnected ? handleUnfollow : handleFollow}
+                size={52}
+              />
+            )}
 
             <ActionButton
               icon={profile.is_shortlisted ? "star" : "star-outline"}
-              label={profile.is_shortlisted ? t("saved") : t("shortlist")}
+              label={t("shortlist")}
               color={profile.is_shortlisted ? "#FFB300" : "#fff"}
               onPress={handleShortlist}
+              size={52}
             />
 
             <ActionButton
@@ -448,6 +435,7 @@ const ProfileCard = ({
               isPrimary
               disabled={!!isLast}
               onPress={() => onAction("next", profile)}
+              size={52}
             />
           </View>
         </View>
@@ -702,13 +690,17 @@ const styles = StyleSheet.create({
   actionContainer: {
     position: "absolute",
     bottom: 15,
-    left: 20,
-    right: 20,
+    left: 10,
+    right: 10,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  actionBtnWrapper: { alignItems: "center", flex: 1 },
+  actionBtnWrapper: { 
+    alignItems: "center", 
+    flex: 1, 
+    justifyContent: "center" 
+  },
   circleBtn: {
     backgroundColor: "rgba(255,255,255,0.15)",
     justifyContent: "center",

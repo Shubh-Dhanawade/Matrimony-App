@@ -104,6 +104,15 @@ const AdminDashboard = ({ navigation }) => {
             <Text style={styles.cardSub}>Toggle User Access</Text>
           </TouchableOpacity>
         </View>
+        <View style={[styles.cardRow, { marginTop: SPACING.md }]}>
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate('AdminUserList')}
+          >
+            <Text style={styles.cardTitle}>Total Users List</Text>
+            <Text style={styles.cardSub}>View All Registered Users</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>

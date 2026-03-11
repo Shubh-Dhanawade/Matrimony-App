@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import api from "../../services/api";
 import { COLORS, SPACING, FONT_SIZES } from "../../utils/constants";
@@ -43,7 +44,8 @@ const STATUS_CONFIG = {
 };
 
 const ShortlistedScreen = ({ navigation }) => {
-  const { user } = useAuth();
+  const { t } = useTranslation();
+  const { user, refreshUser } = useAuth();
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -119,6 +121,58 @@ const ShortlistedScreen = ({ navigation }) => {
     );
   };
 
+  const handleFollow = async (profile) => {
+    if (profile.invitation_status !== "None") {
+      Alert.alert(
+        "Already Connected",
+        `You have already ${profile.invitation_status === "Pending" ? "sent an interest to" : "connected with"} this profile.`,
+      );
+      return;
+    }
+    try {
+      await api.post("/profiles/interest", { receiverId: profile.user_id });
+      Alert.alert(
+        "💌 Interest Sent",
+        `Your request has been sent to ${profile.full_name || "this profile"}.`,
+      );
+      fetchShortlisted();
+    } catch (err) {
+      Alert.alert(
+        "Error",
+        err?.response?.data?.message || "Failed to send interest.",
+      );
+    }
+  };
+
+  const handleUnfollow = async (profile) => {
+    Alert.alert(
+      "Cancel Request",
+      `Are you sure you want to withdraw your interest from ${profile.full_name || "this user"}?`,
+      [
+        { text: "No", style: "cancel" },
+        {
+          text: "Yes, Withdraw",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await api.delete(`/profiles/interest/${profile.user_id}`);
+              Alert.alert(
+                "Request Cancelled",
+                `You have withdrawn your interest.`
+              );
+              fetchShortlisted();
+            } catch (err) {
+              Alert.alert(
+                "Error",
+                err?.response?.data?.message || "Failed to cancel request."
+              );
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const renderItem = ({ item }) => {
     const invStatus = item.invitation_status || "None";
     const statusConf = STATUS_CONFIG[invStatus] || STATUS_CONFIG.None;
@@ -151,7 +205,7 @@ const ShortlistedScreen = ({ navigation }) => {
           <Text style={styles.name} numberOfLines={1}>
             {isConnected || isPaid
               ? item.full_name
-              : maskName(item.full_name)}
+              : maskName(item.user_id)}
             , {item.age}
           </Text>
           <View style={styles.metaRow}>
@@ -186,6 +240,32 @@ const ShortlistedScreen = ({ navigation }) => {
 
         {/* Actions column */}
         <View style={styles.actionsCol}>
+          {isPaid && (
+            <TouchableOpacity
+              style={[
+                styles.followBtn,
+                { backgroundColor: isConnected ? "#4CAF50" : invStatus === "Pending" ? "#FF9800" : COLORS.primary },
+              ]}
+              onPress={() => (invStatus === "Pending" || isConnected) ? handleUnfollow(item) : handleFollow(item)}
+              activeOpacity={0.8}
+            >
+              <MaterialCommunityIcons
+                name={
+                  isConnected
+                    ? "check-circle"
+                    : invStatus === "Pending"
+                    ? "clock-outline"
+                    : "heart-outline"
+                }
+                size={14}
+                color="#fff"
+              />
+              <Text style={[styles.followBtnText, { color: "#fff" }]}>
+                {isConnected ? t("remove_interest") : invStatus === "Pending" ? t("cancel_request") : t("send_interest")}
+              </Text>
+            </TouchableOpacity>
+          )}
+
           {/* View Profile button - Enabled only when Connected */}
           <TouchableOpacity
             style={[
@@ -200,7 +280,7 @@ const ShortlistedScreen = ({ navigation }) => {
               } else {
                 Alert.alert(
                   "Not Connected",
-                  "You must follow and be accepted by this user to view their full profile.",
+                  "You must send an interest and be accepted by this user to view their full profile.",
                 );
               }
             }}
@@ -213,7 +293,7 @@ const ShortlistedScreen = ({ navigation }) => {
                 invStatus !== "Connected" && styles.viewBtnDisabledText,
               ]}
             >
-              {invStatus === "Connected" ? "View Profile" : "Follow First"}
+              {t("full_profile")}
             </Text>
           </TouchableOpacity>
 
@@ -234,13 +314,8 @@ const ShortlistedScreen = ({ navigation }) => {
     );
   };
 
-  const maskName = (fullName) => {
-    if (!fullName) return "Unknown";
-    const parts = fullName.trim().split(/\s+/);
-    if (parts.length === 1) return `${parts[0][0]}.`;
-    const last = parts[parts.length - 1];
-    const rest = parts.slice(0, -1).join(" ");
-    return `${rest} ${last[0]}.`;
+  const maskName = (profileId) => {
+    return `User ${profileId || "Unknown"}`;
   };
 
   if (loading) {
