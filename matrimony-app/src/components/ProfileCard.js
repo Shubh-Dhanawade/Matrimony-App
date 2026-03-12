@@ -394,7 +394,6 @@ const ProfileCard = ({
             <ActionButton
               icon="chevron-left"
               label={t("prev")}
-              color="#9E9E9E"
               disabled={!!isFirst}
               onPress={() => onAction("prev", profile)}
               size={52}
@@ -416,7 +415,7 @@ const ProfileCard = ({
                     ? t("cancel_request")
                     : t("send_interest")
                 }
-                color={isConnected ? "#4CAF50" : isPending ? "#FF9800" : "#E91E63"}
+                isActive={isConnected || isPending}
                 onPress={isPending || isConnected ? handleUnfollow : handleFollow}
                 size={52}
               />
@@ -425,7 +424,7 @@ const ProfileCard = ({
             <ActionButton
               icon={profile.is_shortlisted ? "star" : "star-outline"}
               label={t("shortlist")}
-              color={profile.is_shortlisted ? "#FFB300" : "#fff"}
+              isActive={profile.is_shortlisted}
               onPress={handleShortlist}
               size={52}
             />
@@ -433,8 +432,7 @@ const ProfileCard = ({
             <ActionButton
               icon="chevron-right"
               label={t("next")}
-              color="#fff"
-              isPrimary
+              isActive={true} // Next is always highlighted per requirements
               disabled={!!isLast}
               onPress={() => onAction("next", profile)}
               size={52}
@@ -449,33 +447,44 @@ const ProfileCard = ({
 const ActionButton = ({
   icon,
   label,
-  color,
   onPress,
-  isPrimary,
+  isActive = false,
   size = 52,
   disabled = false,
 }) => {
   const animatedValue = useRef(new Animated.Value(1)).current;
+  const [isPressed, setIsPressed] = useState(false);
+
   const handlePressIn = () => {
-    if (!disabled)
+    if (!disabled) {
+      setIsPressed(true);
       Animated.spring(animatedValue, {
         toValue: 0.9,
         useNativeDriver: true,
       }).start();
+    }
   };
   const handlePressOut = () => {
-    if (!disabled)
+    if (!disabled) {
+      setIsPressed(false);
       Animated.spring(animatedValue, {
         toValue: 1,
         friction: 4,
         tension: 40,
         useNativeDriver: true,
       }).start();
+    }
   };
+
+  // Determine if the button should show as highlighted (primary color)
+  const showAsActive = isActive || isPressed;
+  const iconColor = showAsActive ? "#fff" : "#fff"; // Default icon is white
+  const bgColor = showAsActive ? COLORS.primary : "rgba(255,255,255,0.15)";
+  const borderColor = showAsActive ? COLORS.primary : "rgba(255,255,255,0.3)";
 
   return (
     <TouchableOpacity
-      activeOpacity={disabled ? 1 : 0.7}
+      activeOpacity={disabled ? 1 : 0.8}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       onPress={disabled ? null : onPress}
@@ -486,20 +495,21 @@ const ActionButton = ({
         style={[
           styles.circleBtn,
           { width: size, height: size, borderRadius: size / 2 },
-          isPrimary && styles.primaryBtn,
+          { backgroundColor: bgColor, borderColor: borderColor },
+          showAsActive && { elevation: 8 },
           { transform: [{ scale: animatedValue }] },
         ]}
       >
         <MaterialCommunityIcons
           name={icon}
           size={size * 0.5}
-          color={isPrimary ? "#fff" : color}
+          color={iconColor}
         />
       </Animated.View>
       <Text
         style={[
           styles.actionLabel,
-          isPrimary && !disabled && { color: COLORS.primary },
+          showAsActive && !disabled && { color: COLORS.primary },
         ]}
       >
         {label}
