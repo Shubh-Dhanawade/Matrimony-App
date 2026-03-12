@@ -360,10 +360,12 @@ const ProfileCard = ({
                   size={14}
                   color="#ddd"
                 />
-                <Text style={styles.infoText}>
-                  {profile.occupation ||
-                    profile.qualification ||
-                    t("not_specified")}
+                <Text style={styles.infoText} numberOfLines={1} ellipsizeMode="tail">
+                  {profile.company_name
+                    ? `${profile.company_name} – ${profile.occupation || t("not_specified")}`
+                    : profile.occupation ||
+                      profile.qualification ||
+                      t("not_specified")}
                 </Text>
               </View>
             )}
@@ -685,7 +687,7 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
   infoRow: { flexDirection: "row", alignItems: "center", marginTop: 5 },
-  infoText: { color: "#eee", fontSize: 14, marginLeft: 6, fontWeight: "500" },
+  infoText: { color: "#eee", fontSize: 14, marginLeft: 6, fontWeight: "500", flex: 1 },
 
   actionContainer: {
     position: "absolute",

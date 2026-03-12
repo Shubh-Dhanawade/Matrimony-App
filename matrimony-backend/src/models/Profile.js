@@ -26,7 +26,6 @@ const allowedColumns = [
   "taluka",
   // New profile fields
   "property",
-  "profession",
   "height",
   "color",
   "age",

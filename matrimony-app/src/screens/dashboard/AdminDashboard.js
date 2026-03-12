@@ -70,7 +70,7 @@ const AdminDashboard = ({ navigation }) => {
 
       <View style={styles.managementSection}>
         <Text style={styles.sectionTitle}>Management</Text>
-        <View style={styles.cardRow}>
+        <View style={styles.managementGrid}>
           <TouchableOpacity
             style={styles.card}
             onPress={() => navigation.navigate('PendingProfiles')}
@@ -79,15 +79,6 @@ const AdminDashboard = ({ navigation }) => {
             <Text style={styles.cardSub}>Review & Approve</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => navigation.navigate('ManageProfiles')}
-          >
-            <Text style={styles.cardTitle}>Manage Profiles </Text>
-            <Text style={styles.cardSub}>View Approved</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={[styles.cardRow, { marginTop: SPACING.md }]}>
           <TouchableOpacity
             style={styles.card}
             onPress={() => navigation.navigate('ManageUsers')}
@@ -103,8 +94,7 @@ const AdminDashboard = ({ navigation }) => {
             <Text style={styles.cardTitle}>Paid Memberships</Text>
             <Text style={styles.cardSub}>Toggle User Access</Text>
           </TouchableOpacity>
-        </View>
-        <View style={[styles.cardRow, { marginTop: SPACING.md }]}>
+
           <TouchableOpacity
             style={styles.card}
             onPress={() => navigation.navigate('AdminUserList')}
@@ -142,8 +132,8 @@ const styles = StyleSheet.create({
 
   managementSection: { marginBottom: SPACING.xl },
   sectionTitle: { fontSize: FONT_SIZES.lg, fontWeight: 'bold', color: COLORS.textPrimary, marginBottom: SPACING.md },
-  cardRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  card: { backgroundColor: '#fff', padding: SPACING.md, borderRadius: 10, width: '48%', elevation: 3 },
+  managementGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  card: { backgroundColor: '#fff', padding: SPACING.md, borderRadius: 10, width: '48%', marginBottom: SPACING.md, elevation: 3 },
   cardTitle: { fontSize: FONT_SIZES.md, fontWeight: 'bold', color: COLORS.textPrimary },
   cardSub: { fontSize: FONT_SIZES.sm, color: COLORS.textSecondary, marginTop: 4 },
 

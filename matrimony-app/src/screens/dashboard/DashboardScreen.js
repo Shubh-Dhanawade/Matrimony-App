@@ -325,7 +325,7 @@ const DashboardScreen = ({ navigation }) => {
                   },
                 },
                 right: {
-                  title: t("interested") || "INTERESTED",
+                  title: t("interested") || "INTEREST",
                   style: {
                     label: {
                       backgroundColor: "green",
