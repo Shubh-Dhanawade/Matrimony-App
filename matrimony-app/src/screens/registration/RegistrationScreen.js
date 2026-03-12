@@ -71,11 +71,10 @@ const RegistrationScreen = ({ navigation, route }) => {
     birthplace: "",
     qualification: "",
     occupation: "",
-    profession: "",
     company_name: "",
     monthly_income: "",
     property: "",
-    caste: "",
+    caste: "Lingayat",
     sub_caste: "",
     relative_surname: "",
     expectations: "",
@@ -781,11 +780,24 @@ const RegistrationScreen = ({ navigation, route }) => {
       { key: "qualification", label: t("qualification") },
       { key: "occupation", label: t("occupation") },
       { key: "caste", label: t("caste") },
+      { key: "sub_caste", label: t("sub_caste") },
     ];
 
     const missing = requiredFields.filter(
       ({ key }) => !formData[key] || String(formData[key]).trim() === ""
     );
+
+    if (!formData.avatar_url && !pickedImage && existingPhotos.length === 0 && selectedMultipleImages.length === 0) {
+      missing.push({ label: t("profile_photo") || "Profile Photo" });
+    }
+    
+    if (!formData.biodata_file && !pickedBiodata) {
+      missing.push({ label: t("biodata") || "Biodata Document" });
+    }
+
+    if (!formData.kundali_file && !pickedKundali) {
+      missing.push({ label: t("kundali") || "Kundali Document" });
+    }
 
     if (missing.length > 0) {
       const fieldList = missing?.map(({ label }) => `• ${label}`).join("\n");
@@ -1176,11 +1188,6 @@ const RegistrationScreen = ({ navigation, route }) => {
           onSelect={(v) => updateField("occupation", v)}
         />
         <CustomInput
-          label={`${t("profession")} *`}
-          value={formData.profession}
-          onChangeText={(v) => updateField("profession", v)}
-        />
-        <CustomInput
           label={t("business_name")}
           value={formData.company_name}
           onChangeText={(v) => updateField("company_name", v)}
@@ -1200,12 +1207,12 @@ const RegistrationScreen = ({ navigation, route }) => {
 
         <Text style={styles.sectionTitle}>{t("community_details")}</Text>
         <CustomInput
-          label={t("caste")}
+          label={`${t("caste")} *`}
           value={formData.caste}
           onChangeText={(v) => updateField("caste", v)}
         />
         <CustomInput
-          label={t("sub_caste")}
+          label={`${t("sub_caste")} *`}
           value={formData.sub_caste}
           onChangeText={(v) => updateField("sub_caste", v)}
         />
@@ -1225,7 +1232,7 @@ const RegistrationScreen = ({ navigation, route }) => {
         />
 
         <View style={styles.photoSection}>
-          <Text style={styles.label}>{t("profile_photo")}</Text>
+          <Text style={styles.label}>{t("profile_photo")} *</Text>
           <View style={styles.photoButtons}>
             <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
               <Text style={styles.photoButtonText}>{t("take_photo")}</Text>
@@ -1265,7 +1272,7 @@ const RegistrationScreen = ({ navigation, route }) => {
         {/*  BIODATA UPLOAD SECTION                    */}
         {/* ═══════════════════════════════════════════ */}
         <View style={styles.uploadBox}>
-          <Text style={styles.label}>{t("biodata_upload")}</Text>
+          <Text style={styles.label}>{t("biodata_upload")} *</Text>
           <TouchableOpacity style={styles.uploadButtonLegacy} onPress={pickBiodataFile}>
             <MaterialCommunityIcons name="file-document-outline" size={24} color={COLORS.primary} />
             <Text style={styles.uploadButtonText}>{t("select_biodata")}</Text>
@@ -1296,7 +1303,7 @@ const RegistrationScreen = ({ navigation, route }) => {
         {/*  KUNDALI UPLOAD SECTION                    */}
         {/* ═══════════════════════════════════════════ */}
         <View style={styles.uploadBox}>
-          <Text style={styles.label}>{t("kundali_upload")}</Text>
+          <Text style={styles.label}>{t("kundali_upload")} *</Text>
           <TouchableOpacity style={styles.uploadButtonLegacy} onPress={pickKundaliFile}>
             <MaterialCommunityIcons name="file-document-outline" size={24} color={COLORS.primary} />
             <Text style={styles.uploadButtonText}>{t("select_kundali")}</Text>
@@ -1327,7 +1334,7 @@ const RegistrationScreen = ({ navigation, route }) => {
         {/*  MULTIPLE PROFILE PHOTOS SECTION           */}
         {/* ═══════════════════════════════════════════ */}
         <View style={styles.multiPhotoSection}>
-          <Text style={styles.sectionTitle}>{t("profile_photo")}</Text>
+          <Text style={styles.sectionTitle}>{t("profile_photo")} *</Text>
           <Text style={styles.multiPhotoSubtitle}>
             {t("select_up_to_3_photos")}
           </Text>

@@ -104,7 +104,6 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
           {/* ─── Quick Stats ─── */}
           <View style={styles.statsRow}>
             <QuickStat icon="human-male-height" label={t("height") || "Height"} value={profile.height ?? '—'} />
-            <QuickStat icon="briefcase-outline" label="Profession" value={profile.profession ?? profile.occupation ?? '—'} />
             <QuickStat icon="school-outline" label="Education" value={profile.qualification ?? '—'} />
           </View>
 
@@ -147,7 +146,6 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
               <Text style={styles.sectionTitle}>Professional Details</Text>
               <Text style={styles.detailText}><Text style={styles.detailLabel}>Qualification:</Text> {profile.qualification}</Text>
               <Text style={styles.detailText}><Text style={styles.detailLabel}>Occupation:</Text> {profile.occupation}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Profession:</Text> {profile.profession}</Text>
               <Text style={styles.detailText}><Text style={styles.detailLabel}>{t("company_name")}:</Text> {profile.company_name || 'N/A'}</Text>
               <Text style={styles.detailText}><Text style={styles.detailLabel}>Monthly Income:</Text> {profile.monthly_income}</Text>
               <Text style={styles.detailText}><Text style={styles.detailLabel}>Property:</Text> {profile.property}</Text>
@@ -289,11 +287,6 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
             value={profile.height ?? "—"}
           />
           <QuickStat
-            icon="briefcase-outline"
-            label="Profession"
-            value={profile.profession ?? profile.occupation ?? "—"}
-          />
-          <QuickStat
             icon="school-outline"
             label="Education"
             value={profile.qualification ?? "—"}
@@ -365,10 +358,6 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
             <Text style={styles.detailText}>
               <Text style={styles.detailLabel}>{t("occupation")}:</Text>{" "}
               {t(`occupation_${profile.occupation.toLowerCase()}`) || profile.occupation}
-            </Text>
-            <Text style={styles.detailText}>
-              <Text style={styles.detailLabel}>{t("profession")}:</Text>{" "}
-              {profile.profession}
             </Text>
             <Text style={styles.detailText}>
               <Text style={styles.detailLabel}>{t("company_name")}:</Text>{" "}

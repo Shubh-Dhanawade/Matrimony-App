@@ -162,7 +162,7 @@ const UserProfileScreen = ({ navigation }) => {
         <MenuItem
           icon="help-circle-outline"
           label={t("help_support")}
-          onPress={() => { }}
+          onPress={() => navigation.navigate("HelpSupport")}
         />
         <MenuItem
           icon="logout"
