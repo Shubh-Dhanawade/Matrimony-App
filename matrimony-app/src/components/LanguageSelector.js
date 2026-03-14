@@ -2,8 +2,9 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, FONT_SIZES } from '../utils/constants';
+import CustomPicker from './CustomPicker';
 
-const LanguageSelector = () => {
+const LanguageSelector = ({ variant = 'button' }) => {
     const { t, i18n } = useTranslation();
 
     const languages = [
@@ -15,6 +16,20 @@ const LanguageSelector = () => {
     const changeLanguage = (code) => {
         i18n.changeLanguage(code);
     };
+
+    if (variant === 'dropdown') {
+        const pickerOptions = languages.map(lang => ({ label: lang.label, value: lang.code }));
+        
+        return (
+            <CustomPicker
+                label={t('select_language')}
+                value={i18n.language}
+                options={pickerOptions}
+                placeholder={t('select_language')}
+                onSelect={(val) => changeLanguage(val)}
+            />
+        );
+    }
 
     return (
         <View style={styles.container}>

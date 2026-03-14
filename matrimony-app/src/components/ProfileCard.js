@@ -35,10 +35,8 @@ const CARD_HEIGHT = height * 0.75;
 const CARD_WIDTH = width * 0.92;
 
 // Helper: mask all name parts except the first name for unpaid users
-const getMaskedName = (fullName) => {
-  if (!fullName) return "Unknown";
-  const parts = fullName.trim().split(/\s+/);
-  return parts[0]; // strictly return the first name ONLY
+const getMaskedName = (profileId) => {
+  return `User ${profileId || "Unknown"}`; 
 };
 
 const ProfileCard = ({
@@ -77,7 +75,7 @@ const ProfileCard = ({
   const displayName =
     isConnected || isPaid
       ? profile.full_name
-      : getMaskedName(profile.full_name);
+      : getMaskedName(profile.user_id);
 
   const photos = React.useMemo(() => {
     if (profile.photos && profile.photos.length > 0) {
@@ -101,21 +99,21 @@ const ProfileCard = ({
     if (profile.invitation_status !== "None") {
       Alert.alert(
         "Already Connected",
-        `You have already ${isPending ? "sent a follow request to" : "connected with"} this profile.`,
+        `You have already ${isPending ? "sent an interest to" : "connected with"} this profile.`,
       );
       return;
     }
     try {
       await api.post("/profiles/interest", { receiverId: profile.user_id });
       Alert.alert(
-        "💌 Follow Request Sent",
+        "💌 Interest Sent",
         `Your request has been sent to ${profile.full_name || "this profile"}.`,
       );
       if (onAction) onAction("refresh", profile);
     } catch (err) {
       Alert.alert(
         "Error",
-        err?.response?.data?.message || "Failed to send follow request.",
+        err?.response?.data?.message || "Failed to send interest.",
       );
     }
   };
@@ -177,7 +175,7 @@ const ProfileCard = ({
     if (!isConnected) {
       Alert.alert(
         "Locked",
-        "Follow this profile and wait for acceptance to view the full profile.",
+        "Send an interest to this profile and wait for acceptance to view the full profile.",
       );
       return;
     }
@@ -261,7 +259,6 @@ const ProfileCard = ({
               </TouchableOpacity>
             </View>
 
-            {/* Status Badges (Right) */}
             <View style={styles.topRightActions}>
               {/* Last Seen Badge */}
               {profile.last_active_at && (
@@ -275,33 +272,6 @@ const ProfileCard = ({
                     {formatLastActive(profile.last_active_at)}
                   </Text>
                 </View>
-              )}
-
-              {/* Follow Badge Button */}
-              {isPaid && (
-                <TouchableOpacity
-                  style={[
-                    styles.followBtn,
-                    (isPending || isConnected) && styles.followBtnDisabled,
-                  ]}
-                  onPress={isPending || isConnected ? handleUnfollow : handleFollow}
-                  activeOpacity={0.8}
-                >
-                  <MaterialCommunityIcons
-                    name={
-                      isConnected
-                        ? "check-circle"
-                        : isPending
-                          ? "clock-outline"
-                          : "heart-outline"
-                    }
-                    size={14}
-                    color="#fff"
-                  />
-                  <Text style={styles.followBtnText}>
-                    {isConnected ? t("unfollow") : isPending ? t("cancel_request") : t("follow")}
-                  </Text>
-                </TouchableOpacity>
               )}
             </View>
           </View>
@@ -390,10 +360,12 @@ const ProfileCard = ({
                   size={14}
                   color="#ddd"
                 />
-                <Text style={styles.infoText}>
-                  {profile.occupation ||
-                    profile.qualification ||
-                    t("not_specified")}
+                <Text style={styles.infoText} numberOfLines={1} ellipsizeMode="tail">
+                  {profile.company_name
+                    ? `${profile.company_name} – ${profile.occupation || t("not_specified")}`
+                    : profile.occupation ||
+                      profile.qualification ||
+                      t("not_specified")}
                 </Text>
               </View>
             )}
@@ -422,32 +394,48 @@ const ProfileCard = ({
             <ActionButton
               icon="chevron-left"
               label={t("prev")}
-              color="#9E9E9E"
               disabled={!!isFirst}
               onPress={() => onAction("prev", profile)}
+              size={52}
             />
 
-            <ActionButton
-              icon="close"
-              label={t("skip")}
-              color="#FF5252"
-              onPress={() => onAction("skip", profile)}
-            />
+            {isPaid && (
+              <ActionButton
+                icon={
+                  isConnected
+                    ? "check-circle"
+                    : isPending
+                    ? "clock-outline"
+                    : "heart-outline"
+                }
+                label={
+                  isConnected
+                    ? t("remove_interest")
+                    : isPending
+                    ? t("cancel_request")
+                    : t("send_interest")
+                }
+                isActive={isConnected || isPending}
+                onPress={isPending || isConnected ? handleUnfollow : handleFollow}
+                size={52}
+              />
+            )}
 
             <ActionButton
               icon={profile.is_shortlisted ? "star" : "star-outline"}
-              label={profile.is_shortlisted ? t("saved") : t("shortlist")}
-              color={profile.is_shortlisted ? "#FFB300" : "#fff"}
+              label={t("shortlist")}
+              isActive={profile.is_shortlisted}
               onPress={handleShortlist}
+              size={52}
             />
 
             <ActionButton
               icon="chevron-right"
               label={t("next")}
-              color="#fff"
-              isPrimary
+              isActive={true} // Next is always highlighted per requirements
               disabled={!!isLast}
               onPress={() => onAction("next", profile)}
+              size={52}
             />
           </View>
         </View>
@@ -459,33 +447,44 @@ const ProfileCard = ({
 const ActionButton = ({
   icon,
   label,
-  color,
   onPress,
-  isPrimary,
+  isActive = false,
   size = 52,
   disabled = false,
 }) => {
   const animatedValue = useRef(new Animated.Value(1)).current;
+  const [isPressed, setIsPressed] = useState(false);
+
   const handlePressIn = () => {
-    if (!disabled)
+    if (!disabled) {
+      setIsPressed(true);
       Animated.spring(animatedValue, {
         toValue: 0.9,
         useNativeDriver: true,
       }).start();
+    }
   };
   const handlePressOut = () => {
-    if (!disabled)
+    if (!disabled) {
+      setIsPressed(false);
       Animated.spring(animatedValue, {
         toValue: 1,
         friction: 4,
         tension: 40,
         useNativeDriver: true,
       }).start();
+    }
   };
+
+  // Determine if the button should show as highlighted (primary color)
+  const showAsActive = isActive || isPressed;
+  const iconColor = showAsActive ? "#fff" : "#fff"; // Default icon is white
+  const bgColor = showAsActive ? COLORS.primary : "rgba(255,255,255,0.15)";
+  const borderColor = showAsActive ? COLORS.primary : "rgba(255,255,255,0.3)";
 
   return (
     <TouchableOpacity
-      activeOpacity={disabled ? 1 : 0.7}
+      activeOpacity={disabled ? 1 : 0.8}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       onPress={disabled ? null : onPress}
@@ -496,20 +495,21 @@ const ActionButton = ({
         style={[
           styles.circleBtn,
           { width: size, height: size, borderRadius: size / 2 },
-          isPrimary && styles.primaryBtn,
+          { backgroundColor: bgColor, borderColor: borderColor },
+          showAsActive && { elevation: 8 },
           { transform: [{ scale: animatedValue }] },
         ]}
       >
         <MaterialCommunityIcons
           name={icon}
           size={size * 0.5}
-          color={isPrimary ? "#fff" : color}
+          color={iconColor}
         />
       </Animated.View>
       <Text
         style={[
           styles.actionLabel,
-          isPrimary && !disabled && { color: COLORS.primary },
+          showAsActive && !disabled && { color: COLORS.primary },
         ]}
       >
         {label}
@@ -697,18 +697,22 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
   infoRow: { flexDirection: "row", alignItems: "center", marginTop: 5 },
-  infoText: { color: "#eee", fontSize: 14, marginLeft: 6, fontWeight: "500" },
+  infoText: { color: "#eee", fontSize: 14, marginLeft: 6, fontWeight: "500", flex: 1 },
 
   actionContainer: {
     position: "absolute",
     bottom: 15,
-    left: 20,
-    right: 20,
+    left: 10,
+    right: 10,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  actionBtnWrapper: { alignItems: "center", flex: 1 },
+  actionBtnWrapper: { 
+    alignItems: "center", 
+    flex: 1, 
+    justifyContent: "center" 
+  },
   circleBtn: {
     backgroundColor: "rgba(255,255,255,0.15)",
     justifyContent: "center",

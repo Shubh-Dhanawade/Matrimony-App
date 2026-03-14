@@ -196,6 +196,8 @@
     "inches": "इंच",
     "phone_number": "फोन नंबर",
     "phone_number_req": "फोन नंबर *",
+    "parents_phone_number": "पालकांचा फोन नंबर",
+    "parents_phone": "पालकांचा फोन",
     "Very Fair": "खूप गोरा",
     "Fair": "गोरा",
     "Wheatish": "गहूवर्णीय",
@@ -220,7 +222,6 @@
     "relation_placeholder": "उदा. मित्र, नातेवाईक",
     "select_qualification": "शिक्षण निवडा",
     "select_occupation": "व्यवसाय निवडा",
-    "profession": "पेशा",
     "property_details": "मालमत्तेचे तपशील",
     "submit": "सबमिट करा",
     "create_profile": "प्रोफाईल तयार करा",
@@ -238,7 +239,7 @@
     "none": "काहीही नाही",
     "shortlist": "शॉर्टलिस्ट",
     "saved": "जतन केले",
-    "send_interest": "स्वारस्य पाठवा",
+    "send_interest": "स्वारस्य आहे",
     "already_saved": "आधीच जतन केले आहे",
     "already_saved_msg": "ही प्रोफाईल आधीपासून तुमच्या शॉर्टलिस्टमध्ये आहे.",
     "profile_shortlisted_msg": "प्रोफाईल तुमच्या शॉर्टलिस्टमध्ये जोडले गेले!",
@@ -246,7 +247,8 @@
     "interest_sent_msg": "तुमचे स्वारस्य {{name}} ला पाठवले आहे.",
     "shortlisted_profiles": "शॉर्टलिस्ट केलेले प्रोफाईल",
     "manage_saved_profiles": "तुमची जतन केलेली प्रोफाईल पहा आणि व्यवस्थापित करा",
-    "full_profile": "पूर्ण प्रोफाईल",
+    "remove_interest": "स्वारस्य नाही",
+    "cancel_request": "रद्द करा",
     "follow": "फॉलो करा",
     "pending": "प्रलंबित",
     "connected": "जोडलेले",
@@ -259,5 +261,6 @@
     "location": "स्थान",
     "family_details": "कुटुंबाचे तपशील",
     "other_details": "इतर तपशील",
-    "partner_expectations_photo": "अपेक्षा आणि फोटो"
+    "partner_expectations_photo": "अपेक्षा आणि फोटो",
+    "contact_details": "संपर्क तपशील"
 }

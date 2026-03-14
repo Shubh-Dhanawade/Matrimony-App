@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
+import LanguageSelector from '../../components/LanguageSelector';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import api from '../../services/api';
@@ -43,8 +44,12 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>{t('login_title')}</Text>
         <CustomInput
           label={t('mobile_number')}
@@ -66,7 +71,11 @@ const LoginScreen = ({ navigation }) => {
         <Text style={styles.link} onPress={() => navigation.navigate('Signup')}>
           {t('new_user_link')}
         </Text>
+        <View style={{ marginTop: SPACING.lg }}>
+          <LanguageSelector variant="dropdown" />
+        </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

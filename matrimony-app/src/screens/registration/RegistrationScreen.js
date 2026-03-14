@@ -9,6 +9,8 @@ import {
   Platform,
   ActivityIndicator,
   PermissionsAndroid,
+  KeyboardAvoidingView,
+  StatusBar,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
@@ -69,11 +71,10 @@ const RegistrationScreen = ({ navigation, route }) => {
     birthplace: "",
     qualification: "",
     occupation: "",
-    profession: "",
     company_name: "",
     monthly_income: "",
     property: "",
-    caste: "",
+    caste: "Lingayat",
     sub_caste: "",
     relative_surname: "",
     expectations: "",
@@ -86,6 +87,7 @@ const RegistrationScreen = ({ navigation, route }) => {
     district: "",
     taluka: "",
     phone_number: "",
+    parents_phone_number: "",
     whatsapp_number: "",
     biodata_file: "",
     biodata_name: "",
@@ -493,6 +495,7 @@ const RegistrationScreen = ({ navigation, route }) => {
             state: profile.state || "",
             district: profile.district || "",
             taluka: profile.taluka || "",
+            parents_phone_number: profile.parents_phone_number || "",
           };
           setFormData(newData);
           setInitialData(newData);
@@ -508,6 +511,7 @@ const RegistrationScreen = ({ navigation, route }) => {
             state: profile.state || "",
             district: profile.district || "",
             taluka: profile.taluka || "",
+            parents_phone_number: profile.parents_phone_number || "",
           };
           setFormData(newData);
           setInitialData(newData);
@@ -776,11 +780,24 @@ const RegistrationScreen = ({ navigation, route }) => {
       { key: "qualification", label: t("qualification") },
       { key: "occupation", label: t("occupation") },
       { key: "caste", label: t("caste") },
+      { key: "sub_caste", label: t("sub_caste") },
     ];
 
     const missing = requiredFields.filter(
       ({ key }) => !formData[key] || String(formData[key]).trim() === ""
     );
+
+    if (!formData.avatar_url && !pickedImage && existingPhotos.length === 0 && selectedMultipleImages.length === 0) {
+      missing.push({ label: t("profile_photo") || "Profile Photo" });
+    }
+    
+    if (!formData.biodata_file && !pickedBiodata) {
+      missing.push({ label: t("biodata") || "Biodata Document" });
+    }
+
+    if (!formData.kundali_file && !pickedKundali) {
+      missing.push({ label: t("kundali") || "Kundali Document" });
+    }
 
     if (missing.length > 0) {
       const fieldList = missing?.map(({ label }) => `• ${label}`).join("\n");
@@ -818,6 +835,7 @@ const RegistrationScreen = ({ navigation, route }) => {
       const basePayload = {
         ...formData,
         phone_number: formData.phone_number,
+        parents_phone_number: formData.parents_phone_number,
         whatsapp_number: formData.whatsapp_number,
         company_name: formData.company_name,
         avatar_url: finalAvatarUrl,         // ← includes newly uploaded URL
@@ -923,8 +941,12 @@ const RegistrationScreen = ({ navigation, route }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom", "left", "right"]}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView contentContainerStyle={styles.content}>
         {/* <TouchableOpacity onPress={handleGoBack} style={styles.inlineBack}>
           <Text style={styles.inlineBackText}>← Back</Text>
         </TouchableOpacity> */}
@@ -1084,6 +1106,13 @@ const RegistrationScreen = ({ navigation, route }) => {
           maxLength={10}
         />
         <CustomInput
+          label={t("parents_phone_number") || "Parent's Phone Number"}
+          value={formData.parents_phone_number}
+          keyboardType="phone-pad"
+          onChangeText={(v) => updateField("parents_phone_number", v)}
+          maxLength={15}
+        />
+        <CustomInput
           label={t("whatsapp_number")}
           value={formData.whatsapp_number}
           keyboardType="phone-pad"
@@ -1159,11 +1188,6 @@ const RegistrationScreen = ({ navigation, route }) => {
           onSelect={(v) => updateField("occupation", v)}
         />
         <CustomInput
-          label={`${t("profession")} *`}
-          value={formData.profession}
-          onChangeText={(v) => updateField("profession", v)}
-        />
-        <CustomInput
           label={t("business_name")}
           value={formData.company_name}
           onChangeText={(v) => updateField("company_name", v)}
@@ -1183,12 +1207,12 @@ const RegistrationScreen = ({ navigation, route }) => {
 
         <Text style={styles.sectionTitle}>{t("community_details")}</Text>
         <CustomInput
-          label={t("caste")}
+          label={`${t("caste")} *`}
           value={formData.caste}
           onChangeText={(v) => updateField("caste", v)}
         />
         <CustomInput
-          label={t("sub_caste")}
+          label={`${t("sub_caste")} *`}
           value={formData.sub_caste}
           onChangeText={(v) => updateField("sub_caste", v)}
         />
@@ -1208,7 +1232,7 @@ const RegistrationScreen = ({ navigation, route }) => {
         />
 
         <View style={styles.photoSection}>
-          <Text style={styles.label}>{t("profile_photo")}</Text>
+          <Text style={styles.label}>{t("profile_photo")} *</Text>
           <View style={styles.photoButtons}>
             <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
               <Text style={styles.photoButtonText}>{t("take_photo")}</Text>
@@ -1248,7 +1272,7 @@ const RegistrationScreen = ({ navigation, route }) => {
         {/*  BIODATA UPLOAD SECTION                    */}
         {/* ═══════════════════════════════════════════ */}
         <View style={styles.uploadBox}>
-          <Text style={styles.label}>{t("biodata_upload")}</Text>
+          <Text style={styles.label}>{t("biodata_upload")} *</Text>
           <TouchableOpacity style={styles.uploadButtonLegacy} onPress={pickBiodataFile}>
             <MaterialCommunityIcons name="file-document-outline" size={24} color={COLORS.primary} />
             <Text style={styles.uploadButtonText}>{t("select_biodata")}</Text>
@@ -1279,7 +1303,7 @@ const RegistrationScreen = ({ navigation, route }) => {
         {/*  KUNDALI UPLOAD SECTION                    */}
         {/* ═══════════════════════════════════════════ */}
         <View style={styles.uploadBox}>
-          <Text style={styles.label}>{t("kundali_upload")}</Text>
+          <Text style={styles.label}>{t("kundali_upload")} *</Text>
           <TouchableOpacity style={styles.uploadButtonLegacy} onPress={pickKundaliFile}>
             <MaterialCommunityIcons name="file-document-outline" size={24} color={COLORS.primary} />
             <Text style={styles.uploadButtonText}>{t("select_kundali")}</Text>
@@ -1310,7 +1334,7 @@ const RegistrationScreen = ({ navigation, route }) => {
         {/*  MULTIPLE PROFILE PHOTOS SECTION           */}
         {/* ═══════════════════════════════════════════ */}
         <View style={styles.multiPhotoSection}>
-          <Text style={styles.sectionTitle}>{t("profile_photo")}</Text>
+          <Text style={styles.sectionTitle}>{t("profile_photo")} *</Text>
           <Text style={styles.multiPhotoSubtitle}>
             {t("select_up_to_3_photos")}
           </Text>
@@ -1468,19 +1492,24 @@ const RegistrationScreen = ({ navigation, route }) => {
         />
       </ScrollView>
 
-      <TermsModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        title={modalData.title}
-        content={modalData.content}
-      />
+        <TermsModal
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          title={modalData.title}
+          content={modalData.content}
+        />
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  content: { padding: SPACING.lg },
+  container: { 
+    flex: 1, 
+    backgroundColor: COLORS.background,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+  },
+  content: { padding: SPACING.lg, paddingBottom: SPACING.xl * 2 },
   mainTitle: {
     fontSize: FONT_SIZES.xl,
     fontWeight: "bold",
@@ -1496,6 +1525,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
     paddingBottom: 4,
+    marginTop: SPACING.lg,
   },
   label: {
     fontSize: FONT_SIZES.sm,

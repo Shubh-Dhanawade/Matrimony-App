@@ -85,7 +85,24 @@ const adminController = {
         return res.status(403).json({ message: 'Cannot delete an administrator account' });
       }
 
-      // 2. Delete the user (cascading will handle profiles and invitations)
+      // 2. Explicitly delete related records to avoid foreign key constraint errors
+      try {
+        await db.execute('DELETE FROM shortlists WHERE user_id = ? OR profile_user_id = ?', [id, id]);
+      } catch (err) { /* ignore if table doesn't exist */ }
+
+      try {
+        await db.execute('DELETE FROM invitations WHERE sender_id = ? OR receiver_id = ?', [id, id]);
+      } catch (err) { /* ignore */ }
+
+      try {
+        await db.execute('DELETE FROM multiple_profile_images WHERE user_id = ?', [id]);
+      } catch (err) { /* ignore */ }
+
+      try {
+        await db.execute('DELETE FROM profiles WHERE user_id = ?', [id]);
+      } catch (err) { /* ignore */ }
+
+      // 3. Delete the user
       const [result] = await db.execute('DELETE FROM users WHERE id = ?', [id]);
 
       if (result.affectedRows === 0) {
@@ -108,7 +125,7 @@ const adminController = {
 
   getAllUsers: async (req, res) => {
     try {
-      const { search = '' } = req.query;
+      const { search = '', is_paid, profile_status } = req.query;
 
       let query = `
       SELECT 
@@ -121,7 +138,9 @@ const adminController = {
         p.full_name,
         p.address,
         p.birthplace,
-        p.status AS profile_status
+        p.status AS profile_status,
+        p.avatar_url,
+        p.gender
       FROM users u
       LEFT JOIN profiles p ON u.id = p.user_id
       WHERE u.role != 'admin'
@@ -132,6 +151,16 @@ const adminController = {
       if (search) {
         query += ` AND (u.mobile_number LIKE ? OR p.full_name LIKE ?)`;
         params.push(`%${search}%`, `%${search}%`);
+      }
+
+      if (is_paid !== undefined && is_paid !== '') {
+        query += ` AND u.is_paid = ?`;
+        params.push(is_paid === 'true' || is_paid === '1' ? 1 : 0);
+      }
+
+      if (profile_status) {
+        query += ` AND p.status = ?`;
+        params.push(profile_status);
       }
 
       query += ` ORDER BY u.created_at DESC`;
@@ -183,6 +212,34 @@ const adminController = {
       res.json({ message: `User membership status updated to ${is_paid ? 'Paid' : 'Unpaid'}` });
     } catch (error) {
       console.error('togglePaidStatus Error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  },
+
+  resetProfile: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // Check if user exists
+      const [userRows] = await db.execute('SELECT id FROM users WHERE id = ?', [id]);
+      if (userRows.length === 0) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Explicitly delete related profile records
+      try { await db.execute('DELETE FROM shortlists WHERE user_id = ? OR profile_user_id = ?', [id, id]); } catch (err) { }
+      try { await db.execute('DELETE FROM invitations WHERE sender_id = ? OR receiver_id = ?', [id, id]); } catch (err) { }
+      try { await db.execute('DELETE FROM multiple_profile_images WHERE user_id = ?', [id]); } catch (err) { }
+      
+      const [result] = await db.execute('DELETE FROM profiles WHERE user_id = ?', [id]);
+      
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: 'No profile found to reset for this user' });
+      }
+
+      res.json({ message: 'Profile reset successfully. User will need to create a new profile.' });
+    } catch (error) {
+      console.error('resetProfile Error:', error);
       res.status(500).json({ message: error.message });
     }
   }

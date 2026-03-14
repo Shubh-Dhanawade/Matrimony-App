@@ -24,10 +24,11 @@ import api from "../services/api";
 import { COLORS } from "../utils/constants";
 import AdminDashboard from "../screens/dashboard/AdminDashboard";
 import PendingProfiles from "../screens/dashboard/PendingProfiles";
-import ManageProfiles from "../screens/dashboard/ManageProfiles";
 import ManageUsers from "../screens/dashboard/ManageUsers";
 import MembershipManagement from "../screens/dashboard/MembershipManagement";
 import ProfilesFeedScreen from "../screens/dashboard/ProfilesFeedScreen";
+import AdminUserListScreen from "../screens/dashboard/AdminUserListScreen";
+import HelpSupportScreen from "../screens/dashboard/HelpSupportScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -83,11 +84,6 @@ const AdminStack = () => (
       options={{ title: "Pending Profiles" }}
     />
     <Stack.Screen
-      name="ManageProfiles"
-      component={ManageProfiles}
-      options={{ title: "Manage Profiles" }}
-    />
-    <Stack.Screen
       name="ManageUsers"
       component={ManageUsers}
       options={{ title: "Manage Users" }}
@@ -96,6 +92,11 @@ const AdminStack = () => (
       name="MembershipManagement"
       component={MembershipManagement}
       options={{ title: "Paid Memberships" }}
+    />
+    <Stack.Screen
+      name="AdminUserList"
+      component={AdminUserListScreen}
+      options={{ title: "Total Users" }}
     />
   </Stack.Navigator>
 );
@@ -196,6 +197,11 @@ const MainStack = () => {
         name="Shortlist"
         component={ShortlistedScreen}
         options={{ title: t("shortlisted_profiles") || "Shortlisted Profiles" }}
+      />
+      <Stack.Screen
+        name="HelpSupport"
+        component={HelpSupportScreen}
+        options={{ title: t("help_support") || "Help & Support" }}
       />
     </Stack.Navigator>
   );

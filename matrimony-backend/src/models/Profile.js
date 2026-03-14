@@ -26,12 +26,12 @@ const allowedColumns = [
   "taluka",
   // New profile fields
   "property",
-  "profession",
   "height",
   "color",
   "age",
   "profile_managed_by",
   "phone_number",
+  "parents_phone_number",
   "whatsapp_number",
   "company_name",
   "manglik",

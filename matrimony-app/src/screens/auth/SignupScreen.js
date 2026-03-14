@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
+import LanguageSelector from '../../components/LanguageSelector';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import api from '../../services/api';
@@ -13,14 +14,22 @@ const SignupScreen = ({ navigation }) => {
   const { t } = useTranslation();
   const [mobileNumber, setMobileNumber] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
   const handleSignup = async () => {
-    // if (!mobileNumber || !password) {
-    //   Alert.alert('Error', 'Please fill all fields');
-    //   return;
-    // }
+    if (!mobileNumber || !password || !confirmPassword) {
+      Alert.alert(t('error') || 'Error', t('fill_all_fields') || 'Please fill all fields');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert(t('error') || 'Error', t('password_mismatch') || 'Passwords do not match');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -41,35 +50,55 @@ const SignupScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Join Matrimony</Text>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.title}>{t('signup_title') || 'Join Matrimony'}</Text>
         <CustomInput
-          label="Mobile Number *"
-          placeholder="Enter mobile number"
+          label={`${t('mobile_number') || 'Mobile Number'} *`}
+          placeholder={t('mobile_placeholder') || "Enter mobile number"}
           keyboardType="phone-pad"
           required
           value={mobileNumber}
           onChangeText={(e) => setMobileNumber(e)}
         />
         <CustomInput
-          label="Password *"
-          placeholder="Create password"
-          secureTextEntry
+          label={`${t('password') || 'Password'} *`}
+          placeholder={t('password_placeholder') || "Create password"}
+          secureTextEntry={!showPassword}
           required
           value={password}
           onChangeText={(e) => setPassword(e)}
+          rightIcon={showPassword ? "eye-off" : "eye"}
+          onRightIconPress={() => setShowPassword(!showPassword)}
         />
-        <CustomButton title="Create Account" onPress={() => {
+        <CustomInput
+          label={`${t('confirm_password') || 'Confirm Password'} *`}
+          placeholder={t('confirm_password_placeholder') || "Confirm password"}
+          secureTextEntry={!showConfirmPassword}
+          required
+          value={confirmPassword}
+          onChangeText={(e) => setConfirmPassword(e)}
+          rightIcon={showConfirmPassword ? "eye-off" : "eye"}
+          onRightIconPress={() => setShowConfirmPassword(!showConfirmPassword)}
+        />
+        <CustomButton title={t('signup_title') || "Create Account"} onPress={() => {
           handleSignup()
         }} loading={loading} />
         <Text style={styles.link} onPress={() => navigation.navigate('Login')}>
-          Already have an account? Login
+          {t('already_user') || "Already have an account? Login"}
         </Text>
+        <View style={{ marginTop: SPACING.lg }}>
+          <LanguageSelector variant="dropdown" />
+        </View>
         {/* <Text style={styles.link} >
           {mobileNumber} , {password}
         </Text> */}
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

@@ -26,10 +26,11 @@ export const FONT_SIZES = {
   xxl: 32,
 };
 
-export const API_BASE_URL =
-  "https://cagelike-nonpatriotic-noelia.ngrok-free.dev/api"; // Standard Android Emulator IP for localhost
-export const IMAGE_BASE_URL =
-  "https://cagelike-nonpatriotic-noelia.ngrok-free.dev";
+// export const API_BASE_URL = "https://cagelike-nonpatriotic-noelia.ngrok-free.dev/api"; // Standard Android Emulator IP for localhost
+// export const IMAGE_BASE_URL = "https://cagelike-nonpatriotic-noelia.ngrok-free.dev";
+
+export const API_BASE_URL = "http://192.168.0.104:5472/api";
+export const IMAGE_BASE_URL = "http://192.168.0.104:5472";
 
 export const MARITAL_STATUS_OPTIONS = [
   "Single",
@@ -38,14 +39,7 @@ export const MARITAL_STATUS_OPTIONS = [
   "Widowed",
 ];
 
-export const COLOR_OPTIONS = [
-  "Very Fair",
-  "Fair",
-  "Wheatish",
-  "Wheatish Brown",
-  "Brown",
-  "Dark",
-];
+export const COLOR_OPTIONS = ["Fair", "Wheatish Brown", "Brown"];
 
 export const MANGLIK_OPTIONS = [
   { label: "Yes", value: "Yes" },
@@ -62,41 +56,45 @@ export const OCCUPATION_OPTIONS = [
   "Other",
 ];
 export const QUALIFICATION_OPTIONS = [
-  "10th Pass / SSC",
-  "12th Pass / HSC",
-  "ITI",
-  "Diploma / Certificate",
-  "Diploma",
-  "Graduation",
-  "B.A (Bachelor of Arts)",
+  "High School (10th)",
+  "Higher Secondary (12th)",
+  "B.A. (Bachelor of Arts)",
   "B.Com (Bachelor of Commerce)",
   "B.Sc (Bachelor of Science)",
-  "B.Tech / B.E",
-  "BBA",
-  "BCA",
+  "BBA (Bachelor of Business Administration)",
+  "BCA (Bachelor of Computer Applications)",
+  "B.Tech / B.E. (Engineering)",
   "B.Pharm",
-  "Post Graduation",
-  "M.A",
-  "M.Com",
-  "M.Sc",
-  "M.Tech / M.E",
-  "MBA",
-  "MCA",
-  "M.Pharm",
+  "B.Arch",
   "MBBS",
+  "BDS",
   "BAMS",
   "BHMS",
-  "Bsc Nursing",
-  "Msc Nursing",
-  "Bsc Optometry",
-  "Bsc Physiotherapy",
-  "Bsc Paramedical",
-  "Higher Studies",
-  "PhD / Doctorate",
-  "Post Doctorate",
-  "Professional Course",
-  "Certificate Course",
-  "Other",
+  "BPT (Physiotherapy)",
+  "LLB",
+  "B.Ed",
+  "M.A.",
+  "M.Com",
+  "M.Sc",
+  "MBA / PGDM",
+  "MCA",
+  "M.Tech / M.E.",
+  "M.Pharm",
+  "MDS",
+  "MD / MS",
+  "LLM",
+  "M.Ed",
+  "CA (Chartered Accountant)",
+  "CS (Company Secretary)",
+  "ICWA / CMA",
+  "CFA",
+  "Architect",
+  "Pilot",
+  "Fashion Designing",
+  "Hotel Management",
+  "PhD",
+  "ITI",
+  "Not Specified / Other",
 ];
 
 export const PROFILE_FOR_OPTIONS = [

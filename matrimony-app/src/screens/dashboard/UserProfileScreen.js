@@ -8,7 +8,10 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Platform,
+  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
@@ -58,8 +61,9 @@ const UserProfileScreen = ({ navigation }) => {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
         <View style={styles.avatarContainer}>
           <Image
             source={{ uri: getProfileImageUri(profile?.avatar_url) }}
@@ -158,7 +162,7 @@ const UserProfileScreen = ({ navigation }) => {
         <MenuItem
           icon="help-circle-outline"
           label={t("help_support")}
-          onPress={() => { }}
+          onPress={() => navigation.navigate("HelpSupport")}
         />
         <MenuItem
           icon="logout"
@@ -166,8 +170,9 @@ const UserProfileScreen = ({ navigation }) => {
           onPress={handleLogout}
           color="#F44336"
         />
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -193,6 +198,11 @@ const MenuItem = ({ icon, label, onPress, color = "#333" }) => (
 );
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#fff",
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+  },
   container: { flex: 1, backgroundColor: "#F8F9FA" },
   header: {
     backgroundColor: "#fff",

@@ -10,8 +10,9 @@ import {
   Alert,
   StatusBar,
   Linking,
+  Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
@@ -20,6 +21,7 @@ import { COLORS, SPACING, FONT_SIZES, IMAGE_BASE_URL } from '../../utils/constan
 import { getProfileImageUri } from '../../utils/imageUtils';
 
 const ViewFullProfileScreen = ({ navigation, route }) => {
+  const insets = useSafeAreaInsets();
   const { userId } = route.params;
   const { t } = useTranslation();
   const [profile, setProfile] = useState(null);
@@ -58,7 +60,7 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
 
   if (error || !profile) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
         <ScrollView
           style={styles.container}
@@ -103,7 +105,6 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
           {/* ─── Quick Stats ─── */}
           <View style={styles.statsRow}>
             <QuickStat icon="human-male-height" label={t("height") || "Height"} value={profile.height ?? '—'} />
-            <QuickStat icon="briefcase-outline" label="Profession" value={profile.profession ?? profile.occupation ?? '—'} />
             <QuickStat icon="school-outline" label="Education" value={profile.qualification ?? '—'} />
           </View>
 
@@ -146,7 +147,6 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
               <Text style={styles.sectionTitle}>Professional Details</Text>
               <Text style={styles.detailText}><Text style={styles.detailLabel}>Qualification:</Text> {profile.qualification}</Text>
               <Text style={styles.detailText}><Text style={styles.detailLabel}>Occupation:</Text> {profile.occupation}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Profession:</Text> {profile.profession}</Text>
               <Text style={styles.detailText}><Text style={styles.detailLabel}>{t("company_name")}:</Text> {profile.company_name || 'N/A'}</Text>
               <Text style={styles.detailText}><Text style={styles.detailLabel}>Monthly Income:</Text> {profile.monthly_income}</Text>
               <Text style={styles.detailText}><Text style={styles.detailLabel}>Property:</Text> {profile.property}</Text>
@@ -163,6 +163,9 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Contact Details</Text>
               <Text style={styles.detailText}><Text style={styles.detailLabel}>Phone:</Text> {profile.phone_number}</Text>
+              {profile.parents_phone_number ? (
+                <Text style={styles.detailText}><Text style={styles.detailLabel}>Parent's Phone:</Text> {profile.parents_phone_number}</Text>
+              ) : null}
               <Text style={styles.detailText}><Text style={styles.detailLabel}>{t("whatsapp")}:</Text> {profile.whatsapp_number}</Text>
             </View>
 
@@ -285,11 +288,6 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
             value={profile.height ?? "—"}
           />
           <QuickStat
-            icon="briefcase-outline"
-            label="Profession"
-            value={profile.profession ?? profile.occupation ?? "—"}
-          />
-          <QuickStat
             icon="school-outline"
             label="Education"
             value={profile.qualification ?? "—"}
@@ -329,24 +327,6 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
             </Text>
           </View>
 
-          {/* Quick Stats */}
-          <View style={styles.statsContainer}>
-            <View style={styles.statBox}>
-              <MaterialCommunityIcons name="human-male-height" size={24} color={COLORS.primary} />
-              <Text style={styles.statValue}>{profile.height}</Text>
-              <Text style={styles.statLabel}>{t("height")}</Text>
-            </View>
-            <View style={[styles.statBox, styles.statBoxBorder]}>
-              <MaterialCommunityIcons name="briefcase" size={24} color={COLORS.primary} />
-              <Text style={styles.statValue} numberOfLines={1}>{profile.profession || 'N/A'}</Text>
-              <Text style={styles.statLabel}>{t("profession")}</Text>
-            </View>
-            <View style={styles.statBox}>
-              <MaterialCommunityIcons name="school" size={24} color={COLORS.primary} />
-              <Text style={styles.statValue} numberOfLines={1}>{profile.qualification || 'N/A'}</Text>
-              <Text style={styles.statLabel}>{t("education")}</Text>
-            </View>
-          </View>
           {/* 3️⃣ Location Details */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t("location")}</Text>
@@ -381,10 +361,6 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
               {t(`occupation_${profile.occupation.toLowerCase()}`) || profile.occupation}
             </Text>
             <Text style={styles.detailText}>
-              <Text style={styles.detailLabel}>{t("profession")}:</Text>{" "}
-              {profile.profession}
-            </Text>
-            <Text style={styles.detailText}>
               <Text style={styles.detailLabel}>{t("company_name")}:</Text>{" "}
               {profile.company_name || "N/A"}
             </Text>
@@ -417,6 +393,12 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
               <Text style={styles.detailLabel}>{t("phone")}:</Text>{" "}
               {profile.phone_number}
             </Text>
+            {profile.parents_phone_number ? (
+              <Text style={styles.detailText}>
+                <Text style={styles.detailLabel}>{t("parents_phone") || "Parent's Phone"}:</Text>{" "}
+                {profile.parents_phone_number}
+              </Text>
+            ) : null}
             <Text style={styles.detailText}>
               <Text style={styles.detailLabel}>{t("whatsapp")}:</Text>{" "}
               {profile.whatsapp_number}

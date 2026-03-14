@@ -196,6 +196,8 @@
     "inches": "इंच",
     "phone_number": "फ़ोन नंबर",
     "phone_number_req": "फ़ोन नंबर *",
+    "parents_phone_number": "माता-पिता का फ़ोन नंबर",
+    "parents_phone": "माता-पिता का फ़ोन",
     "Very Fair": "बहुत गोरा",
     "Fair": "गोरा",
     "Wheatish": "गेहुआं",
@@ -220,7 +222,6 @@
     "relation_placeholder": "जैसे दोस्त, चचेरा भाई",
     "select_qualification": "योग्यता चुनें",
     "select_occupation": "व्यवसाय चुनें",
-    "profession": "पेशा",
     "property_details": "संपत्ति का विवरण",
     "submit": "जमा करें",
     "create_profile": "प्रोफाइल बनाएं",
@@ -238,7 +239,7 @@
     "none": "कोई नहीं",
     "shortlist": "शॉर्टलिस्ट",
     "saved": "सहेजा गया",
-    "send_interest": "रुचि भेजें",
+    "send_interest": "रुचि है",
     "already_saved": "पहले से सहेजा गया",
     "already_saved_msg": "यह प्रोफाइल आपकी शॉर्टलिस्ट में पहले ही मौजूद है।",
     "profile_shortlisted_msg": "प्रोफाइल को आपकी शॉर्टलिस्ट में जोड़ दिया गया!",
@@ -247,6 +248,8 @@
     "shortlisted_profiles": "शॉर्टलिस्ट की गई प्रोफाइल",
     "manage_saved_profiles": "अपनी सहेजी गई प्रोफाइल देखें और प्रबंधित करें",
     "full_profile": "पूरी प्रोफाइल",
+    "remove_interest": "रुचि नहीं है",
+    "cancel_request": "रद्द करें",
     "follow": "फॉलो करें",
     "pending": "लंबित",
     "connected": "जुड़े हुए",
@@ -259,5 +262,6 @@
     "location": "स्थान",
     "family_details": "परिवार का विवरण",
     "other_details": "अन्य विवरण",
-    "partner_expectations_photo": "अपेक्षाएं और फोटो"
+    "partner_expectations_photo": "अपेक्षाएं और फोटो",
+    "contact_details": "संपर्क विवरण"
 }
