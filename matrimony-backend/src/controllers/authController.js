@@ -26,9 +26,10 @@ const authController = {
       const hashedPassword = await bcrypt.hash(password, salt);
 
       const userId = await User.create(mobileNumber, hashedPassword, role);
+      const tokenVersion = 0;
 
       const token = jwt.sign(
-        { id: userId, role: role },
+        { id: userId, role: role, tokenVersion: tokenVersion },
         process.env.JWT_SECRET || "secret",
         { expiresIn: "7d" },
       );
@@ -69,6 +70,12 @@ const authController = {
         return res.status(400).json({ message: "Invalid credentials" });
       }
 
+      if (user.account_status === "deleted") {
+        return res.status(403).json({
+          message: "Your account has been deleted. Please contact support.",
+        });
+      }
+
       if (user.is_blocked) {
         console.log(`Login failed: User ${mobileNumber} is blocked`);
         return res
@@ -76,8 +83,11 @@ const authController = {
           .json({ message: "Your account has been blocked by admin" });
       }
 
+      // Record last login timestamp
+      await User.updateLastLogin(user.id);
+
       const token = jwt.sign(
-        { id: user.id, role: user.role },
+        { id: user.id, role: user.role, tokenVersion: user.token_version },
         process.env.JWT_SECRET || "secret",
         { expiresIn: "7d" },
       );

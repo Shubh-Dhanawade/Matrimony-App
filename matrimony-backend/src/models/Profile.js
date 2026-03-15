@@ -37,6 +37,7 @@ const allowedColumns = [
   "manglik",
   "biodata_file",
   "kundali_file",
+  "privacy_setting",
 ];
 
 const filterValidData = (data) => {
@@ -102,7 +103,6 @@ const Profile = {
   },
 
   getAll: async (currentUserId, filters = {}) => {
-    // Base query without semicolon at the end
     let query = `
      SELECT 
     p.*,
@@ -128,7 +128,11 @@ WHERE p.user_id != ?
       AND p.status = 'Approved'
     `;
 
-    const params = [currentUserId, currentUserId, currentUserId];
+    const params = [
+      currentUserId,
+      currentUserId,
+      currentUserId,
+    ];
 
     // Helper to check if value is valid (not undefined, null, or empty string)
     const isValid = (val) =>
@@ -172,7 +176,6 @@ WHERE p.user_id != ?
       params.push(`%${filters.birthplace}%`);
     }
 
-    // Add logging for debugging
     console.log(
       "[FILTER_DEBUG] Generated Query:",
       query.replace(/\s+/g, " ").trim(),
@@ -191,6 +194,8 @@ WHERE p.user_id != ?
     }
   },
 
+
+
   getLatest: async (currentUserId, filters = {}) => {
     // Sanitize and provide defaults for pagination
     const page = Math.max(1, parseInt(filters.page) || 1);
@@ -205,8 +210,6 @@ WHERE p.user_id != ?
       `[SQL_DEBUG] Fetching profiles for userId: ${currentUserId}, Page: ${page}, Limit: ${limit}`,
     );
 
-    // Optimized SQL using subquery for invitation status to comply with ONLY_FULL_GROUP_BY
-    // Mapping: Accepted -> Connected, Pending -> Pending, else None.
     let query = `
       SELECT 
         p.*,
@@ -236,7 +239,12 @@ WHERE p.user_id != ?
         AND p.status = 'Approved'
     `;
 
-    const params = [currentUserId, currentUserId, currentUserId, currentUserId];
+    const params = [
+      currentUserId, // is_shortlisted subquery
+      currentUserId, // inv sender_id
+      currentUserId, // inv receiver_id
+      currentUserId, // user_id != currentUserId
+    ];
 
     if (minAge !== null && !isNaN(minAge)) {
       query += ` AND TIMESTAMPDIFF(YEAR, p.dob, CURDATE()) >= ?`;
@@ -247,11 +255,11 @@ WHERE p.user_id != ?
       params.push(maxAge);
     }
 
-    query += ` ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
-    params.push(limit, offset);
+    // Use integer interpolation for LIMIT and OFFSET (safe because they are validated integers)
+    query += ` ORDER BY p.created_at DESC LIMIT ${limit} OFFSET ${offset}`;
 
     try {
-      const [rows] = await db.query(query, params);
+      const [rows] = await db.execute(query, params);
       return { rows, totalCount: rows.length };
     } catch (error) {
       console.error("[SQL_ERROR] getLatest failed:", error.message);
@@ -324,6 +332,49 @@ WHERE p.user_id != ?
     const query = `UPDATE profiles SET ${setClause} WHERE user_id = ?`;
     const [result] = await db.execute(query, [...values, userId]);
     return result.affectedRows > 0;
+  },
+
+  updatePrivacySetting: async (userId, setting) => {
+    const [result] = await db.execute(
+      "UPDATE profiles SET privacy_setting = ? WHERE user_id = ?",
+      [setting, userId],
+    );
+    return result.affectedRows > 0;
+  },
+
+  blockUser: async (blockerId, blockedUserId, reason = "") => {
+    const [result] = await db.execute(
+      "INSERT IGNORE INTO blocks (blocker_id, blocked_user_id, reason) VALUES (?, ?, ?)",
+      [blockerId, blockedUserId, reason],
+    );
+    return result.affectedRows > 0;
+  },
+
+  unblockUser: async (blockerId, blockedUserId) => {
+    const [result] = await db.execute(
+      "DELETE FROM blocks WHERE blocker_id = ? AND blocked_user_id = ?",
+      [blockerId, blockedUserId],
+    );
+    return result.affectedRows > 0;
+  },
+
+  getBlockedUsers: async (blockerId) => {
+    const [rows] = await db.execute(
+      `SELECT p.user_id, p.full_name, p.avatar_url 
+       FROM blocks b 
+       JOIN profiles p ON b.blocked_user_id = p.user_id 
+       WHERE b.blocker_id = ?`,
+      [blockerId],
+    );
+    return rows;
+  },
+
+  isBlocked: async (userId, otherUserId) => {
+    const [rows] = await db.execute(
+      "SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_user_id = ?) OR (blocker_id = ? AND blocked_user_id = ?)",
+      [userId, otherUserId, otherUserId, userId],
+    );
+    return rows.length > 0;
   },
 };
 

@@ -36,7 +36,7 @@ const CARD_WIDTH = width * 0.92;
 
 // Helper: mask all name parts except the first name for unpaid users
 const getMaskedName = (profileId) => {
-  return `User ${profileId || "Unknown"}`; 
+  return `User ${profileId || "Unknown"}`;
 };
 
 const ProfileCard = ({
@@ -362,10 +362,10 @@ const ProfileCard = ({
                 />
                 <Text style={styles.infoText} numberOfLines={1} ellipsizeMode="tail">
                   {profile.company_name
-                    ? `${profile.company_name} – ${profile.occupation || t("not_specified")}`
+                    ? ` ${profile.occupation || t("not_specified")}`
                     : profile.occupation ||
-                      profile.qualification ||
-                      t("not_specified")}
+                    profile.qualification ||
+                    t("not_specified")}
                 </Text>
               </View>
             )}
@@ -405,15 +405,15 @@ const ProfileCard = ({
                   isConnected
                     ? "check-circle"
                     : isPending
-                    ? "clock-outline"
-                    : "heart-outline"
+                      ? "clock-outline"
+                      : "heart-outline"
                 }
                 label={
                   isConnected
                     ? t("remove_interest")
                     : isPending
-                    ? t("cancel_request")
-                    : t("send_interest")
+                      ? t("cancel_request")
+                      : t("send_interest")
                 }
                 isActive={isConnected || isPending}
                 onPress={isPending || isConnected ? handleUnfollow : handleFollow}
@@ -708,10 +708,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  actionBtnWrapper: { 
-    alignItems: "center", 
-    flex: 1, 
-    justifyContent: "center" 
+  actionBtnWrapper: {
+    alignItems: "center",
+    flex: 1,
+    justifyContent: "center"
   },
   circleBtn: {
     backgroundColor: "rgba(255,255,255,0.15)",

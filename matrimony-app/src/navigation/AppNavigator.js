@@ -29,6 +29,8 @@ import MembershipManagement from "../screens/dashboard/MembershipManagement";
 import ProfilesFeedScreen from "../screens/dashboard/ProfilesFeedScreen";
 import AdminUserListScreen from "../screens/dashboard/AdminUserListScreen";
 import HelpSupportScreen from "../screens/dashboard/HelpSupportScreen";
+import AccountSecurityScreen from "../screens/dashboard/AccountSecurityScreen";
+import BlockedUsersScreen from "../screens/dashboard/BlockedUsersScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -202,6 +204,16 @@ const MainStack = () => {
         name="HelpSupport"
         component={HelpSupportScreen}
         options={{ title: t("help_support") || "Help & Support" }}
+      />
+      <Stack.Screen
+        name="AccountSecurity"
+        component={AccountSecurityScreen}
+        options={{ title: t("account_security") || "Account Security" }}
+      />
+      <Stack.Screen
+        name="BlockedUsers"
+        component={BlockedUsersScreen}
+        options={{ title: t("blocked_users") || "Blocked Users" }}
       />
     </Stack.Navigator>
   );

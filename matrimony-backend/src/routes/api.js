@@ -5,6 +5,7 @@ const profileController = require("../controllers/profileController");
 const invitationController = require("../controllers/invitationController");
 const adminController = require("../controllers/adminController");
 const locationController = require("../controllers/locationController");
+const securityRoutes = require("./security");
 const auth = require("../middleware/auth");
 const admin = require("../middleware/admin");
 
@@ -103,5 +104,8 @@ router.delete("/admin/users/:id", auth, admin, adminController.deleteUser);
 router.patch("/admin/users/:id/paid", auth, admin, adminController.togglePaidStatus);
 router.delete("/admin/users/:id/reset-profile", auth, admin, adminController.resetProfile);
 router.patch("/admin/users/me/subscribe", auth, authController.simulateUpgrade);
+
+// Security Routes
+router.use("/security", securityRoutes);
 
 module.exports = router;
