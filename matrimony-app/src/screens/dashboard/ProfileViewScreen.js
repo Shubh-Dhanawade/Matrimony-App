@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIndicator, Platform, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import api from '../../services/api';
+import api, { blockUser } from '../../services/api';
+import { Alert } from 'react-native';
 import { COLORS, SPACING, FONT_SIZES } from '../../utils/constants';
 import { getProfileImageUri } from '../../utils/imageUtils';
 import { formatDateToDisplay, calculateAge } from '../../utils/dateUtils';
@@ -28,6 +29,36 @@ const ProfileViewScreen = ({ navigation, route }) => {
     }
   };
 
+  const handleBlockUser = () => {
+    const userId = route.params?.userId;
+    if (!userId) return;
+
+    Alert.alert(
+      "Block User",
+      "Are you sure you want to block this user? They will no longer be able to see your profile or interact with you.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Block", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await blockUser(userId);
+              Alert.alert("Success", "User blocked successfully", [
+                { text: "OK", onPress: () => navigation.goBack() }
+              ]);
+            } catch (error) {
+              Alert.alert("Error", "Failed to block user");
+            } finally {
+              setLoading(false);
+            }
+          } 
+        },
+      ]
+    );
+  };
+
   const renderDetailRow = (label, value) => (
     <View style={styles.row}>
       <Text style={styles.label}>{label}:</Text>
@@ -46,6 +77,12 @@ const ProfileViewScreen = ({ navigation, route }) => {
           <Text style={styles.subtext}>
             {calculateAge(profile?.dob)} years | {profile?.marital_status}
           </Text>
+          {route.params?.userId && (
+            <TouchableOpacity style={styles.blockLink} onPress={handleBlockUser}>
+              <MaterialCommunityIcons name="account-cancel" size={20} color={COLORS.error} />
+              <Text style={styles.blockLinkText}>Block User</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {!route.params?.userId && (
@@ -109,7 +146,9 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: SPACING.xs },
   label: { fontSize: FONT_SIZES.md, color: COLORS.textSecondary, fontWeight: '600' },
   value: { fontSize: FONT_SIZES.md, color: COLORS.text },
-  longValue: { fontSize: FONT_SIZES.md, color: COLORS.text, lineHeight: 22 }
+  longValue: { fontSize: FONT_SIZES.md, color: COLORS.text, lineHeight: 22 },
+  blockLink: { flexDirection: 'row', alignItems: 'center', marginTop: SPACING.md },
+  blockLinkText: { color: COLORS.error, marginLeft: 4, fontWeight: '600' }
 });
 
 export default ProfileViewScreen;

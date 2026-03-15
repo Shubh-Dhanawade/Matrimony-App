@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (newToken, userData) => {
+  const login = async (newToken, userData, deviceInfo = null) => {
     console.log("[AUTH_CONTEXT] Login called, saving token...");
     setToken(newToken);
     setUser(userData);
@@ -63,6 +63,28 @@ export const AuthProvider = ({ children }) => {
     // Check profile immediately after login if not admin
     if (userData.role !== "admin") {
       await checkProfileStatus();
+    }
+  };
+
+  const logoutAllDevices = async () => {
+    try {
+      const { logoutAllDevices: apiLogoutAll } = await import("../services/api");
+      await apiLogoutAll();
+      await logout();
+    } catch (error) {
+      console.error("[AUTH_CONTEXT] Logout all devices error:", error);
+      throw error;
+    }
+  };
+
+  const deleteMyAccount = async () => {
+    try {
+      const { deleteAccount: apiDeleteAccount } = await import("../services/api");
+      await apiDeleteAccount();
+      await logout();
+    } catch (error) {
+      console.error("[AUTH_CONTEXT] Delete account error:", error);
+      throw error;
     }
   };
 
@@ -130,6 +152,8 @@ export const AuthProvider = ({ children }) => {
         checkProfileStatus,
         login,
         logout,
+        logoutAllDevices,
+        deleteMyAccount,
         refreshUser,
         updateUser,
       }}

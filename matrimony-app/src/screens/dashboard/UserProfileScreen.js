@@ -149,7 +149,7 @@ const UserProfileScreen = ({ navigation }) => {
         <MenuItem
           icon="shield-check-outline"
           label={t("account_security")}
-          onPress={() => { }}
+          onPress={() => navigation.navigate("AccountSecurity")}
         />
         {Number(user?.is_subscribed) !== 1 && (
           <MenuItem

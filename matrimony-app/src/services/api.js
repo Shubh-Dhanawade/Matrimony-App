@@ -110,3 +110,36 @@ export const getProfilePhotos = (userId) => {
 export const deleteProfilePhoto = (photoId) => {
   return api.delete(`/profiles/photos/${photoId}`);
 };
+
+// ═══════════════════════════════════════════
+//  Account Security API helpers
+// ═══════════════════════════════════════════
+
+export const getSecurityStatus = () => {
+  return api.get("/security/status");
+};
+
+export const logoutAllDevices = () => {
+  return api.post("/security/logout-all");
+};
+
+export const deleteAccount = () => {
+  return api.delete("/security/account");
+};
+
+export const updatePrivacy = (setting) => {
+  return api.put("/security/privacy", { setting });
+};
+
+export const blockUser = (userIdToBlock, reason = "") => {
+  return api.post("/security/block", { userIdToBlock, reason });
+};
+
+export const unblockUser = (userIdToUnblock) => {
+  return api.post("/security/unblock", { userIdToUnblock });
+};
+
+export const getBlockedUsers = () => {
+  return api.get("/security/blocked-users");
+};
+
