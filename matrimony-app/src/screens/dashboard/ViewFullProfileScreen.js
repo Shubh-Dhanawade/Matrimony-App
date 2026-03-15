@@ -12,7 +12,7 @@ import {
   Linking,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +21,7 @@ import { COLORS, SPACING, FONT_SIZES, IMAGE_BASE_URL } from '../../utils/constan
 import { getProfileImageUri } from '../../utils/imageUtils';
 
 const ViewFullProfileScreen = ({ navigation, route }) => {
+  const insets = useSafeAreaInsets();
   const { userId } = route.params;
   const { t } = useTranslation();
   const [profile, setProfile] = useState(null);
@@ -574,7 +575,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: COLORS.background,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {
     flex: 1,
@@ -635,7 +635,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: Platform.OS === 'android' ? SPACING.md + StatusBar.currentHeight : SPACING.xl,
+    top: SPACING.md,
     left: SPACING.md,
     width: 40,
     height: 40,

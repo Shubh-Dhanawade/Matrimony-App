@@ -1,5 +1,9 @@
 <resources>
+<<<<<<< HEAD
+  <string name="app_name">Matrimony App</string>
+=======
   <string name="app_name">ShivSathi Matrimony</string>
+>>>>>>> c6b273a0b44b7ae0805481b135424044bcc4f9eb
   <string name="expo_splash_screen_resize_mode" translatable="false">contain</string>
   <string name="expo_splash_screen_status_bar_translucent" translatable="false">false</string>
   <string name="expo_system_ui_user_interface_style" translatable="false">light</string>

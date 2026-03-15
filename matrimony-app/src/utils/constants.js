@@ -31,6 +31,8 @@ export const FONT_SIZES = {
 
 export const API_BASE_URL = "http://192.168.0.101:5472/api";
 export const IMAGE_BASE_URL = "http://192.168.0.101:5472";
+export const API_BASE_URL = "http://192.168.0.104:5472/api";
+export const IMAGE_BASE_URL = "http://192.168.0.104:5472";
 
 export const MARITAL_STATUS_OPTIONS = [
   "Single",
@@ -77,7 +79,6 @@ export const OCCUPATION_OPTIONS = [
   "Other"
 ];
 export const QUALIFICATION_OPTIONS = [
-
   "High School (10th)",
   "Higher Secondary (12th)",
   "B.A. (Bachelor of Arts)",
