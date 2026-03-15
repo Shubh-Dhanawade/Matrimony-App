@@ -10,7 +10,6 @@ import {
   TouchableOpacity,
   Animated,
   Image,
-  Platform,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -378,7 +377,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0, 
   },
   headerRow: {
     flexDirection: "row",

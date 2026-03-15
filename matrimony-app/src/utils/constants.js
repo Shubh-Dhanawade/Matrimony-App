@@ -29,8 +29,8 @@ export const FONT_SIZES = {
 // export const API_BASE_URL = "https://cagelike-nonpatriotic-noelia.ngrok-free.dev/api"; // Standard Android Emulator IP for localhost
 // export const IMAGE_BASE_URL = "https://cagelike-nonpatriotic-noelia.ngrok-free.dev";
 
-export const API_BASE_URL = "http://192.168.0.100:5472/api";
-export const IMAGE_BASE_URL = "http://192.168.0.100:5472";
+export const API_BASE_URL = "http://192.168.0.104:5472/api";
+export const IMAGE_BASE_URL = "http://192.168.0.104:5472";
 
 export const MARITAL_STATUS_OPTIONS = [
   "Single",
@@ -39,13 +39,7 @@ export const MARITAL_STATUS_OPTIONS = [
   "Widowed",
 ];
 
-export const COLOR_OPTIONS = [
-  
-  "Fair",
-  "Wheatish Brown",
-  "Brown",
-  
-];
+export const COLOR_OPTIONS = ["Fair", "Wheatish Brown", "Brown"];
 
 export const MANGLIK_OPTIONS = [
   { label: "Yes", value: "Yes" },
@@ -62,7 +56,6 @@ export const OCCUPATION_OPTIONS = [
   "Other",
 ];
 export const QUALIFICATION_OPTIONS = [
-
   "High School (10th)",
   "Higher Secondary (12th)",
   "B.A. (Bachelor of Arts)",
