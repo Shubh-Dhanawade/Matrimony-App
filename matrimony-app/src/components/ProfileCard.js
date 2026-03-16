@@ -49,6 +49,7 @@ const ProfileCard = ({
   onViewProfile,
   navigation,
   isPaid,
+  language, // used to force re-render on language change via memo
 }) => {
   const { t } = useTranslation();
   const [isFullProfileViewed, setIsFullProfileViewed] = useState(false);
@@ -87,8 +88,8 @@ const ProfileCard = ({
   // Handlers
   const handleUnlockPreview = () => {
     Alert.alert(
-      "Upgrade Required",
-      "Only available for paid users. Please upgrade your plan."
+      t("upgrade_to_premium_title"),
+      t("photo_visible_paid_only")
     );
     if (onUpgrade) {
       onUpgrade();
@@ -98,22 +99,24 @@ const ProfileCard = ({
   const handleFollow = async () => {
     if (profile.invitation_status !== "None") {
       Alert.alert(
-        "Already Connected",
-        `You have already ${isPending ? "sent an interest to" : "connected with"} this profile.`,
+        t("connected"),
+        isPending
+          ? t("invitation_sent_success")
+          : t("connected"),
       );
       return;
     }
     try {
       await api.post("/profiles/interest", { receiverId: profile.user_id });
       Alert.alert(
-        "💌 Interest Sent",
-        `Your request has been sent to ${profile.full_name || "this profile"}.`,
+        t("interest_sent"),
+        t("interest_sent_msg").replace("{{name}}", profile.full_name || t("not_specified")),
       );
       if (onAction) onAction("refresh", profile);
     } catch (err) {
       Alert.alert(
-        "Error",
-        err?.response?.data?.message || "Failed to send interest.",
+        t("error"),
+        err?.response?.data?.message || t("action_failed"),
       );
     }
   };
@@ -124,45 +127,48 @@ const ProfileCard = ({
         // Toggle OFF (Unshortlist)
         await api.delete(`/profiles/shortlist/${profile.user_id}`);
         Alert.alert(
-          "Removed",
-          `${profile.full_name || "Profile"} has been removed from your shortlist.`
+          t("remove"),
+          t("shortlisted_msg").replace("{{name}}", profile.full_name || t("profile"))
         );
       } else {
         // Toggle ON (Shortlist)
         await api.post("/profiles/shortlist", { profileUserId: profile.user_id });
         Alert.alert(
-          "⭐ Saved",
-          `${profile.full_name || "Profile"} has been added to your shortlist.`
+          t("shortlisted_title"),
+          t("profile_shortlisted_msg")
         );
       }
       if (onAction) onAction("refresh", profile);
     } catch (err) {
       const msg = err?.response?.data?.message;
-      Alert.alert("Error", msg || "Failed to update shortlist.");
+      Alert.alert(t("error"), msg || t("action_failed"));
     }
   };
 
   const handleUnfollow = async () => {
     Alert.alert(
-      "Cancel Request",
-      `Are you sure you want to withdraw your interest from ${profile.full_name || "this user"}?`,
+      t("cancel_request"),
+      t("unsaved_changes_msg").replace(
+        "Are you sure you want to go back? Unsaved changes will be lost.",
+        `${t("cancel_request")} ${profile.full_name || ""}`
+      ) || `${t("cancel_request")} ${profile.full_name || ""}`,
       [
-        { text: "No", style: "cancel" },
+        { text: t("no") || "No", style: "cancel" },
         {
-          text: "Yes, Withdraw",
+          text: t("yes") || "Yes",
           style: "destructive",
           onPress: async () => {
             try {
               await api.delete(`/profiles/interest/${profile.user_id}`);
               Alert.alert(
-                "Request Cancelled",
-                `You have withdrawn your interest.`
+                t("success"),
+                t("remove_interest")
               );
               if (onAction) onAction("refresh", profile);
             } catch (err) {
               Alert.alert(
-                "Error",
-                err?.response?.data?.message || "Failed to cancel request."
+                t("error"),
+                err?.response?.data?.message || t("action_failed")
               );
             }
           }
@@ -174,8 +180,8 @@ const ProfileCard = ({
   const handleViewFullProfile = () => {
     if (!isConnected) {
       Alert.alert(
-        "Locked",
-        "Send an interest to this profile and wait for acceptance to view the full profile.",
+        t("locked") || "Locked",
+        t("photo_visible_paid_only")
       );
       return;
     }

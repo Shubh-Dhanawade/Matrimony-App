@@ -24,7 +24,7 @@ import { useAuth } from "../../context/AuthContext";
 const { width } = Dimensions.get("window");
 
 const ProfilesFeedScreen = ({ navigation }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, refreshUser } = useAuth();
 
   const [profiles, setProfiles] = useState([]);
@@ -241,8 +241,8 @@ const ProfilesFeedScreen = ({ navigation }) => {
 
           console.log("[FEED_SHORTLIST] Success response:", response.data);
           Alert.alert(
-            "⭐ Added to Shortlist!",
-            `${profile.full_name || "This profile"} has been saved.`,
+            t("shortlisted_title"),
+            `${profile.full_name || "Profile"} ${t("profile_shortlisted_msg").replace("Profile added to your shortlist!", "") || t("profile_shortlisted_msg")}`,
             [
               { text: "OK" },
               {
@@ -264,10 +264,7 @@ const ProfilesFeedScreen = ({ navigation }) => {
         if (errMsg === "You have already sent interest to this person") {
           Alert.alert("Already Sent", "You have already sent interest.");
         } else if (errMsg === "Already shortlisted") {
-          Alert.alert(
-            "Already Saved",
-            "This profile is already in your shortlist.",
-          );
+          Alert.alert(t("already_saved"), t("already_saved_msg"));
         } else {
           Alert.alert(
             t("error"),
@@ -355,6 +352,7 @@ const ProfilesFeedScreen = ({ navigation }) => {
           ]}
         >
           <ProfileCard
+            language={i18n.language}
             profile={currentProfile}
             isFirst={currentIndex === 0}
             isLast={currentIndex >= profiles.length - 1}
