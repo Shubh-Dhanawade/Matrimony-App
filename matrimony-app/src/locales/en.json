@@ -293,5 +293,8 @@
     "failed_to_load_blocked_users": "Failed to load blocked users",
     "failed_to_unblock_user": "Failed to unblock user",
     "block_user": "Block User",
-    "block_user_confirm": "Are you sure you want to block this user? They will no longer be able to see your profile or interact with you."
+    "block_user_confirm": "Are you sure you want to block this user? They will no longer be able to see your profile or interact with you.",
+    "no": "No",
+    "yes": "Yes",
+    "locked": "Locked"
 }

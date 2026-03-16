@@ -1,6 +1,5 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import * as Localization from 'expo-localization';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import en from './locales/en.json';
@@ -26,11 +25,11 @@ const languageDetector = {
                 return callback(savedLanguage);
             }
 
-            // 2. Default to Marathi if no language is saved
-            return callback('mr');
+            // 2. Default to English if no language is saved
+            return callback('en');
         } catch (error) {
             console.log('Error detecting language:', error);
-            callback('mr');
+            callback('en');
         }
     },
     init: () => { },
@@ -48,13 +47,14 @@ i18n
     .use(initReactI18next)
     .init({
         resources,
-        fallbackLng: 'mr', // Default language is Marathi
-        compatibilityJSON: 'v3', // Required for React Native
+        fallbackLng: 'en',          // Default language is English
+        compatibilityJSON: 'v3',    // Required for React Native
+        initImmediate: false,        // Wait for async detection before render
         interpolation: {
-            escapeValue: false, // React already does escaping
+            escapeValue: false,     // React already does escaping
         },
         react: {
-            useSuspense: false, // Avoid splash screen issues in some setups
+            useSuspense: false,     // Avoid splash screen issues
         },
     });
 
