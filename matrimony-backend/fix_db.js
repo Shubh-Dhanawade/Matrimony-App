@@ -1,56 +1,60 @@
 const db = require('./src/config/db');
 
-async function fixDb() {
+async function fix() {
   try {
-    console.log('--- STARTING DATABASE REPAIR ---');
-    
-    // 1. Ensure users table has role and is_blocked
-    console.log('Ensuring users table columns...');
-    const [userCols] = await db.execute('SHOW COLUMNS FROM users');
-    const userColNames = userCols.map(c => c.Field);
-    
-    if (!userColNames.includes('role')) {
-      console.log('Adding role to users...');
-      await db.execute("ALTER TABLE users ADD COLUMN role ENUM('user', 'admin') DEFAULT 'user'");
-    }
-    if (!userColNames.includes('is_blocked')) {
-      console.log('Adding is_blocked to users...');
-      await db.execute("ALTER TABLE users ADD COLUMN is_blocked BOOLEAN DEFAULT FALSE");
+    console.log('Fixing database schema...');
+
+    // 1. Add token_version to users if missing
+    try {
+        await db.execute("ALTER TABLE users ADD COLUMN token_version INT DEFAULT 0");
+        console.log('Added token_version column.');
+    } catch (e) {
+        if (e.code === 'ER_DUP_FIELDNAME') console.log('token_version already exists.');
+        else throw e;
     }
 
-    // 2. Ensure profiles table has status
-    console.log('\nEnsuring profiles table columns...');
-    const [profileCols] = await db.execute('SHOW COLUMNS FROM profiles');
-    const profileColNames = profileCols.map(c => c.Field);
-    
-    if (!profileColNames.includes('status')) {
-      console.log('Adding status to profiles...');
-      await db.execute("ALTER TABLE profiles ADD COLUMN status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Approved'");
-    } else {
-      // If status exists, set all Pending to Approved so they show up on dashboard
-      console.log('Updating profiles to Approved status...');
-      await db.execute("UPDATE profiles SET status = 'Approved' WHERE status = 'Pending' OR status IS NULL");
+    // 2. Add last_login to users if missing
+    try {
+        await db.execute("ALTER TABLE users ADD COLUMN last_login TIMESTAMP NULL");
+        console.log('Added last_login column.');
+    } catch (e) {
+        if (e.code === 'ER_DUP_FIELDNAME') console.log('last_login already exists.');
+        else throw e;
     }
 
-    // 3. Fix monthly_income if it has bad data
-    if (profileColNames.includes('monthly_income')) {
-       console.log('Ensuring monthly_income is clean...');
-       await db.execute("UPDATE profiles SET monthly_income = 0 WHERE monthly_income IS NULL");
+    // 3. Add account_status to users if missing
+    try {
+        await db.execute("ALTER TABLE users ADD COLUMN account_status ENUM('active', 'deleted') DEFAULT 'active'");
+        console.log('Added account_status column.');
+    } catch (e) {
+        if (e.code === 'ER_DUP_FIELDNAME') console.log('account_status already exists.');
+        else throw e;
     }
 
-    // 4. Verify Invitations Table
-    console.log('\nVerifying invitations table...');
-    const [invCols] = await db.execute('SHOW COLUMNS FROM invitations');
-    const invColNames = invCols.map(c => c.Field);
-    console.log('Invitations columns:', invColNames.join(', '));
+    // 4. Create blocks table if missing
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS blocks (
+          id int NOT NULL AUTO_INCREMENT,
+          blocker_id int NOT NULL,
+          blocked_user_id int NOT NULL,
+          reason text NULL,
+          created_at timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (id),
+          UNIQUE KEY unique_block (blocker_id, blocked_user_id),
+          KEY blocker_id (blocker_id),
+          KEY blocked_user_id (blocked_user_id),
+          CONSTRAINT blocks_ibfk_1 FOREIGN KEY (blocker_id) REFERENCES users (id) ON DELETE CASCADE,
+          CONSTRAINT blocks_ibfk_2 FOREIGN KEY (blocked_user_id) REFERENCES users (id) ON DELETE CASCADE
+      ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4
+    `);
+    console.log('Blocks table checked/created.');
 
-    console.log('\n--- DATABASE REPAIR COMPLETED ---');
-    console.log('Please restart your backend server now.');
+    console.log('Fix completed successfully!');
     process.exit(0);
   } catch (error) {
-    console.error('CRITICAL REPAIR ERROR:', error.message);
+    console.error('Fix failed:', error);
     process.exit(1);
   }
 }
 
-fixDb();
+fix();

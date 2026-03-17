@@ -64,17 +64,19 @@ const AdminDashboard = ({ navigation }) => {
         <StatCard title="Pending Profiles" value={stats?.pendingProfiles || 0} color="#e67e22" />
         <StatCard title="Approved Profiles" value={stats?.approvedProfiles || 0} color="#2ecc71" />
         <StatCard title="Rejected Profiles" value={stats?.rejectedProfiles || 0} color="#e74c3c" />
+        <StatCard title="Paid Users" value={stats?.totalPaidUsers || 0} color="#f1c40f" />
+        <StatCard title="Unpaid Users" value={stats?.totalUnpaidUsers || 0} color="#95a5a6" />
       </View>
 
       <View style={styles.managementSection}>
         <Text style={styles.sectionTitle}>Management</Text>
-        <View style={styles.cardRow}>
+        <View style={styles.managementGrid}>
           <TouchableOpacity
             style={styles.card}
-            onPress={() => navigation.navigate('ManageProfiles')}
+            onPress={() => navigation.navigate('PendingProfiles')}
           >
-            <Text style={styles.cardTitle}>Manage Profiles </Text>
-            <Text style={styles.cardSub}>Approve & Reject Profiles</Text>
+            <Text style={styles.cardTitle}>Pending Profiles</Text>
+            <Text style={styles.cardSub}>Review & Approve</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -83,6 +85,22 @@ const AdminDashboard = ({ navigation }) => {
           >
             <Text style={styles.cardTitle}>Manage Users</Text>
             <Text style={styles.cardSub}>Deactivate or Reset Profiles</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate('MembershipManagement')}
+          >
+            <Text style={styles.cardTitle}>Paid Memberships</Text>
+            <Text style={styles.cardSub}>Toggle User Access</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate('AdminUserList')}
+          >
+            <Text style={styles.cardTitle}>Total Users List</Text>
+            <Text style={styles.cardSub}>View All Registered Users</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -114,8 +132,8 @@ const styles = StyleSheet.create({
 
   managementSection: { marginBottom: SPACING.xl },
   sectionTitle: { fontSize: FONT_SIZES.lg, fontWeight: 'bold', color: COLORS.textPrimary, marginBottom: SPACING.md },
-  cardRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  card: { backgroundColor: '#fff', padding: SPACING.md, borderRadius: 10, width: '48%', elevation: 3 },
+  managementGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  card: { backgroundColor: '#fff', padding: SPACING.md, borderRadius: 10, width: '48%', marginBottom: SPACING.md, elevation: 3 },
   cardTitle: { fontSize: FONT_SIZES.md, fontWeight: 'bold', color: COLORS.textPrimary },
   cardSub: { fontSize: FONT_SIZES.sm, color: COLORS.textSecondary, marginTop: 4 },
 

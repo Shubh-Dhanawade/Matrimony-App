@@ -1,16 +1,24 @@
 import React from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { COLORS, SPACING, FONT_SIZES } from '../utils/constants';
 
-const CustomInput = ({ label, error, ...props }) => {
+const CustomInput = ({ label, error, rightIcon, onRightIconPress, ...props }) => {
   return (
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <TextInput
-        style={[styles.input, error && styles.inputError]}
-        placeholderTextColor={COLORS.textSecondary}
-        {...props}
-      />
+      <View style={[styles.inputContainer, error && styles.inputError]}>
+        <TextInput
+          style={styles.input}
+          placeholderTextColor={COLORS.textSecondary}
+          {...props}
+        />
+        {rightIcon && (
+          <TouchableOpacity onPress={onRightIconPress} style={styles.iconContainer}>
+            <MaterialCommunityIcons name={rightIcon} size={22} color={COLORS.textSecondary} />
+          </TouchableOpacity>
+        )}
+      </View>
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
@@ -26,14 +34,23 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: SPACING.xs,
   },
-  input: {
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 8,
+  },
+  input: {
+    flex: 1,
     padding: SPACING.md,
     fontSize: FONT_SIZES.md,
     color: COLORS.text,
+  },
+  iconContainer: {
+    padding: SPACING.sm,
+    paddingRight: SPACING.md,
   },
   inputError: {
     borderColor: COLORS.error,

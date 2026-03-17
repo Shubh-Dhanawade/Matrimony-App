@@ -1,16 +1,16 @@
-const mysql = require('mysql2');
-const dotenv = require('dotenv');
+const mysql = require("mysql2");
+const dotenv = require("dotenv");
 
 dotenv.config();
 
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'Root',
-  database: process.env.DB_NAME || 'matrimony_db',
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "Krishaa@2904",
+  database: process.env.DB_NAME || "matrimony_db",
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
 });
 
 module.exports = pool.promise();

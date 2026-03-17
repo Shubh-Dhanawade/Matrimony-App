@@ -18,7 +18,7 @@ const ManageProfiles = () => {
 
   const fetchProfiles = async () => {
     try {
-      const response = await api.get('/admin/profiles');
+      const response = await api.get('/admin/profiles?status=Approved');
       setProfiles(response.data);
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch profiles');
@@ -136,7 +136,7 @@ const ManageProfiles = () => {
         renderItem={renderProfileItem}
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        ListEmptyComponent={<Text style={styles.emptyText}>No profiles found.</Text>}
+        ListEmptyComponent={<Text style={styles.emptyText}>No approved profiles found.</Text>}
       />
     </View>
   );

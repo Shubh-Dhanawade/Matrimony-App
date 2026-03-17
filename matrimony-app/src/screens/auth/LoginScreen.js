@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
+import LanguageSelector from '../../components/LanguageSelector';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import api from '../../services/api';
 import { COLORS, SPACING, FONT_SIZES } from '../../utils/constants';
 
 const LoginScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   const [mobileNumber, setMobileNumber] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,7 +19,7 @@ const LoginScreen = ({ navigation }) => {
   const handleLogin = async () => {
     console.log('Attempting login with:', { mobileNumber, password });
     if (!mobileNumber || !password) {
-      Alert.alert('Error', 'Please fill all fields');
+      Alert.alert(t('error'), t('fill_all_fields'));
       return;
     }
 
@@ -33,7 +36,7 @@ const LoginScreen = ({ navigation }) => {
 
     } catch (error) {
       console.log('Login error response:', error.response?.data);
-      Alert.alert('Login Failed', error.response?.data?.message || 'Check your credentials');
+      Alert.alert(t('login_failed'), error.response?.data?.message || t('check_credentials'));
 
     } finally {
       setLoading(false);
@@ -41,30 +44,38 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Matrimony login</Text>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.title}>{t('login_title')}</Text>
         <CustomInput
-          label="Mobile Number"
-          placeholder="Enter mobile number"
+          label={t('mobile_number')}
+          placeholder={t('mobile_placeholder')}
           keyboardType="phone-pad"
           value={mobileNumber}
           onChangeText={setMobileNumber}
         />
         <CustomInput
-          label="Password"
-          placeholder="Enter password"
+          label={t('password')}
+          placeholder={t('password_placeholder')}
           secureTextEntry
           value={password}
           onChangeText={setPassword}
         />
-        <CustomButton title="Login" onPress={() => {
+        <CustomButton title={t('login')} onPress={() => {
           handleLogin(mobileNumber, password)
         }} loading={loading} />
         <Text style={styles.link} onPress={() => navigation.navigate('Signup')}>
-          New user? Create an account
+          {t('new_user_link')}
         </Text>
+        <View style={{ marginTop: SPACING.lg }}>
+          <LanguageSelector variant="dropdown" />
+        </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
