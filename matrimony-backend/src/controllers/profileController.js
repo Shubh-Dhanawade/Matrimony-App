@@ -168,22 +168,33 @@ const profileController = {
       const viewerId = req.user.id;
       console.log(`Fetching profile for user ID: ${id}, Viewer: ${viewerId}`);
 
-      const authUser = await User.findById(viewerId);
-      if (!authUser || Number(authUser.is_paid) !== 1) {
-        // Exception: users can always view their own profile
-        if (Number(viewerId) !== Number(id)) {
-          return res.status(403).json({ message: "Only paid users can access this feature." });
-        }
-      }
-
       const profile = await Profile.findByUserId(id, viewerId);
       if (!profile) {
         return res.status(404).json({ message: "Profile not found" });
       }
-      // Only allow viewing approved profiles (except for own profile via different endpoint)
-      if (profile.status !== "Approved" && Number(viewerId) !== Number(id)) {
-        return res.status(404).json({ message: "Profile not found" });
+
+      // Check visibility constraints
+      const isOwnProfile = Number(viewerId) === Number(id);
+      const isConnected = profile.invitation_status === "Connected";
+      const authUser = await User.findById(viewerId);
+      const isPaid = Number(authUser?.is_paid) === 1;
+
+      if (!isOwnProfile) {
+        // Requirement 8: Full profile visible only if BOTH paid AND connected
+        if (!isPaid || !isConnected) {
+          return res.status(403).json({ 
+            message: "Full profile access is restricted. Please ensure you have a premium membership and are connected with this user.",
+            isPaid,
+            isConnected
+          });
+        }
+
+        // Only allow viewing approved profiles
+        if (profile.status !== "Approved") {
+          return res.status(404).json({ message: "Profile not found" });
+        }
       }
+
       res.json({ profile });
     } catch (error) {
       console.error("Error in getProfileById:", error);
@@ -298,12 +309,26 @@ const profileController = {
           ? await ProfileImage.getByProfileIds(profileIds)
           : {};
 
-      const enrichedProfiles = rows.map((p) => ({
-        ...p,
-        photos: photosMap[p.user_id] || [],
-      }));
+      const viewerUser = await User.findById(currentUserId);
+      const isViewerPaid = Number(viewerUser?.is_paid) === 1;
 
-      console.log(`[FEED] Returning ${enrichedProfiles.length} profiles`);
+      const enrichedProfiles = rows.map((p) => {
+        const photos = photosMap[p.user_id] || [];
+        
+        // Requirement 1: If viewer is unpaid, hide sensitive info in feed
+        let name = p.full_name;
+        if (!isViewerPaid && name) {
+          name = name.split(" ")[0]; // Only first name
+        }
+
+        return {
+          ...p,
+          full_name: name,
+          photos: photos,
+        };
+      });
+
+      console.log(`[FEED] Returning ${enrichedProfiles.length} profiles. Paid: ${isViewerPaid}`);
 
       // Return a plain array — simple and backward-compatible
       res.status(200).json(enrichedProfiles);

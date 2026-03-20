@@ -34,9 +34,11 @@ const { width, height } = Dimensions.get("window");
 const CARD_HEIGHT = height * 0.75;
 const CARD_WIDTH = width * 0.92;
 
-// Helper: mask all name parts except the first name for unpaid users
-const getMaskedName = (profileId) => {
-  return `User ${profileId || "Unknown"}`;
+// Helper: show only first name for unpaid users
+const getMaskedName = (fullName, profileId) => {
+  if (!fullName) return `User ${profileId || "Unknown"}`;
+  const firstChild = fullName.split(" ")[0];
+  return firstChild || `User ${profileId || "Unknown"}`;
 };
 
 const ProfileCard = ({
@@ -70,13 +72,13 @@ const ProfileCard = ({
 
   const isConnected = profile.invitation_status === "Connected";
   const isPending = profile.invitation_status === "Pending";
-  const isPreviewUnlocked = isPaid || isConnected;
+  const isPreviewUnlocked = Number(isPaid) === 1; // Payment unlocks photo clarity
   const isBlurred = !isPreviewUnlocked;
 
-  const displayName =
-    isConnected || isPaid
-      ? profile.full_name
-      : getMaskedName(profile.user_id);
+  // Name masking: Full name only if paid
+  const displayName = isPreviewUnlocked
+    ? profile.full_name
+    : getMaskedName(profile.full_name, profile.user_id);
 
   const photos = React.useMemo(() => {
     if (profile.photos && profile.photos.length > 0) {
@@ -87,10 +89,6 @@ const ProfileCard = ({
 
   // Handlers
   const handleUnlockPreview = () => {
-    Alert.alert(
-      t("upgrade_to_premium_title"),
-      t("photo_visible_paid_only")
-    );
     if (onUpgrade) {
       onUpgrade();
     }
@@ -178,13 +176,19 @@ const ProfileCard = ({
   };
 
   const handleViewFullProfile = () => {
+    if (!isPreviewUnlocked) {
+      if (onUpgrade) onUpgrade();
+      return;
+    }
+
     if (!isConnected) {
       Alert.alert(
-        t("locked") || "Locked",
-        t("photo_visible_paid_only")
+        "Access Denied",
+        "Full profile details are visible only to connected users. Please send an interest and wait for approval."
       );
       return;
     }
+
     if (onViewProfile) onViewProfile(profile.user_id);
   };
 
@@ -246,21 +250,25 @@ const ProfileCard = ({
               <TouchableOpacity
                 style={[
                   styles.viewFullProfileBtn,
-                  !isConnected && styles.viewFullProfileBtnLocked
+                  (!isPreviewUnlocked || !isConnected) && styles.viewFullProfileBtnLocked
                 ]}
                 onPress={handleViewFullProfile}
                 activeOpacity={0.8}
               >
                 <MaterialCommunityIcons
-                  name={isConnected ? "account-details" : "lock"}
+                  name={isConnected && isPreviewUnlocked ? "account-details" : "lock"}
                   size={16}
-                  color={isConnected ? "#fff" : "rgba(255,255,255,0.7)"}
+                  color={isConnected && isPreviewUnlocked ? "#fff" : "rgba(255,255,255,0.7)"}
                 />
                 <Text style={[
-                  styles.viewFullProfileBtnText,
-                  !isConnected && { color: "rgba(255,255,255,0.7)" }
+                  styles.viewFullProfileText,
+                  (!isConnected || !isPreviewUnlocked) && styles.viewFullProfileTextLocked
                 ]}>
-                  {t("full_profile")}
+                  {!isPreviewUnlocked 
+                    ? "Unlock" 
+                    : isConnected 
+                      ? t("full_profile") 
+                      : "Details Locked"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -282,31 +290,6 @@ const ProfileCard = ({
             </View>
           </View>
 
-          {/* Blur Overlay */}
-          {!isPreviewUnlocked && (
-            <BlurView
-              intensity={70}
-              tint="dark"
-              style={StyleSheet.absoluteFill}
-            >
-              <View style={styles.blurOverlay}>
-                <MaterialCommunityIcons
-                  name="eye-off-outline"
-                  size={50}
-                  color="#fff"
-                />
-                <Text style={styles.blurText}>
-                  {t("photo_visible_paid_only")}
-                </Text>
-                <TouchableOpacity
-                  style={styles.upgradeBtn}
-                  onPress={handleUnlockPreview}
-                >
-                  <Text style={styles.upgradeBtnText}>{t("unlock_preview")}</Text>
-                </TouchableOpacity>
-              </View>
-            </BlurView>
-          )}
 
           <LinearGradient
             colors={["transparent", "rgba(0,0,0,0.9)"]}
@@ -394,6 +377,33 @@ const ProfileCard = ({
               </View>
             )}
           </Animated.View>
+
+          {/* Blur Overlay - Moved here to be on top of Gradient/Details */}
+          {!isPreviewUnlocked && (
+            <BlurView
+              intensity={70}
+              tint="dark"
+              style={StyleSheet.absoluteFill}
+            >
+                <TouchableOpacity 
+                  style={styles.blurOverlay} 
+                  onPress={handleUnlockPreview}
+                  activeOpacity={0.9}
+                >
+                  <MaterialCommunityIcons
+                    name="eye-off-outline"
+                    size={50}
+                    color="#fff"
+                  />
+                  <Text style={styles.blurText}>
+                    Please complete payment to view profiles
+                  </Text>
+                  <View style={styles.upgradeBtn}>
+                    <Text style={styles.upgradeBtnText}>Unlock Profiles</Text>
+                  </View>
+                </TouchableOpacity>
+            </BlurView>
+          )}
 
           {/* Action Row - Prev | Skip | Shortlist | Next */}
           <View style={styles.actionContainer}>

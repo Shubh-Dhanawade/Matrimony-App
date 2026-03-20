@@ -1,0 +1,1 @@
+const db=require('./src/config/db'); async function run(){try{await db.query('ALTER TABLE users DROP COLUMN payment_requested;'); console.log('Column payment_requested removed');}catch(e){console.error(e);} process.exit(0);} run();

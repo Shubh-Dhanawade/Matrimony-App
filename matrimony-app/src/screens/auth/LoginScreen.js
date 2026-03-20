@@ -29,6 +29,16 @@ const LoginScreen = ({ navigation }) => {
       console.log('Login success response:', response.data);
       const { token, user } = response.data;
 
+      // Check if user is an admin
+      if (user && user.role === 'admin') {
+        Alert.alert(
+          t('access_denied') || 'Access Denied', 
+          t('admin_use_web') || 'Administrators must use the Web Admin Dashboard to manage the platform.'
+        );
+        setLoading(false);
+        return;
+      }
+
       await login(token, user);
 
       // No manual navigation needed!

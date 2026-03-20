@@ -123,7 +123,51 @@ expo start
 
 ---
 
+## 🌐 Web Admin Dashboard Setup
+
+### Step 1: Install Dependencies
+
+```bash
+cd matrimony-admin-web
+npm install
+```
+
+### Step 2: Seed Admin User (First Time Only)
+
+Run the seed script in the backend to create an admin account:
+
+```bash
+cd matrimony-backend
+node seed_admin.js
+```
+
+**Credentials Created:**
+- **Mobile Number:** `9999999999`
+- **Password:** `admin123`
+
+### Step 3: Verify API URL
+
+**File:** `matrimony-admin-web/src/api.js`
+
+```javascript
+export const API_BASE_URL = "http://localhost:5472/api";
+```
+
+*(No need to change if running backend on the same machine)*
+
+### Step 4: Start Web App
+
+```bash
+cd matrimony-admin-web
+npm run dev
+```
+
+✅ Open `http://localhost:5173` in your browser.
+
+---
+
 ## 🧪 Complete Feature Testing Flow
+
 
 ### Test Case 1: Create User & Profile
 
@@ -344,9 +388,9 @@ WHERE sender_id = 1 AND receiver_id = 2 AND status = 'Accepted';
 
 ### Admin (Optional):
 
-- Mobile: 9999999999
+- Mobile: 8446430330
 - Password: admin123
-- Then update role: `UPDATE users SET role='admin' WHERE mobile_number='9999999999';`
+- Then update role: `UPDATE users SET role='admin' WHERE mobile_number='8446430330';`
 
 ---
 

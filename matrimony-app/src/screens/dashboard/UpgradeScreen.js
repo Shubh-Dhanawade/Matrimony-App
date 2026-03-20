@@ -1,32 +1,81 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Image, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { COLORS, SPACING, FONT_SIZES } from '../../utils/constants';
-import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
 const UpgradeScreen = ({ navigation }) => {
     const { refreshUser } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [showScanner, setShowScanner] = useState(false);
 
-    const handleUpgrade = async () => {
-        setLoading(true);
-        try {
-            // In a real app, integrate Payment Gateway here
-            // For demo, we just call an endpoint to update subscription
-            await api.patch('/admin/users/me/subscribe', { is_subscribed: 1 });
-            await refreshUser();
-            Alert.alert('Success', 'Welcome to Premium Membership! All photos are now visible.', [
-                { text: 'Great!', onPress: () => navigation.goBack() }
-            ]);
-        } catch (error) {
-            console.error('Upgrade error:', error);
-            Alert.alert('Error', 'Payment failed. Please try again.');
-        } finally {
-            setLoading(false);
-        }
+    const openWhatsApp = () => {
+        const url = 'whatsapp://send?phone=918788513415&text=Hello, I have made the payment for the Matrimony App premium membership. [Attach Screenshot Here]';
+        Linking.canOpenURL(url)
+            .then((supported) => {
+                if (supported) {
+                    return Linking.openURL(url);
+                } else {
+                    Alert.alert('Error', 'WhatsApp is not installed on your device.');
+                }
+            })
+            .catch((err) => console.error('An error occurred', err));
     };
+
+    if (showScanner) {
+        return (
+            <View style={styles.container}>
+                <LinearGradient colors={['#FF4081', '#E91E63']} style={styles.header}>
+                    <TouchableOpacity 
+                        style={styles.backButton} 
+                        onPress={() => setShowScanner(false)}
+                    >
+                        <MaterialCommunityIcons name="arrow-left" size={28} color="#fff" />
+                    </TouchableOpacity>
+                    <MaterialCommunityIcons name="qrcode-scan" size={60} color="#FFD700" />
+                    <Text style={styles.headerTitle}>Scan to Pay</Text>
+                    <Text style={styles.headerSubtitle}>Complete your payment securely</Text>
+                </LinearGradient>
+
+                <ScrollView contentContainerStyle={styles.scannerContent}>
+                    <View style={styles.qrContainer}>
+                        {/* ⚠️ IMPORTANT: Please copy your QR code image to the /assets folder and name it 'payment_qr.jpg' */}
+                        {/* Then change the source below from 'icon.png' to 'payment_qr.jpg' */}
+                        <Image 
+                            source={require('../../../assets/icon.png')} // Changed to icon.png temporarily to prevent build crash
+                            style={styles.qrImage}
+                            resizeMode="contain"
+                        />
+                    </View>
+
+                    <View style={styles.instructionsCard}>
+                        <Text style={styles.instructionTitle}>Payment Instructions:</Text>
+                        <Text style={styles.instructionText}>
+                            1. Scan the QR code above or take a screenshot and import it into your UPI app (GPay, PhonePe, etc).
+                        </Text>
+                        <Text style={styles.instructionText}>
+                            2. Complete the payment of <Text style={{fontWeight: 'bold'}}>₹999</Text>.
+                        </Text>
+                        <Text style={[styles.instructionText, styles.highlightText]}>
+                            3. After payment is complete, send the payment screenshot on 8788513415 this number on WhatsApp.
+                        </Text>
+                        <Text style={styles.instructionText}>
+                            4. Your premium subscription will be activated within <Text style={{fontWeight: 'bold'}}>24 hours</Text> after verification.
+                        </Text>
+                    </View>
+
+                    <TouchableOpacity 
+                        style={styles.whatsappBtn}
+                        onPress={openWhatsApp}
+                    >
+                        <MaterialCommunityIcons name="whatsapp" size={24} color="#fff" />
+                        <Text style={styles.whatsappBtnText}>Send Screenshot via WhatsApp</Text>
+                    </TouchableOpacity>
+                </ScrollView>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
@@ -36,7 +85,7 @@ const UpgradeScreen = ({ navigation }) => {
                 <Text style={styles.headerSubtitle}>Unlock the best matching experience</Text>
             </LinearGradient>
 
-            <ScrollView style={styles.content}>
+            <ScrollView contentContainerStyle={styles.content}>
                 <FeatureItem
                     icon="eye-outline"
                     title="View All Photos"
@@ -63,12 +112,9 @@ const UpgradeScreen = ({ navigation }) => {
                     <Text style={styles.planPrice}>₹999 / month</Text>
                     <TouchableOpacity
                         style={styles.upgradeBtn}
-                        onPress={handleUpgrade}
-                        disabled={loading}
+                        onPress={() => setShowScanner(true)}
                     >
-                        <Text style={styles.upgradeBtnText}>
-                            {loading ? 'Processing...' : 'Subscribe Now'}
-                        </Text>
+                        <Text style={styles.upgradeBtnText}>Subscribe Now</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
@@ -96,6 +142,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderBottomLeftRadius: 30,
         borderBottomRightRadius: 30,
+        position: 'relative',
+    },
+    backButton: {
+        position: 'absolute',
+        top: 50,
+        left: 20,
+        padding: 10,
     },
     headerTitle: {
         fontSize: 28,
@@ -109,6 +162,7 @@ const styles = StyleSheet.create({
         marginTop: 5,
     },
     content: { padding: 20 },
+    scannerContent: { padding: 20, paddingBottom: 40, alignItems: 'center' },
     featureItem: {
         flexDirection: 'row',
         marginBottom: 20,
@@ -126,13 +180,18 @@ const styles = StyleSheet.create({
     featureTitle: { fontSize: 18, fontWeight: 'bold', color: '#333' },
     featureDesc: { fontSize: 14, color: '#666', marginTop: 2 },
     planCard: {
-        backgroundColor: '#F5F5F5',
+        backgroundColor: '#f9f9f9',
         padding: 25,
         borderRadius: 20,
         alignItems: 'center',
         marginTop: 20,
-        borderWidth: 2,
+        borderWidth: 1,
         borderColor: '#E91E63',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3.84,
+        elevation: 5,
     },
     planTitle: { fontSize: 20, fontWeight: 'bold', color: '#333' },
     planPrice: { fontSize: 24, fontWeight: 'bold', color: '#E91E63', marginVertical: 10 },
@@ -142,8 +201,62 @@ const styles = StyleSheet.create({
         paddingVertical: 15,
         borderRadius: 30,
         elevation: 5,
+        marginTop: 10,
     },
     upgradeBtnText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+    qrContainer: {
+        backgroundColor: '#fff',
+        padding: 15,
+        borderRadius: 20,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 5.46,
+        elevation: 9,
+        marginBottom: 30,
+    },
+    qrImage: {
+        width: 250,
+        height: 250,
+    },
+    instructionsCard: {
+        backgroundColor: '#FCE4EC',
+        padding: 20,
+        borderRadius: 15,
+        width: '100%',
+        marginBottom: 30,
+    },
+    instructionTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#C2185B',
+        marginBottom: 10,
+    },
+    instructionText: {
+        fontSize: 15,
+        color: '#444',
+        marginBottom: 10,
+        lineHeight: 22,
+    },
+    highlightText: {
+        color: '#C2185B',
+        fontWeight: 'bold',
+    },
+    whatsappBtn: {
+        backgroundColor: '#25D366',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 25,
+        paddingVertical: 15,
+        borderRadius: 30,
+        elevation: 5,
+    },
+    whatsappBtnText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginLeft: 10,
+    },
 });
 
 export default UpgradeScreen;

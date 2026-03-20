@@ -356,9 +356,9 @@ const ProfilesFeedScreen = ({ navigation }) => {
             profile={currentProfile}
             isFirst={currentIndex === 0}
             isLast={currentIndex >= profiles.length - 1}
-            isSubscribed={isPaid}
-            isPaid={isPaid}
-            onUpgrade={() => navigation.navigate("Upgrade")}
+            isSubscribed={isSubscribed}
+            isPaid={isSubscribed}
+            onUpgrade={() => navigation.navigate("Payment")}
             onAction={handleAction}
             onViewProfile={(userId) =>
               navigation.navigate("ViewFullProfile", { userId })

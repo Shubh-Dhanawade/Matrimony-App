@@ -12,7 +12,6 @@ import LoginScreen from "../screens/auth/LoginScreen";
 import SignupScreen from "../screens/auth/SignupScreen";
 import PendingScreen from "../screens/auth/PendingScreen";
 import RegistrationScreen from "../screens/registration/RegistrationScreen";
-import DashboardScreen from "../screens/dashboard/DashboardScreen";
 import ProfileViewScreen from "../screens/dashboard/ProfileViewScreen";
 import UpgradeScreen from "../screens/dashboard/UpgradeScreen";
 import UserProfileScreen from "../screens/dashboard/UserProfileScreen";
@@ -20,17 +19,12 @@ import ViewFullProfileScreen from "../screens/dashboard/ViewFullProfileScreen";
 import InvitationsScreen from "../screens/dashboard/InvitationsScreen";
 import ShortlistedScreen from "../screens/dashboard/ShortlistedScreen";
 import CustomHeader from "../components/CustomHeader";
-import api from "../services/api";
 import { COLORS } from "../utils/constants";
-import AdminDashboard from "../screens/dashboard/AdminDashboard";
-import PendingProfiles from "../screens/dashboard/PendingProfiles";
-import ManageUsers from "../screens/dashboard/ManageUsers";
-import MembershipManagement from "../screens/dashboard/MembershipManagement";
 import ProfilesFeedScreen from "../screens/dashboard/ProfilesFeedScreen";
-import AdminUserListScreen from "../screens/dashboard/AdminUserListScreen";
 import HelpSupportScreen from "../screens/dashboard/HelpSupportScreen";
 import AccountSecurityScreen from "../screens/dashboard/AccountSecurityScreen";
 import BlockedUsersScreen from "../screens/dashboard/BlockedUsersScreen";
+import PaymentScreen from "../screens/dashboard/PaymentScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -62,46 +56,6 @@ const AuthStack = () => {
     </Stack.Navigator>
   );
 };
-
-const AdminStack = () => (
-  <Stack.Navigator
-    screenOptions={{
-      header: ({ options, route }) => (
-        <CustomHeader
-          title={options.title || route.name}
-          showBack={route.name !== "AdminDashboard"}
-          onBackPress={options.onBackPress}
-        />
-      ),
-    }}
-  >
-    <Stack.Screen
-      name="AdminDashboard"
-      component={AdminDashboard}
-      options={{ title: "Admin Overview" }}
-    />
-    <Stack.Screen
-      name="PendingProfiles"
-      component={PendingProfiles}
-      options={{ title: "Pending Profiles" }}
-    />
-    <Stack.Screen
-      name="ManageUsers"
-      component={ManageUsers}
-      options={{ title: "Manage Users" }}
-    />
-    <Stack.Screen
-      name="MembershipManagement"
-      component={MembershipManagement}
-      options={{ title: "Paid Memberships" }}
-    />
-    <Stack.Screen
-      name="AdminUserList"
-      component={AdminUserListScreen}
-      options={{ title: "Total Users" }}
-    />
-  </Stack.Navigator>
-);
 
 const MainTabs = () => {
   const { t } = useTranslation();
@@ -187,8 +141,13 @@ const MainStack = () => {
       />
       <Stack.Screen
         name="Upgrade"
-        component={UpgradeScreen}
-        options={{ title: t("upgrade_to_premium_title") }}
+        component={PaymentScreen}
+        options={{ title: "Upgrade to Premium", headerShown: false }}
+      />
+      <Stack.Screen
+        name="Payment"
+        component={PaymentScreen}
+        options={{ title: "Upgrade to Premium", headerShown: false }}
       />
       <Stack.Screen
         name="ViewFullProfile"
@@ -196,9 +155,9 @@ const MainStack = () => {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="Shortlist"
-        component={ShortlistedScreen}
-        options={{ title: t("shortlisted_profiles") || "Shortlisted Profiles" }}
+          name="Shortlist"
+          component={ShortlistedScreen}
+          options={{ title: t("shortlisted_profiles") || "Shortlisted Profiles" }}
       />
       <Stack.Screen
         name="HelpSupport"
@@ -221,8 +180,7 @@ const MainStack = () => {
 
 const AppNavigator = () => {
   const { t } = useTranslation();
-  const { user, isAuthenticated, loading, hasProfile, profileStatus } =
-    useAuth();
+  const { isAuthenticated, loading, hasProfile, profileStatus } = useAuth();
 
   if (loading) {
     return (
@@ -232,8 +190,6 @@ const AppNavigator = () => {
     );
   }
 
-  const isAdmin = user?.role === "admin";
-
   // Profile is Pending or Rejected → show holding screen (no app access)
   const isApproved = profileStatus === "Approved";
   const isProfileGated = hasProfile && profileStatus && !isApproved;
@@ -242,8 +198,6 @@ const AppNavigator = () => {
     <NavigationContainer>
       {!isAuthenticated ? (
         <AuthStack />
-      ) : isAdmin ? (
-        <AdminStack />
       ) : !hasProfile ? (
         <Stack.Navigator
           screenOptions={{

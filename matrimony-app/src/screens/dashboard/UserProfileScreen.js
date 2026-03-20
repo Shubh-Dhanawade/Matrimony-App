@@ -155,7 +155,7 @@ const UserProfileScreen = ({ navigation }) => {
           <MenuItem
             icon="crown-outline"
             label={t("upgrade_to_premium")}
-            onPress={() => navigation.navigate("Upgrade")}
+            onPress={() => navigation.navigate("Payment")}
             color="#E91E63"
           />
         )}

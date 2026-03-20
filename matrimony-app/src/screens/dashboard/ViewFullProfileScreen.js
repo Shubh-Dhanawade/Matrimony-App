@@ -19,11 +19,14 @@ import { useTranslation } from 'react-i18next';
 import api from '../../services/api';
 import { COLORS, SPACING, FONT_SIZES, IMAGE_BASE_URL } from '../../utils/constants';
 import { getProfileImageUri } from '../../utils/imageUtils';
+import { useAuth } from '../../context/AuthContext';
 
 const ViewFullProfileScreen = ({ navigation, route }) => {
   const insets = useSafeAreaInsets();
   const { userId } = route.params;
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const isPaid = Number(user?.is_paid) === 1 || Number(user?.is_subscribed) === 1;
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,13 +40,20 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
       setLoading(true);
       setError(null);
       const response = await api.get(`/profiles/${userId}`);
-      // Backend may return { profile: {...} } or the object directly
       const data = response.data?.profile ?? response.data;
       setProfile(data);
     } catch (err) {
       console.error("[ViewFullProfile] Error fetching profile:", err);
-      setError("Unable to load profile. Please try again.");
-      Alert.alert("Error", "Failed to load profile. Please try again.");
+      const status = err.response?.status;
+      const msg = err.response?.data?.message;
+      
+      if (status === 403) {
+        setError(msg || "Access restricted. Please ensure you have a premium membership and are connected with this user.");
+      } else if (status === 404) {
+        setError("Profile not found.");
+      } else {
+        setError("Unable to load profile. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -60,175 +70,39 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
 
   if (error || !profile) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.safeArea}>
         <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-        <ScrollView
-          style={styles.container}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {/* ─── Hero Header ─── */}
-          <View style={styles.heroContainer}>
-            <LinearGradient
-              colors={[COLORS.primary, '#C2185B']}
-              style={styles.heroGradient}
-            />
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Profile</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <View style={styles.errorContainer}>
+          <MaterialCommunityIcons name="alert-circle-outline" size={80} color={COLORS.primary} />
+          <Text style={styles.errorText}>
+            {error || "Profile not found or you don't have permission to view."}
+          </Text>
+          {!isPaid && (
             <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
+              style={styles.retryBtn}
+              onPress={() => navigation.navigate("Payment")}
             >
-              <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+              <Text style={styles.retryBtnText}>Unlock Premium</Text>
             </TouchableOpacity>
-
-            <View style={styles.avatarWrapper}>
-              <Image
-                source={{ uri: getProfileImageUri(profile.avatar_url) }}
-                style={styles.avatar}
-              />
-              {profile.is_verified && (
-                <View style={styles.verifiedBadge}>
-                  <MaterialCommunityIcons name="check-decagram" size={18} color="#fff" />
-                </View>
-              )}
-            </View>
-
-            <Text style={styles.heroName}>{profile.full_name}</Text>
-            {profile.age || profile.marital_status ? (
-              <Text style={styles.heroSub}>
-                {[profile.age && `${profile.age} yrs`, profile.marital_status]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </Text>
-            ) : null}
-          </View>
-
-          {/* ─── Quick Stats ─── */}
-          <View style={styles.statsRow}>
-            <QuickStat icon="human-male-height" label={t("height") || "Height"} value={profile.height ?? '—'} />
-            <QuickStat icon="school-outline" label="Education" value={profile.qualification ?? '—'} />
-          </View>
-
-          <View style={styles.sectionsWrapper}>
-            {/* 1️⃣ Basic Information */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Basic Information</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Name:</Text> {profile.full_name}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Profile For:</Text> {profile.profile_for}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>{t("profile_managed_by")}:</Text> {profile.profile_managed_by ? t(profile.profile_managed_by) || profile.profile_managed_by : 'N/A'}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Gender:</Text> {profile.gender}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Age:</Text> {profile.age}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Date of Birth:</Text> {profile.dob ? new Date(profile.dob).toLocaleDateString() : 'N/A'}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>{t("height")}:</Text> {profile.height}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>{t("complexion")}:</Text> {profile.color ? t(profile.color) || profile.color : 'N/A'}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>{t("manglik")}:</Text> {profile.manglik ? (t(`manglik_${profile.manglik.toLowerCase()}`) || t(profile.manglik) || profile.manglik) : 'N/A'}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Marital Status:</Text> {profile.marital_status}</Text>
-            </View>
-
-            {/* 2️⃣ Family Details */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Family Details</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Father Name:</Text> {profile.father_name}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Mother Maiden Name:</Text> {profile.mother_maiden_name}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Relative Surname:</Text> {profile.relative_surname}</Text>
-            </View>
-
-            {/* 3️⃣ Location Details */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Location</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Birthplace:</Text> {profile.birthplace}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Address:</Text> {profile.address}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>{t("state")}:</Text> {profile.state}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>{t("district")}:</Text> {profile.district}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>{t("taluka")}:</Text> {profile.taluka}</Text>
-            </View>
-
-            {/* 4️⃣ Professional Details */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Professional Details</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Qualification:</Text> {profile.qualification}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Occupation:</Text> {profile.occupation}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>{t("company_name")}:</Text> {profile.company_name || 'N/A'}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Monthly Income:</Text> {profile.monthly_income}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Property:</Text> {profile.property}</Text>
-            </View>
-
-            {/* 5️⃣ Community Details */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Community Details</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Caste:</Text> {profile.caste}</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Sub Caste:</Text> {profile.sub_caste}</Text>
-            </View>
-
-            {/* 6️⃣ Contact Details */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Contact Details</Text>
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>Phone:</Text> {profile.phone_number}</Text>
-              {profile.parents_phone_number ? (
-                <Text style={styles.detailText}><Text style={styles.detailLabel}>Parent's Phone:</Text> {profile.parents_phone_number}</Text>
-              ) : null}
-              <Text style={styles.detailText}><Text style={styles.detailLabel}>{t("whatsapp")}:</Text> {profile.whatsapp_number}</Text>
-            </View>
-
-            {/* 7️⃣ Partner Expectations */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Partner Expectations</Text>
-              <Text style={styles.detailText}>{profile.expectations || 'Not Specified'}</Text>
-            </View>
-
-            {/* 8️⃣ Other Comments */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Other Comments</Text>
-              <Text style={styles.detailText}>{profile.other_comments || 'None'}</Text>
-            </View>
-
-            {/* 9️⃣ Biodata Link */}
-            {profile.biodata_file && profile.biodata_file.trim() !== '' && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>{t("biodata")}</Text>
-                <TouchableOpacity
-                  style={styles.biodataBtn}
-                  onPress={() => Linking.openURL(`${IMAGE_BASE_URL}/${profile.biodata_file}`)}
-                >
-                  <MaterialCommunityIcons name="file-document-outline" size={24} color={COLORS.primary} />
-                  <Text style={styles.biodataBtnText}>{t("view_biodata")}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* 🔟 Kundali Link */}
-            {profile.kundali_file && profile.kundali_file.trim() !== '' && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>{t("kundali")}</Text>
-                <TouchableOpacity
-                  style={styles.biodataBtn}
-                  onPress={() => Linking.openURL(`${IMAGE_BASE_URL}/${profile.kundali_file}`)}
-                >
-                  <MaterialCommunityIcons name="file-document-outline" size={24} color={COLORS.primary} />
-                  <Text style={styles.biodataBtnText}>{t("view_kundali")}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-
-          {/* ─── Action Buttons ─── */}
-          <View style={styles.actionsContainer}>
-            <TouchableOpacity
-              style={styles.interestBtn}
-              activeOpacity={0.85}
-              onPress={() =>
-                Alert.alert(
-                  t("interest_sent"),
-                  t("interest_sent_msg", { name: profile.full_name })
-                )
-              }
-            >
-              <MaterialCommunityIcons name="heart" size={20} color="#fff" />
-              <Text style={styles.interestBtnText}>{t("send_interest")}</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.bottomSpacer} />
-        </ScrollView>
+          )}
+          <TouchableOpacity
+            style={[styles.retryBtn, { backgroundColor: '#eee', marginTop: 10 }]}
+            onPress={fetchProfile}
+          >
+            <Text style={[styles.retryBtnText, { color: '#333' }]}>Retry</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     );
   }
@@ -258,6 +132,7 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
             <Image
               source={{ uri: getProfileImageUri(profile.avatar_url) }}
               style={styles.avatar}
+              blurRadius={isPaid ? 0 : 20}
             />
             {profile.is_verified && (
               <View style={styles.verifiedBadge}>
@@ -391,17 +266,17 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
             <Text style={styles.sectionTitle}>{t("contact_location")}</Text>
             <Text style={styles.detailText}>
               <Text style={styles.detailLabel}>{t("phone")}:</Text>{" "}
-              {profile.phone_number}
+              {isPaid ? profile.phone_number : (profile.phone_number ? profile.phone_number.substring(0, 3) + '*******' : 'N/A')}
             </Text>
             {profile.parents_phone_number ? (
               <Text style={styles.detailText}>
                 <Text style={styles.detailLabel}>{t("parents_phone") || "Parent's Phone"}:</Text>{" "}
-                {profile.parents_phone_number}
+                {isPaid ? profile.parents_phone_number : (profile.parents_phone_number ? profile.parents_phone_number.substring(0, 3) + '*******' : 'N/A')}
               </Text>
             ) : null}
             <Text style={styles.detailText}>
               <Text style={styles.detailLabel}>{t("whatsapp")}:</Text>{" "}
-              {profile.whatsapp_number}
+            {isPaid ? profile.whatsapp_number : (profile.whatsapp_number ? profile.whatsapp_number.substring(0, 3) + '*******' : 'N/A')}
             </Text>
           </View>
 
@@ -464,63 +339,30 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
 
         {/* ─── Action Buttons ─── */}
         <View style={styles.actionsContainer}>
-          <TouchableOpacity
-            style={[
-              styles.shortlistBtn,
-              !!profile.is_shortlisted && styles.shortlistBtnDisabled,
-            ]}
-            activeOpacity={!!profile.is_shortlisted ? 1 : 0.85}
-            onPress={async () => {
-              if (!!profile.is_shortlisted) return;
-              try {
-                await api.post("/profiles/shortlist", {
-                  profileUserId: profile.user_id,
-                });
-                setProfile((prev) => ({ ...prev, is_shortlisted: true }));
-                Alert.alert("Success", "Profile added to your shortlist!");
-              } catch (err) {
-                const msg = err.response?.data?.message || err.message;
-                if (msg === "Already shortlisted") {
-                  setProfile((prev) => ({ ...prev, is_shortlisted: true }));
-                  Alert.alert(
-                    "Already Saved",
-                    "This profile is already in your shortlist.",
-                  );
-                } else {
-                  Alert.alert("Error", msg);
-                }
+          {isPaid ? (
+            <TouchableOpacity
+              style={styles.interestBtn}
+              activeOpacity={0.85}
+              onPress={() =>
+                Alert.alert(
+                  "Interest Sent 💌",
+                  `Your interest has been sent to ${profile.full_name}.`,
+                )
               }
-            }}
-            disabled={!!profile.is_shortlisted}
-          >
-            <MaterialCommunityIcons
-              name={profile.is_shortlisted ? "star" : "star-outline"}
-              size={20}
-              color={profile.is_shortlisted ? "#FFB300" : COLORS.primary}
-            />
-            <Text
-              style={[
-                styles.shortlistBtnText,
-                profile.is_shortlisted && { color: "#999" },
-              ]}
             >
-              {profile.is_shortlisted ? "Saved" : "Shortlist"}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.interestBtn}
-            activeOpacity={0.85}
-            onPress={() =>
-              Alert.alert(
-                "Interest Sent 💌",
-                `Your interest has been sent to ${profile.full_name}.`,
-              )
-            }
-          >
-            <MaterialCommunityIcons name="heart" size={20} color="#fff" />
-            <Text style={styles.interestBtnText}>Send Interest</Text>
-          </TouchableOpacity>
+              <MaterialCommunityIcons name="heart" size={20} color="#fff" />
+              <Text style={styles.interestBtnText}>Send Interest</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.interestBtn, { backgroundColor: COLORS.secondary || '#E91E63' }]}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate("Payment")}
+            >
+              <MaterialCommunityIcons name="lock-open-variant" size={20} color="#fff" />
+              <Text style={styles.interestBtnText}>Unlock Full Details</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.bottomSpacer} />
