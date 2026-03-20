@@ -194,7 +194,7 @@ const ShortlistedScreen = ({ navigation }) => {
           }
           activeOpacity={0.85}
         >
-          <Image source={{ uri: avatarUri }} style={styles.avatar} />
+          <Image source={{ uri: avatarUri }} style={styles.avatar} blurRadius={isPaid ? 0 : 15} />
           {isConnected && (
             <View style={styles.connectedBadge}>
               <MaterialCommunityIcons name="check" size={10} color="#fff" />
@@ -205,9 +205,9 @@ const ShortlistedScreen = ({ navigation }) => {
         {/* Profile Info */}
         <View style={styles.info}>
           <Text style={styles.name} numberOfLines={1}>
-            {isConnected || isPaid
+            {isPaid
               ? item.full_name
-              : maskName(item.user_id)}
+              : maskName(item.full_name, item.user_id)}
             , {item.age}
           </Text>
           <View style={styles.metaRow}>
@@ -275,18 +275,24 @@ const ShortlistedScreen = ({ navigation }) => {
               invStatus !== "Connected" && styles.viewBtnDisabled,
             ]}
             onPress={() => {
-              if (invStatus === "Connected") {
-                navigation.navigate("ViewFullProfile", {
-                  userId: item.user_id,
-                });
-              } else {
-                Alert.alert(
-                  "Not Connected",
-                  "You must send an interest and be accepted by this user to view their full profile.",
-                );
+              if (!isPaid) {
+                navigation.navigate("Payment");
+                return;
               }
+
+              if (!isConnected) {
+                Alert.alert(
+                  "Access Denied",
+                  "Full profile details are visible only to connected users. Please send an interest and wait for approval."
+                );
+                return;
+              }
+
+              navigation.navigate("ViewFullProfile", {
+                userId: item.user_id,
+              });
             }}
-            disabled={invStatus !== "Connected"}
+            disabled={!isConnected && !isPaid}
             activeOpacity={0.8}
           >
             <Text
@@ -316,8 +322,10 @@ const ShortlistedScreen = ({ navigation }) => {
     );
   };
 
-  const maskName = (profileId) => {
-    return `User ${profileId || "Unknown"}`;
+  const maskName = (fullName, profileId) => {
+    if (!fullName) return `User ${profileId || "Unknown"}`;
+    const firstPart = fullName.split(" ")[0];
+    return firstPart || `User ${profileId || "Unknown"}`;
   };
 
   if (loading) {

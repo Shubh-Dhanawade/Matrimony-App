@@ -130,22 +130,22 @@ const authController = {
     }
   },
 
-  simulateUpgrade: async (req, res) => {
+  requestUpgrade: async (req, res) => {
     try {
       const userId = req.user.id;
-      // Assuming 'db' is available in this scope, e.g., imported or passed
-      // For this example, we'll assume it's available.
-      // In a real application, you might import it or pass it via middleware context.
-      const db = require("../config/db"); // Added for context, assuming db is available
+      const db = require("../config/db");
+      
+      // Update is_subscribed flag
       await db.execute("UPDATE users SET is_subscribed = 1 WHERE id = ?", [
         userId,
       ]);
-      const [rows] = await db.execute(
-        "SELECT id, mobile_number, role, is_blocked, is_subscribed, is_paid FROM users WHERE id = ?",
-        [userId],
-      );
-      res.json({ message: "Upgraded successfully", user: rows[0] });
+      
+      res.json({ 
+        message: "Payment request submitted successfully",
+        success: true
+      });
     } catch (error) {
+      console.error("Upgrade request error:", error);
       res.status(500).json({ message: error.message });
     }
   },

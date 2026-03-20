@@ -36,7 +36,8 @@ const { height } = Dimensions.get("window");
 const DashboardScreen = ({ navigation }) => {
   const { t } = useTranslation();
   useHardwareBack();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const isPaidViewer = Number(user?.is_paid) === 1 || Number(user?.is_subscribed) === 1;
   const [myProfile, setMyProfile] = useState(null);
   const [profiles, setProfiles] = useState([]);
   const [suggested, setSuggested] = useState([]);
@@ -277,9 +278,9 @@ const DashboardScreen = ({ navigation }) => {
               renderCard={(card) => (
                 <ProfileCard
                   profile={card}
-                  isSubscribed={card.is_paid === 1 || card.is_subscribed === 1}
-                  isPaid={card.is_paid === 1 || card.is_subscribed === 1}
-                  onUpgrade={() => navigation.navigate("Upgrade")}
+                  isSubscribed={isPaidViewer}
+                  isPaid={isPaidViewer}
+                  onUpgrade={() => navigation.navigate("Payment")}
                   isFirst={profiles.indexOf(card) === 0}
                   isLast={profiles.indexOf(card) === profiles.length - 1}
                   onViewProfile={(userId) =>

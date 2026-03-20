@@ -125,7 +125,7 @@ const adminController = {
 
   getAllUsers: async (req, res) => {
     try {
-      const { search = '', is_paid, profile_status } = req.query;
+      const { search = '', is_paid, payment_requested, profile_status } = req.query;
 
       let query = `
       SELECT 
@@ -134,6 +134,7 @@ const adminController = {
         u.role,
         u.is_blocked,
         u.is_paid,
+        u.is_subscribed,
         u.created_at,
         p.full_name,
         p.address,
@@ -158,6 +159,11 @@ const adminController = {
         params.push(is_paid === 'true' || is_paid === '1' ? 1 : 0);
       }
 
+      // If `is_subscribed` param is passed, use it to filter users who have requested a subscription upgrade
+      if (payment_requested !== undefined && payment_requested !== '') {
+        query += ` AND u.is_subscribed = ?`;
+        params.push(payment_requested === 'true' || payment_requested === '1' ? 1 : 0);
+      }
       if (profile_status) {
         query += ` AND p.status = ?`;
         params.push(profile_status);
