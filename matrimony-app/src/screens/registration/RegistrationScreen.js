@@ -132,6 +132,9 @@ const RegistrationScreen = ({ navigation, route }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalData, setModalData] = useState({ title: "", content: "" });
   const [ageError, setAgeError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [parentsPhoneError, setParentsPhoneError] = useState("");
+  const [whatsappError, setWhatsappError] = useState("");
 
   const [feet, setFeet] = useState("");
   const [inches, setInches] = useState("");
@@ -827,8 +830,34 @@ const RegistrationScreen = ({ navigation, route }) => {
       return;
     }
 
+    let isPhoneValid = true;
+    
+    // Validate primary phone number (Required)
     if (!formData.phone_number || formData.phone_number.length !== 10) {
-      Alert.alert(t("error") || "Error", t("invalid_phone_number") || "Please enter valid phone number");
+      setPhoneError(t("invalid_phone_number") || "Please enter valid 10-digit phone number");
+      isPhoneValid = false;
+    } else {
+      setPhoneError("");
+    }
+
+    // Validate parent's phone number (Optional, but must be 10 digits if entered)
+    if (formData.parents_phone_number && formData.parents_phone_number.length !== 10) {
+      setParentsPhoneError(t("invalid_phone_number") || "Please enter valid 10-digit phone number");
+      isPhoneValid = false;
+    } else {
+      setParentsPhoneError("");
+    }
+
+    // Validate WhatsApp number (Optional, but must be 10 digits if entered)
+    if (formData.whatsapp_number && formData.whatsapp_number.length !== 10) {
+      setWhatsappError(t("invalid_phone_number") || "Please enter valid 10-digit phone number");
+      isPhoneValid = false;
+    } else {
+      setWhatsappError("");
+    }
+
+    if (!isPhoneValid) {
+      Alert.alert(t("error") || "Error", t("invalid_phone_number") || "Please enter valid 10-digit phone number");
       return;
     }
 
@@ -1121,21 +1150,34 @@ const RegistrationScreen = ({ navigation, route }) => {
           label={t("phone_number_req")}
           value={formData.phone_number}
           keyboardType="phone-pad"
-          onChangeText={(v) => updateField("phone_number", v)}
+          onChangeText={(v) => {
+            updateField("phone_number", v);
+            if (v.length === 10) setPhoneError("");
+          }}
           maxLength={10}
+          error={phoneError}
         />
         <CustomInput
           label={t("parents_phone_number") || "Parent's Phone Number"}
           value={formData.parents_phone_number}
           keyboardType="phone-pad"
-          onChangeText={(v) => updateField("parents_phone_number", v)}
-          maxLength={15}
+          onChangeText={(v) => {
+            updateField("parents_phone_number", v);
+            if (v.length === 10) setParentsPhoneError("");
+          }}
+          maxLength={10}
+          error={parentsPhoneError}
         />
         <CustomInput
           label={t("whatsapp_number")}
           value={formData.whatsapp_number}
           keyboardType="phone-pad"
-          onChangeText={(v) => updateField("whatsapp_number", v)}
+          onChangeText={(v) => {
+            updateField("whatsapp_number", v);
+            if (v.length === 10) setWhatsappError("");
+          }}
+          maxLength={10}
+          error={whatsappError}
         />
         <CustomInput
           label={t("birthplace")}

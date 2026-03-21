@@ -29,7 +29,7 @@ const STATUS_COLORS = {
 
 const InvitationsScreen = ({ navigation }) => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, refreshInvitationsCount } = useAuth();
   const [invitations, setInvitations] = useState({ sent: [], received: [] });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -55,13 +55,16 @@ const InvitationsScreen = ({ navigation }) => {
       if (currentListData.length > 0) {
         console.log(`[INVITATIONS] First Item Avatar:`, currentListData[0].avatar_url || "NULL");
       }
+      
+      // Sync global badge
+      refreshInvitationsCount();
     } catch (error) {
       console.error("Error fetching invitations:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [refreshInvitationsCount, activeTab]);
 
   useEffect(() => {
     fetchInvitations();

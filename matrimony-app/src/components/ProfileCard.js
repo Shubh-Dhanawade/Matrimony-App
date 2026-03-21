@@ -99,11 +99,11 @@ const ProfileCard = ({
   };
 
   const handleFollow = async () => {
-    if (profile.invitation_status !== "None") {
+    if (rawStatus !== "none" && rawStatus !== "") {
       Alert.alert(
         t("connected"),
         isPending
-          ? t("invitation_sent_success")
+          ? (t("waiting_for_acceptance") || "Waiting for Acceptance")
           : t("connected"),
       );
       return;
@@ -358,7 +358,7 @@ const ProfileCard = ({
             <View style={styles.infoRow}>
               <MaterialCommunityIcons
                 name="map-marker"
-                size={14}
+                size={12}
                 color="#ddd"
               />
               <Text style={styles.infoText}>
@@ -367,20 +367,29 @@ const ProfileCard = ({
             </View>
 
             {isPreviewUnlocked && (
-              <View style={styles.infoRow}>
-                <MaterialCommunityIcons
-                  name="briefcase-outline"
-                  size={14}
-                  color="#ddd"
-                />
-                <Text style={styles.infoText} numberOfLines={1} ellipsizeMode="tail">
-                  {profile.company_name
-                    ? ` ${profile.occupation || t("not_specified")}`
-                    : profile.occupation ||
-                    profile.qualification ||
-                    t("not_specified")}
-                </Text>
-              </View>
+              <>
+                <View style={[styles.infoRow, { justifyContent: 'space-between' }]}>
+                  <View style={styles.infoItem}>
+                    <MaterialCommunityIcons name="human-male-height" size={12} color="#ddd" />
+                    <Text style={styles.infoText}>{profile.height || t('not_specified')}</Text>
+                  </View>
+                  <View style={styles.infoItem}>
+                    <MaterialCommunityIcons name="account-group" size={12} color="#ddd" />
+                    <Text style={styles.infoText}>{profile.caste || t('not_specified')}</Text>
+                  </View>
+                </View>
+
+                <View style={[styles.infoRow, { justifyContent: 'space-between' }]}>
+                  <View style={styles.infoItem}>
+                    <MaterialCommunityIcons name="school" size={12} color="#ddd" />
+                    <Text style={styles.infoText} numberOfLines={1}>{profile.qualification || profile.occupation || t('not_specified')}</Text>
+                  </View>
+                  <View style={styles.infoItem}>
+                    <MaterialCommunityIcons name="currency-inr" size={12} color="#ddd" />
+                    <Text style={styles.infoText}>{profile.monthly_income ? `₹${profile.monthly_income}` : t('not_specified')}</Text>
+                  </View>
+                </View>
+              </>
             )}
 
             {isConnected && profile.mobile_number && (
@@ -439,27 +448,25 @@ const ProfileCard = ({
               size={52}
             />
 
-            {isPaid && (
-              <ActionButton
-                icon={
-                  isConnected
-                    ? "check-circle"
-                    : isPending
-                      ? "clock-outline"
-                      : "heart-outline"
-                }
-                label={
-                  isConnected
-                    ? t("remove_interest")
-                    : isPending
-                      ? t("cancel_request")
-                      : t("send_interest")
-                }
-                isActive={isConnected || isPending}
-                onPress={isPending || isConnected ? handleUnfollow : handleFollow}
-                size={52}
-              />
-            )}
+            <ActionButton
+              icon={
+                isConnected
+                  ? "check-circle"
+                  : isPending
+                    ? "clock-outline"
+                    : "heart-outline"
+              }
+              label={
+                isConnected
+                  ? (t("connected") || "Connected")
+                  : isPending
+                    ? (t("pending") || "Pending")
+                    : (t("send_interest") || t("interested") || "Interest")
+              }
+              isActive={isConnected || isPending}
+              onPress={isPending || isConnected ? handleUnfollow : handleFollow}
+              size={52}
+            />
 
             <ActionButton
               icon={profile.is_shortlisted ? "star" : "star-outline"}
@@ -518,9 +525,13 @@ const ActionButton = ({
 
   // Determine if the button should show as highlighted (primary color)
   const showAsActive = isActive || isPressed;
-  const iconColor = showAsActive ? "#fff" : "#fff"; // Default icon is white
-  const bgColor = showAsActive ? COLORS.primary : "rgba(255,255,255,0.15)";
-  const borderColor = showAsActive ? COLORS.primary : "rgba(255,255,255,0.3)";
+  const iconColor = "#fff"; // Explicitly white for both states
+  const bgColor = isActive 
+    ? (icon === 'check-circle' ? '#4CAF50' : COLORS.primary) 
+    : isPressed 
+      ? COLORS.primary 
+      : "rgba(255,255,255,0.15)";
+  const borderColor = showAsActive ? (icon === 'check-circle' ? '#4CAF50' : COLORS.primary) : "rgba(255,255,255,0.3)";
 
   return (
     <TouchableOpacity
@@ -722,7 +733,7 @@ const styles = StyleSheet.create({
   },
 
   nameText: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "bold",
     color: "#fff",
     textShadowColor: "rgba(0,0,0,0.5)",
@@ -732,12 +743,13 @@ const styles = StyleSheet.create({
   },
   managedByText: {
     color: "rgba(255,255,255,0.8)",
-    fontSize: 12,
-    marginBottom: 8,
+    fontSize: 10,
+    marginBottom: 4,
     fontStyle: "italic",
   },
-  infoRow: { flexDirection: "row", alignItems: "center", marginTop: 5 },
-  infoText: { color: "#eee", fontSize: 14, marginLeft: 6, fontWeight: "500", flex: 1 },
+  infoRow: { flexDirection: "row", alignItems: "center", marginTop: 4 },
+  infoItem: { flexDirection: "row", alignItems: "center", flex: 1, marginRight: 10 },
+  infoText: { color: "#eee", fontSize: 12, marginLeft: 4, fontWeight: "500", flex: 1 },
 
   actionContainer: {
     position: "absolute",

@@ -59,6 +59,8 @@ const AuthStack = () => {
 
 const MainTabs = () => {
   const { t } = useTranslation();
+  const { invitationCount } = useAuth();
+  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -98,6 +100,11 @@ const MainTabs = () => {
         options={{
           title: t("invitations_title"),
           tabBarLabel: t("invitations_tab"),
+          tabBarBadge: invitationCount > 0 ? invitationCount : null,
+          tabBarBadgeStyle: {
+            backgroundColor: COLORS.primary,
+            fontSize: 10,
+          }
         }}
       />
 

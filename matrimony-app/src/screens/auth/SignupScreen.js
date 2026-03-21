@@ -20,9 +20,27 @@ const SignupScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
+  const [mobileNumberError, setMobileNumberError] = useState('');
+
   const handleSignup = async () => {
-    if (!mobileNumber || !password || !confirmPassword) {
-      Alert.alert(t('error') || 'Error', t('fill_all_fields') || 'Please fill all fields');
+    let isValid = true;
+    
+    if (!mobileNumber) {
+      setMobileNumberError(t('phone_number_required') || 'Mobile number is required');
+      isValid = false;
+    } else if (mobileNumber.length !== 10) {
+      setMobileNumberError(t('invalid_phone_number') || 'Mobile number must be exactly 10 digits');
+      isValid = false;
+    } else {
+      setMobileNumberError('');
+    }
+
+    if (!isValid || !password || !confirmPassword) {
+      if (!password || !confirmPassword) {
+        Alert.alert(t('error') || 'Error', t('fill_all_fields') || 'Please fill all fields');
+      } else if (!isValid) {
+        Alert.alert(t('error') || 'Error', mobileNumberError || t('invalid_phone_number'));
+      }
       return;
     }
 
@@ -63,7 +81,12 @@ const SignupScreen = ({ navigation }) => {
           keyboardType="phone-pad"
           required
           value={mobileNumber}
-          onChangeText={(e) => setMobileNumber(e)}
+          onChangeText={(v) => {
+            setMobileNumber(v);
+            if (v.length === 10) setMobileNumberError('');
+          }}
+          error={mobileNumberError}
+          maxLength={10}
         />
         <CustomInput
           label={`${t('password') || 'Password'} *`}

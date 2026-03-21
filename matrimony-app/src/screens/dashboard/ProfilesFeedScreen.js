@@ -238,25 +238,32 @@ const ProfilesFeedScreen = ({ navigation }) => {
             }
           });
         } else if (type === "shortlist") {
-          const payload = { profileUserId: profile.user_id };
-          console.log("[FEED_SHORTLIST] Sending payload:", payload);
-          console.log("[FEED_SHORTLIST] To endpoint: /profiles/shortlist");
-          console.log("[FEED_SHORTLIST] Profile object:", profile);
-
-          const response = await api.post("/profiles/shortlist", payload);
-
-          console.log("[FEED_SHORTLIST] Success response:", response.data);
-          Alert.alert(
-            t("shortlisted_title"),
-            `${profile.full_name || "Profile"} ${t("profile_shortlisted_msg").replace("Profile added to your shortlist!", "") || t("profile_shortlisted_msg")}`,
-            [
-              { text: "OK" },
-              {
-                text: "View Shortlist",
-                onPress: () => navigation.navigate("Shortlist"),
-              },
-            ],
+          // Optimistic update
+          setProfiles((prev) => 
+            prev.map(p => p.user_id === profile.user_id ? { ...p, is_shortlisted: !p.is_shortlisted } : p)
           );
+
+          const payload = { profileUserId: profile.user_id };
+          try {
+            await api.post("/profiles/shortlist", payload);
+            Alert.alert(
+              t("shortlisted_title"),
+              `${profile.full_name || "Profile"} ${t("profile_shortlisted_msg").replace("Profile added to your shortlist!", "") || t("profile_shortlisted_msg")}`,
+              [
+                { text: "OK" },
+                {
+                  text: "View Shortlist",
+                  onPress: () => navigation.navigate("Shortlist"),
+                },
+              ],
+            );
+          } catch (err) {
+            // Revert on error
+            setProfiles((prev) => 
+              prev.map(p => p.user_id === profile.user_id ? { ...p, is_shortlisted: !p.is_shortlisted } : p)
+            );
+            throw err;
+          }
         } else if (type === "refresh") {
           // Re-fetch all to get latest statuses (like shortlisted, invitation_status)
           const feedRes = await api.get("/profiles/latest");
