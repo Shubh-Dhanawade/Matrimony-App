@@ -10,6 +10,8 @@ export const AuthProvider = ({ children }) => {
   const [hasProfile, setHasProfile] = useState(true);
   const [profileStatus, setProfileStatus] = useState(null); // null | 'Pending' | 'Approved' | 'Rejected'
 
+  const [invitationCount, setInvitationCount] = useState(0);
+
   useEffect(() => {
     loadStorageData();
   }, []);
@@ -28,12 +30,26 @@ export const AuthProvider = ({ children }) => {
         // If it's a regular user, check profile
         if (parsedUser.role !== "admin") {
           await checkProfileStatus();
+          await refreshInvitationsCount();
         }
       }
     } catch (e) {
       console.error("[AUTH_CONTEXT] Load error:", e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const refreshInvitationsCount = async () => {
+    try {
+      const api = (await import("../services/api")).default;
+      const response = await api.get("/invitations");
+      const { received } = response.data;
+      const pendingCount = received.filter(inv => inv.status.toLowerCase() === 'pending').length;
+      setInvitationCount(pendingCount);
+      console.log("[AUTH_CONTEXT] Invitations refreshed count:", pendingCount);
+    } catch (error) {
+      console.error("[AUTH_CONTEXT] Refresh invitations count error:", error);
     }
   };
 
@@ -76,6 +92,7 @@ export const AuthProvider = ({ children }) => {
     // Check profile immediately after login if not admin
     if (userData.role !== "admin") {
       await checkProfileStatus();
+      await refreshInvitationsCount();
     }
   };
 
@@ -159,6 +176,7 @@ export const AuthProvider = ({ children }) => {
       setUser(currentUserObject);
       await AsyncStorage.setItem("user", JSON.stringify(currentUserObject));
       console.log("[AUTH_CONTEXT] User and Profile refreshed");
+      await refreshInvitationsCount();
 
     } catch (error) {
       console.error("[AUTH_CONTEXT] Refresh error:", error);
@@ -185,6 +203,8 @@ export const AuthProvider = ({ children }) => {
         deleteMyAccount,
         refreshUser,
         updateUser,
+        invitationCount,
+        refreshInvitationsCount,
       }}
     >
       {children}

@@ -16,10 +16,28 @@ const LoginScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
+  const [mobileNumberError, setMobileNumberError] = useState('');
+
   const handleLogin = async () => {
     console.log('Attempting login with:', { mobileNumber, password });
-    if (!mobileNumber || !password) {
-      Alert.alert(t('error'), t('fill_all_fields'));
+    
+    let isValid = true;
+    if (!mobileNumber) {
+      setMobileNumberError(t('phone_number_required') || 'Mobile number is required');
+      isValid = false;
+    } else if (mobileNumber.length !== 10) {
+      setMobileNumberError(t('invalid_phone_number') || 'Mobile number must be exactly 10 digits');
+      isValid = false;
+    } else {
+      setMobileNumberError('');
+    }
+
+    if (!isValid || !password) {
+      if (!password) {
+        Alert.alert(t('error'), t('fill_all_fields'));
+      } else if (!isValid) {
+        Alert.alert(t('error'), mobileNumberError || t('invalid_phone_number'));
+      }
       return;
     }
 
@@ -66,7 +84,12 @@ const LoginScreen = ({ navigation }) => {
           placeholder={t('mobile_placeholder')}
           keyboardType="phone-pad"
           value={mobileNumber}
-          onChangeText={setMobileNumber}
+          onChangeText={(v) => {
+            setMobileNumber(v);
+            if (v.length === 10) setMobileNumberError('');
+          }}
+          error={mobileNumberError}
+          maxLength={10}
         />
         <CustomInput
           label={t('password')}

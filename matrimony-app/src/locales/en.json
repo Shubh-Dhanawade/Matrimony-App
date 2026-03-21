@@ -31,6 +31,8 @@
     "no_more_profiles_desc": "Try changing your filters or check back later!",
     "error_fetch_profiles": "Failed to fetch profiles. Please try again later.",
     "shortlisted_title": "Shortlisted",
+    "invalid_phone_number": "Mobile number must be exactly 10 digits",
+    "phone_number_required": "Mobile number is required",
     "shortlisted_msg": "{{name}} has been added to your shortlist.",
     "interested_title": "Interested",
     "interested_msg": "Interest sent to {{name}}",
@@ -307,5 +309,10 @@
     "payment_instructions": "Payment Instructions",
     "unlock": "Unlock",
     "active_now": "Active now",
-    "unlock_profiles": "Unlock Profiles"
+    "unlock_profiles": "Unlock Profiles",
+    "invitations": "Invitations",
+    "no_invitations": "No new invitations",
+    "invitation_accepted_msg": "Invitation accepted successfully",
+    "invitation_rejected_msg": "Invitation rejected successfully",
+    "invitation_processing": "Processing..."
 }

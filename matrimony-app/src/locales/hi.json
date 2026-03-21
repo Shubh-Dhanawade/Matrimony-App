@@ -307,5 +307,10 @@
     "payment_instructions": "भुगतान निर्देश",
     "unlock": "अनलॉक",
     "active_now": "अभी सक्रिय",
-    "unlock_profiles": "प्रोफ़ाइल अनलॉक़ करें"
+    "unlock_profiles": "प्रोफ़ाइल अनलॉक़ करें",
+    "invitations": "आमंत्रण",
+    "no_invitations": "कोई नया आमंत्रण नहीं है",
+    "invitation_accepted_msg": "आमंत्रण सफलतापूर्वक स्वीकार किया गया",
+    "invitation_rejected_msg": "आमंत्रण सफलतापूर्वक अस्वीकार किया गया",
+    "invitation_processing": "प्रोसेसिंग..."
 }
