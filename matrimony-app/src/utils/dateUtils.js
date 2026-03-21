@@ -59,20 +59,22 @@ export const calculateAge = (dob) => {
  * @param {string|Date} date 
  * @returns {string} Human readable elapsed time
  */
-export const formatLastActive = (date) => {
+export const formatLastActive = (date, t) => {
     if (!date) return '';
     const diff = Date.now() - new Date(date).getTime();
     if (isNaN(diff)) return '';
 
+    const fn = typeof t === 'function' ? t : (key, params) => params?.defaultValue || key;
+
     const minutes = Math.floor(diff / 60000);
 
-    if (minutes < 5) return "Active now";
-    if (minutes < 60) return `Active ${minutes} min ago`;
+    if (minutes < 5) return fn("active_now", { defaultValue: "Active now" });
+    if (minutes < 60) return fn("active_ago", { time: `${minutes} min`, defaultValue: `Active ${minutes} min ago` });
 
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `Active ${hours} hours ago`;
+    if (hours < 24) return fn("active_ago", { time: `${hours} hours`, defaultValue: `Active ${hours} hours ago` });
 
     const days = Math.floor(hours / 24);
-    if (days === 1) return `Active yesterday`;
-    return `Active ${days} days ago`;
+    if (days === 1) return fn("active_yesterday", { defaultValue: "Active yesterday" });
+    return fn("active_ago", { time: `${days} days`, defaultValue: `Active ${days} days ago` });
 };

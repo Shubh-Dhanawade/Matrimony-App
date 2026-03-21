@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
@@ -11,6 +10,7 @@ import {
   Platform,
   StatusBar,
 } from "react-native";
+import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useFocusEffect } from "@react-navigation/native";
@@ -67,7 +67,12 @@ const UserProfileScreen = ({ navigation }) => {
         <View style={styles.avatarContainer}>
           <Image
             source={{ uri: getProfileImageUri(profile?.avatar_url) }}
+            placeholder={require("../../../assets/userprofile.png")}
+            contentFit="cover"
+            transition={300}
+            cachePolicy="disk"
             style={styles.avatar}
+            onError={() => {}}
           />
           <TouchableOpacity
             style={styles.editIcon}

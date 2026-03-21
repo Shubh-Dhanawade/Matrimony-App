@@ -88,8 +88,39 @@ const Profile = {
     const params = [userId];
 
     if (viewerId) {
-      query += `, (SELECT COUNT(*) FROM shortlists WHERE user_id = ? AND profile_user_id = p.user_id) > 0 AS is_shortlisted `;
-      params.unshift(viewerId);
+      query += `, (SELECT COUNT(*) FROM shortlists WHERE user_id = ? AND profile_user_id = p.user_id) > 0 AS is_shortlisted,
+        (
+          -- Check for accepted interest in either direction first
+          SELECT
+            CASE
+              WHEN EXISTS (
+                SELECT 1 FROM invitations
+                WHERE LOWER(status) = 'accepted'
+                  AND (
+                    (sender_id = ? AND receiver_id = p.user_id)
+                    OR (sender_id = p.user_id AND receiver_id = ?)
+                  )
+              ) THEN 'accepted'
+              -- Mutual interest: both sides sent pending
+              WHEN EXISTS (
+                SELECT 1 FROM invitations WHERE sender_id = ? AND receiver_id = p.user_id AND LOWER(status) = 'pending'
+              ) AND EXISTS (
+                SELECT 1 FROM invitations WHERE sender_id = p.user_id AND receiver_id = ? AND LOWER(status) = 'pending'
+              ) THEN 'mutual'
+              -- Single direction pending
+              WHEN EXISTS (
+                SELECT 1 FROM invitations
+                WHERE LOWER(status) = 'pending'
+                  AND (
+                    (sender_id = ? AND receiver_id = p.user_id)
+                    OR (sender_id = p.user_id AND receiver_id = ?)
+                  )
+              ) THEN 'pending'
+              ELSE 'none'
+            END
+        ) AS invitation_status `;
+      // params: is_shortlisted(viewerId), then 6 viewerId values for the CASE, then viewerId for params.unshift below
+      params.unshift(viewerId, viewerId, viewerId, viewerId, viewerId, viewerId, viewerId);
     }
 
     query += `
@@ -98,7 +129,13 @@ const Profile = {
       WHERE p.user_id = ?
     `;
 
+    console.log(`[PROFILE_DB] Fetching profile ID ${userId} for viewer ${viewerId}`);
     const [rows] = await db.execute(query, params);
+    
+    if (rows.length > 0) {
+      console.log(`[PROFILE_DB] Result status: ${rows[0].invitation_status || 'None'}`);
+    }
+    
     return rows[0];
   },
 
@@ -218,9 +255,9 @@ WHERE p.user_id != ?
         u.mobile_number,
         TIMESTAMPDIFF(YEAR, p.dob, CURDATE()) AS age,
         CASE 
-          WHEN inv.status = 'Accepted' THEN 'Connected'
-          WHEN inv.status = 'Pending' THEN 'Pending'
-          ELSE 'None'
+          WHEN LOWER(inv.status) = 'accepted' THEN 'accepted'
+          WHEN LOWER(inv.status) = 'pending' THEN 'pending'
+          ELSE 'none'
         END AS invitation_status,
         (SELECT COUNT(*) FROM shortlists WHERE user_id = ? AND profile_user_id = p.user_id) > 0 AS is_shortlisted
       FROM profiles p

@@ -5,14 +5,15 @@ import {
   ScrollView,
   Alert,
   TouchableOpacity,
-  Image,
   Platform,
   ActivityIndicator,
   PermissionsAndroid,
   KeyboardAvoidingView,
   StatusBar,
 } from "react-native";
+import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as DocumentPicker from "expo-document-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
@@ -390,16 +391,22 @@ const RegistrationScreen = ({ navigation, route }) => {
           return true;
         });
 
-        const newImages = validImages.slice(0, maxNew).map((asset) => ({
-          uri: asset.uri,
-          type: asset.mimeType || asset.type || "image/jpeg",
-          fileName:
-            asset.fileName ||
-            `photo_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`,
+        const newImages = await Promise.all(validImages.slice(0, maxNew).map(async (asset) => {
+          // Resize on-the-fly to 800x800 for better performance
+          const manipulated = await ImageManipulator.manipulateAsync(
+            asset.uri,
+            [{ resize: { width: 800, height: 800 } }],
+            { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+          );
+
+          return {
+            uri: manipulated.uri,
+            type: "image/jpeg",
+            fileName: asset.fileName || `photo_${Date.now()}.jpg`,
+          };
         }));
-        setSelectedMultipleImages((prev) =>
-          [...prev, ...newImages]
-        );
+
+        setSelectedMultipleImages((prev) => [...prev, ...newImages]);
       } else {
         console.log("[MULTI_PHOTO] No assets in result");
       }
@@ -583,7 +590,13 @@ const RegistrationScreen = ({ navigation, route }) => {
     });
 
     if (!result.canceled) {
-      setPickedImage(result.assets[0]);
+      const asset = result.assets[0];
+      const manipulated = await ImageManipulator.manipulateAsync(
+        asset.uri,
+        [{ resize: { width: 800, height: 800 } }],
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      setPickedImage({ ...asset, uri: manipulated.uri });
     }
   };
 
@@ -599,7 +612,13 @@ const RegistrationScreen = ({ navigation, route }) => {
     });
 
     if (!result.canceled) {
-      setPickedImage(result.assets[0]);
+      const asset = result.assets[0];
+      const manipulated = await ImageManipulator.manipulateAsync(
+        asset.uri,
+        [{ resize: { width: 800, height: 800 } }],
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      setPickedImage({ ...asset, uri: manipulated.uri });
     }
   };
 

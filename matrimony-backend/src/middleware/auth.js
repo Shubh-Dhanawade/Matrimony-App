@@ -33,12 +33,29 @@ const authMiddleware = async (req, res, next) => {
 
       const user = userRows[0];
       
+      // ✅ Requirement 3: Automatical Expiry Check
+      let isPaid = Number(user.is_paid) === 1;
+      const now = new Date();
+      if (isPaid && user.premium_end_date && new Date(user.premium_end_date) < now) {
+        console.log(`[AUTH_EXPIRY] User ${user.id} premium expired on ${user.premium_end_date}. Updating DB...`);
+        isPaid = false;
+        await db.execute("UPDATE users SET is_paid = 0 WHERE id = ?", [user.id]);
+      }
+
       // Handle missing token_version column gracefully
       if (user.token_version !== undefined && decoded.tokenVersion !== undefined && decoded.tokenVersion < user.token_version) {
         console.log("[AUTH_DEBUG] ❌ Token Version Mismatch: Token invalidated");
         return res.status(401).json({ message: "Session expired. Please log in again." });
       }
       
+      // Inject flags into req.user for use in controllers
+      req.user = { 
+        ...decoded, 
+        is_paid: isPaid,
+        premium_end_date: user.premium_end_date,
+        is_premium: isPaid 
+      };
+
       // Update last_active_at only if profiles table has it
       db.execute("UPDATE profiles SET last_active_at = NOW() WHERE user_id = ?", [
         decoded.id,

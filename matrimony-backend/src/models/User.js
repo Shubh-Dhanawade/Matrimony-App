@@ -29,6 +29,22 @@ const User = {
     );
     return result.affectedRows > 0;
   },
+  
+  updatePremiumStatus: async (id, isPaid, days = 30) => {
+    let query = "UPDATE users SET is_paid = ?, is_subscribed = 0 WHERE id = ?";
+    let params = [isPaid ? 1 : 0, id];
+
+    if (isPaid) {
+      query = "UPDATE users SET is_paid = 1, is_subscribed = 0, premium_start_date = NOW(), premium_end_date = DATE_ADD(NOW(), INTERVAL ? DAY) WHERE id = ?";
+      params = [days, id];
+    } else {
+      query = "UPDATE users SET is_paid = 0, premium_start_date = NULL, premium_end_date = NULL WHERE id = ?";
+      params = [id];
+    }
+
+    const [result] = await db.execute(query, params);
+    return result.affectedRows > 0;
+  },
 
   updateLastLogin: async (id) => {
     const [result] = await db.execute(

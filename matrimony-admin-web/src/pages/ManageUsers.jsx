@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ToggleLeft, ToggleRight, Ban, RefreshCw, Loader, Phone, Mail } from 'lucide-react';
+import { Search, ToggleLeft, ToggleRight, Ban, RefreshCw, Loader, Phone, Mail, RotateCcw, Trash2, UserX } from 'lucide-react';
 import api from '../api';
 
 const ManageUsers = () => {
@@ -24,17 +24,39 @@ const ManageUsers = () => {
 
   useEffect(() => { fetchUsers(); }, []);
 
-  const handleToggleActive = async (id, currentStatus) => {
+  const handleToggleActive = async (id, isActive) => {
     try {
-      // Backend uses is_blocked. So setting is_blocked = !currentStatus
-      // where currentStatus is whether they were blocked. Wait, the parameter was 'is_active'.
-      // If we map is_blocked to !is_active
-      const isBlocked = !currentStatus; // this was the action we needed to take
-      await api.patch(`/admin/users/${id}/block`, { is_blocked: isBlocked });
-      setUsers(users.map(u => u.id === id ? { ...u, is_blocked: isBlocked } : u));
+      // If currently isActive, we want to BLOCK them (is_blocked = true)
+      const shouldBlock = isActive; 
+      await api.patch(`/admin/users/${id}/block`, { is_blocked: shouldBlock });
+      setUsers(users.map(u => u.id === id ? { ...u, is_blocked: shouldBlock } : u));
     } catch (error) {
       console.error(error);
       alert('Failed to update user status');
+    }
+  };
+
+  const handleResetProfile = async (id) => {
+    if (!window.confirm('Are you sure you want to reset this profile? This will delete all profile data, photos, and connections.')) return;
+    try {
+      await api.delete(`/admin/users/${id}/reset-profile`);
+      alert('Profile reset successfully');
+      fetchUsers();
+    } catch (error) {
+      console.error(error);
+      alert('Failed to reset profile');
+    }
+  };
+
+  const handleDeleteUser = async (id) => {
+    if (!window.confirm('PERMANENT ACTION: Delete this user and ALL their data?')) return;
+    try {
+      await api.delete(`/admin/users/${id}`);
+      setUsers(users.filter(u => u.id !== id));
+      alert('User deleted permanently');
+    } catch (error) {
+      console.error(error);
+      alert('Failed to delete user');
     }
   };
 
@@ -120,12 +142,28 @@ const ManageUsers = () => {
                     <button
                       onClick={() => handleToggleActive(user.id, isActive)}
                       className={btnClass}
-                      style={{ flex: 1, padding: '0.6rem' }}
+                      style={{ flex: 1, padding: '0.6rem', fontSize: '0.85rem' }}
                     >
                       {isActive
-                        ? <><Ban size={18} /> Block User</>
-                        : <><ToggleRight size={18} /> Unblock</>
+                        ? <><UserX size={16} /> Block</>
+                        : <><ToggleRight size={16} /> Unblock</>
                       }
+                    </button>
+                    <button
+                      onClick={() => handleResetProfile(user.id)}
+                      className="btn btn-outline"
+                      style={{ flex: 1, padding: '0.6rem', fontSize: '0.85rem', color: '#f59e0b', borderColor: '#f59e0b' }}
+                      title="Clear profile data but keep account"
+                    >
+                      <RotateCcw size={16} /> Reset
+                    </button>
+                    <button
+                      onClick={() => handleDeleteUser(user.id)}
+                      className="btn btn-error"
+                      style={{ padding: '0.6rem', background: '#fee2e2', color: '#ef4444' }}
+                      title="Delete account permanently"
+                    >
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </div>

@@ -9,8 +9,8 @@ import {
   StatusBar,
   TouchableOpacity,
   Animated,
-  Image,
 } from "react-native";
+import { Image } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
@@ -56,8 +56,14 @@ const ProfilesFeedScreen = ({ navigation }) => {
         if (!mounted) return;
 
         const data = feedRes.data;
-        // Handle both plain-array and wrapped-object responses
         const profileList = Array.isArray(data) ? data : data.profiles || [];
+        
+        // ✅ Requirement 1 & 7: Debug logs for FlatList/Swiper data
+        console.log("[FEED_SCREEN] Profile Count:", profileList.length);
+        if (profileList.length > 0) {
+          console.log("[FEED_SCREEN] First Profile Avatar:", profileList[0].avatar_url || "NULL");
+        }
+        
         setProfiles(profileList);
 
         const userProfile = meRes.data?.profile;
@@ -79,7 +85,7 @@ const ProfilesFeedScreen = ({ navigation }) => {
           const nextImg = getProfileImageUri(
             profileList[1]?.photos?.[0] || profileList[1]?.avatar_url,
           );
-          if (nextImg) Image.prefetch(nextImg).catch(() => { });
+          if (nextImg) Image.prefetch(nextImg);
         }
       } catch (e) {
         console.error("[FEED] Load error:", e.response?.data || e.message);
@@ -106,7 +112,7 @@ const ProfilesFeedScreen = ({ navigation }) => {
       ].slice(0, 3);
 
       uris.forEach((uri) => {
-        if (uri) Image.prefetch(uri).catch(() => { });
+        if (uri) Image.prefetch(uri);
       });
     },
     [profiles],

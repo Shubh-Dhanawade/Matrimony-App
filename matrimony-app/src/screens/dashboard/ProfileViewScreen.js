@@ -6,10 +6,14 @@ import { Alert } from 'react-native';
 import { COLORS, SPACING, FONT_SIZES } from '../../utils/constants';
 import { getProfileImageUri } from '../../utils/imageUtils';
 import { formatDateToDisplay, calculateAge } from '../../utils/dateUtils';
+import { useTranslation } from "react-i18next";
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const ProfileViewScreen = ({ navigation, route }) => {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [premiumInfo, setPremiumInfo] = useState({ is_premium: false, end_date: null });
 
   useEffect(() => {
     fetchProfile();
@@ -22,8 +26,12 @@ const ProfileViewScreen = ({ navigation, route }) => {
       const endpoint = userId ? `/profiles/${userId}` : '/profiles/me';
       const response = await api.get(endpoint);
       setProfile(response.data.profile);
+      setPremiumInfo({
+        is_premium: response.data.is_premium,
+        end_date: response.data.premium_end_date
+      });
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('[PROFILE_VIEW_ERROR]', error);
     } finally {
       setLoading(false);
     }
@@ -72,7 +80,12 @@ const ProfileViewScreen = ({ navigation, route }) => {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Image source={{ uri: getProfileImageUri(profile?.avatar_url) }} style={styles.avatar} />
+          <Image 
+            source={{ uri: getProfileImageUri(profile?.avatar_url) }} 
+            defaultSource={require("../../../assets/userprofile.png")}
+            style={styles.avatar} 
+            onError={() => {}}
+          />
           <Text style={styles.name}>{profile?.full_name}</Text>
           <Text style={styles.subtext}>
             {calculateAge(profile?.dob)} years | {profile?.marital_status}
@@ -86,12 +99,23 @@ const ProfileViewScreen = ({ navigation, route }) => {
         </View>
 
         {!route.params?.userId && (
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => navigation.navigate('Registration', { isEdit: true })}
-          >
-            <Text style={styles.editButtonText}>Edit Profile</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={() => navigation.navigate('Registration', { isEdit: true })}
+            >
+              <Text style={styles.editButtonText}>{t("edit_profile") || "Edit Profile"}</Text>
+            </TouchableOpacity>
+
+            {premiumInfo.is_premium && premiumInfo.end_date && (
+               <View style={styles.membershipCard}>
+                  <Text style={styles.membershipTitle}>{t("premium_member") || "Premium Membership"}</Text>
+                  <Text style={styles.membershipExpiry}>
+                    {t("premium_valid_till", { date: new Date(premiumInfo.end_date).toLocaleDateString() })}
+                  </Text>
+               </View>
+            )}
+          </>
         )}
 
         <View style={styles.card}>
@@ -148,7 +172,27 @@ const styles = StyleSheet.create({
   value: { fontSize: FONT_SIZES.md, color: COLORS.text },
   longValue: { fontSize: FONT_SIZES.md, color: COLORS.text, lineHeight: 22 },
   blockLink: { flexDirection: 'row', alignItems: 'center', marginTop: SPACING.md },
-  blockLinkText: { color: COLORS.error, marginLeft: 4, fontWeight: '600' }
+  blockLinkText: { color: COLORS.error, marginLeft: 4, fontWeight: '600' },
+  membershipCard: {
+    backgroundColor: '#fffdf0',
+    borderRadius: 12,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    alignItems: 'center',
+  },
+  membershipTitle: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: 'bold',
+    color: '#d97706',
+    marginBottom: 4,
+  },
+  membershipExpiry: {
+    fontSize: FONT_SIZES.sm,
+    color: '#b45309',
+    fontWeight: '500',
+  },
 });
 
 export default ProfileViewScreen;

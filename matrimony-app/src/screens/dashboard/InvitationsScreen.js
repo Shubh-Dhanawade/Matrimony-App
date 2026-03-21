@@ -3,15 +3,15 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
-  ScrollView,
+  FlatList,
   ActivityIndicator,
   Alert,
   RefreshControl,
   Platform,
   StatusBar,
 } from "react-native";
+import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import api from "../../services/api";
@@ -45,6 +45,16 @@ const InvitationsScreen = ({ navigation }) => {
     try {
       const response = await api.get("/invitations");
       setInvitations(response.data);
+      
+      const resData = response.data?.received || [];
+      const sentData = response.data?.sent || [];
+      const currentListData = activeTab === "received" ? resData : sentData;
+
+      // ✅ Requirement 1 & 7: Debug logs for FlatList data
+      console.log(`[INVITATIONS] Tab: ${activeTab}, Count: ${currentListData.length}`);
+      if (currentListData.length > 0) {
+        console.log(`[INVITATIONS] First Item Avatar:`, currentListData[0].avatar_url || "NULL");
+      }
     } catch (error) {
       console.error("Error fetching invitations:", error);
     } finally {
@@ -64,7 +74,7 @@ const InvitationsScreen = ({ navigation }) => {
 
   const handleUpdateInvitation = async (invitationId, status, name) => {
     const confirmMsg =
-      status === "Accepted"
+      status === "accepted"
         ? `Accept interest from ${name}? They will be able to see your full profile.`
         : `Reject interest from ${name}?`;
 
@@ -105,18 +115,23 @@ const InvitationsScreen = ({ navigation }) => {
     );
   };
 
-  const renderCard = (item, isReceived = false) => {
-    const isPending = item.status === "Pending";
-    const isAccepted = item.status === "Accepted";
+  const renderItem = ({ item }) => {
+    const isReceived = activeTab === "received";
+    const rawStatus = (item.status || "").toLowerCase();
+    const isPending = rawStatus === "pending";
+    const isAccepted = rawStatus === "accepted";
 
     return (
-      <View key={item.id} style={styles.card}>
+      <View style={styles.card}>
         {/* Avatar + Info */}
         <View style={styles.cardHeader}>
           <View style={styles.avatarWrap}>
             <Image
               source={{ uri: getProfileImageUri(item.avatar_url) }}
+              placeholder={require('../../../assets/userprofile.png')}
               style={styles.avatar}
+              transition={300}
+              cachePolicy="disk"
             />
             {isAccepted && (
               <View style={styles.avatarBadge}>
@@ -162,7 +177,7 @@ const InvitationsScreen = ({ navigation }) => {
             <TouchableOpacity
               style={styles.rejectBtn}
               onPress={() =>
-                handleUpdateInvitation(item.id, "Rejected", item.full_name)
+                handleUpdateInvitation(item.id, "rejected", item.full_name)
               }
             >
               <MaterialCommunityIcons
@@ -175,7 +190,7 @@ const InvitationsScreen = ({ navigation }) => {
             <TouchableOpacity
               style={styles.acceptBtn}
               onPress={() =>
-                handleUpdateInvitation(item.id, "Accepted", item.full_name)
+                handleUpdateInvitation(item.id, "accepted", item.full_name)
               }
             >
               <MaterialCommunityIcons name="heart" size={16} color="#fff" />
@@ -196,8 +211,8 @@ const InvitationsScreen = ({ navigation }) => {
               {isPending
                 ? "Waiting for their response…"
                 : isAccepted
-                  ? "They accepted! You are now connected."
-                  : "They declined your interest."}
+                ? "They accepted! You are now connected."
+                : "They declined your interest."}
             </Text>
           </View>
         )}
@@ -264,42 +279,42 @@ const InvitationsScreen = ({ navigation }) => {
       </View>
 
       {/* Content */}
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[COLORS.primary]}
-          />
-        }
-      >
-        {data.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons
-              name={
-                activeTab === "received"
-                  ? "inbox-arrow-down-outline"
-                  : "send-circle-outline"
-              }
-              size={64}
-              color="#ddd"
+        <FlatList
+          data={data}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[COLORS.primary]}
             />
-            <Text style={styles.emptyTitle}>
-              {activeTab === "received"
-                ? "No Invitations Yet"
-                : "No Sent Requests"}
-            </Text>
-            <Text style={styles.emptyText}>
-              {activeTab === "received"
-                ? "When someone sends you interest, it will appear here."
-                : "Profiles you send interest to will appear here."}
-            </Text>
-          </View>
-        ) : (
-          data.map((item) => renderCard(item, activeTab === "received"))
-        )}
-      </ScrollView>
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <MaterialCommunityIcons
+                name={
+                  activeTab === "received"
+                    ? "inbox-arrow-down-outline"
+                    : "send-circle-outline"
+                }
+                size={64}
+                color="#ddd"
+              />
+              <Text style={styles.emptyTitle}>
+                {activeTab === "received"
+                  ? "No Invitations Yet"
+                  : "No Sent Requests"}
+              </Text>
+              <Text style={styles.emptyText}>
+                {activeTab === "received"
+                  ? "When someone sends you interest, it will appear here."
+                  : "Profiles you send interest to will appear here."}
+              </Text>
+            </View>
+          }
+        />
     </SafeAreaView>
   );
 };

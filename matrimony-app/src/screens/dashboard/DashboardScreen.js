@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  Image,
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
@@ -15,6 +14,7 @@ import {
   Platform,
   StatusBar,
 } from "react-native";
+import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import api from "../../services/api";
@@ -37,7 +37,7 @@ const DashboardScreen = ({ navigation }) => {
   const { t } = useTranslation();
   useHardwareBack();
   const { logout, user } = useAuth();
-  const isPaidViewer = Number(user?.is_paid) === 1 || Number(user?.is_subscribed) === 1;
+  const isPaidViewer = Number(user?.is_paid) === 1;
   const [myProfile, setMyProfile] = useState(null);
   const [profiles, setProfiles] = useState([]);
   const [suggested, setSuggested] = useState([]);
@@ -57,22 +57,26 @@ const DashboardScreen = ({ navigation }) => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      console.log("[DASHBOARD] Fetching data for user dashboard...");
-
       const requests = [
         api.get("/profiles", { params: filters }),
         api.get("/profiles/suggested"),
         api.get("/profiles/me"),
       ];
-
       const [pRes, sRes, mRes] = await Promise.all(requests);
 
       setProfiles(pRes.data);
-      setSuggested(sRes.data);
+      
+      const suggestedList = sRes.data || [];
+      // ✅ Requirement 1 & 7: Debug logs for FlatList data
+      console.log("[DASHBOARD_SUGGESTED] Count:", suggestedList.length);
+      if (suggestedList.length > 0) {
+        console.log("[DASHBOARD_SUGGESTED] First Item Data (ID):", suggestedList[0].user_id);
+        console.log("[DASHBOARD_SUGGESTED] First Item Avatar:", suggestedList[0].avatar_url || "NULL");
+      }
+      setSuggested(suggestedList);
       setMyProfile(mRes.data.profile);
-      console.log("[DASHBOARD] Data fetch completed successfully");
     } catch (error) {
-      console.error("Fetch error:", error);
+      console.error("[DASHBOARD_FETCH_ERROR]", error);
       Alert.alert(t("error"), t("error_fetch_profiles"));
     } finally {
       setLoading(false);
@@ -210,27 +214,42 @@ const DashboardScreen = ({ navigation }) => {
 
   const renderUserSummary = () =>
     myProfile && (
-      <TouchableOpacity
-        style={styles.summaryCard}
-        onPress={() => navigation.navigate("ProfileView")}
-      >
-        <Image
-          source={{ uri: getProfileImageUri(myProfile.avatar_url) }}
-          style={styles.summaryAvatar}
-        />
-        <View style={styles.summaryInfo}>
-          <Text style={styles.summaryName}>{myProfile.full_name}</Text>
-          <Text style={styles.summaryDetail}>
-            {myProfile.age} yrs | {myProfile.marital_status}
-          </Text>
-        </View>
+      <View style={{ marginBottom: 15 }}>
         <TouchableOpacity
-          style={styles.editBtn}
-          onPress={() => navigation.navigate("Registration", { isEdit: true })}
+          style={styles.summaryCard}
+          onPress={() => navigation.navigate("ProfileView")}
         >
-          <Text style={styles.editBtnText}>{t("edit")}</Text>
+          <Image
+            source={{ uri: getProfileImageUri(myProfile.avatar_url) }}
+            placeholder={require("../../../assets/userprofile.png")}
+            transition={300}
+            cachePolicy="disk"
+            style={styles.summaryAvatar}
+            onError={() => {}}
+          />
+          <View style={styles.summaryInfo}>
+            <Text style={styles.summaryName}>{myProfile.full_name}</Text>
+            <Text style={styles.summaryDetail}>
+              {myProfile.age} yrs | {myProfile.marital_status}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.editBtn}
+            onPress={() => navigation.navigate("Registration", { isEdit: true })}
+          >
+            <Text style={styles.editBtnText}>{t("edit")}</Text>
+          </TouchableOpacity>
         </TouchableOpacity>
-      </TouchableOpacity>
+
+        {isPaidViewer && user?.premium_end_date && (
+          <View style={styles.premiumBadgeSummary}>
+            <MaterialCommunityIcons name="crown" size={14} color="#d97706" />
+            <Text style={styles.premiumTextSummary}>
+              {t("premium_valid_till", { date: new Date(user.premium_end_date).toLocaleDateString() })}
+            </Text>
+          </View>
+        )}
+      </View>
     );
 
   // Placeholder for suggested profiles if needed
@@ -242,7 +261,11 @@ const DashboardScreen = ({ navigation }) => {
           horizontal
           showsHorizontalScrollIndicator={false}
           data={suggested}
-          keyExtractor={(item) => `suggested-${item.user_id}`}
+          keyExtractor={(item) => (item.id || item.user_id).toString()}
+          removeClippedSubviews={true}
+          initialNumToRender={4}
+          maxToRenderPerBatch={2}
+          windowSize={3}
           renderItem={({ item }) => (
             <ProfileCard
               profile={item}
@@ -634,6 +657,24 @@ export const styles = StyleSheet.create({
   swiperContainer: {
     height: height * 0.78,
     marginTop: 0,
+  },
+  premiumBadgeSummary: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fffdf0",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#fde68a",
+    marginTop: -5,
+    marginHorizontal: 10,
+  },
+  premiumTextSummary: {
+    color: "#d97706",
+    fontSize: 12,
+    fontWeight: "bold",
+    marginLeft: 6,
   },
 });
 
