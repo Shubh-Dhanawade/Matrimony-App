@@ -31,7 +31,7 @@ const authController = {
       const token = jwt.sign(
         { id: userId, role: role, tokenVersion: tokenVersion },
         process.env.JWT_SECRET || "secret",
-        { expiresIn: "7d" },
+        { expiresIn: "90d" },
       );
 
       console.log(
@@ -89,7 +89,7 @@ const authController = {
       const token = jwt.sign(
         { id: user.id, role: user.role, tokenVersion: user.token_version },
         process.env.JWT_SECRET || "secret",
-        { expiresIn: "7d" },
+        { expiresIn: "90d" },
       );
 
       console.log(`Login successful for: ${mobileNumber}, Role: ${user.role}`);

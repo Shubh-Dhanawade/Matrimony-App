@@ -10,8 +10,8 @@ import {
   RefreshControl,
   TextInput,
   ScrollView,
-  Image
 } from 'react-native';
+import { Image } from 'expo-image';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import api from '../../services/api';
@@ -36,7 +36,16 @@ const AdminUserListScreen = ({ navigation }) => {
       const response = await api.get('/admin/users', {
         params: { search, is_paid: isPaidFilter, profile_status: statusFilter }
       });
-      setUsers(response.data);
+      
+      const list = response.data || [];
+      // ✅ Requirement 1 & 7: Debug logs for FlatList data
+      console.log("[ADMIN_USER_LIST] Count:", list.length);
+      if (list.length > 0) {
+        console.log("[ADMIN_USER_LIST] First Item Data:", JSON.stringify(list[0], null, 2));
+        console.log("[ADMIN_USER_LIST] First Item Avatar:", list[0].avatar_url || "NULL");
+      }
+
+      setUsers(list);
       setPage(1); // Reset to page 1 on new fetch
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch users');
@@ -237,7 +246,13 @@ const AdminUserListScreen = ({ navigation }) => {
       <View style={styles.tableRow}>
         <Text style={[styles.tableCell, { width: 50 }]}>{item.id}</Text>
         <View style={[styles.tableCell, { width: 70 }]}>
-           <Image source={{ uri: avatarUri }} style={styles.avatar} />
+           <Image
+             source={{ uri: avatarUri }}
+             placeholder={require("../../../assets/userprofile.png")}
+             style={styles.avatar}
+             transition={200}
+             cachePolicy="disk"
+           />
         </View>
         <Text style={[styles.tableCell, { width: 140 }]} numberOfLines={2}>
           {item.full_name || '-'}

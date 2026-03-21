@@ -5,6 +5,7 @@ const Shortlist = require("../models/Shortlist");
 const User = require("../models/User");
 const fs = require("fs");
 const path = require("path");
+const { optimizeImage } = require("../utils/imageOptimizer");
 
 const profileController = {
   createOrUpdate: async (req, res) => {
@@ -86,9 +87,20 @@ const profileController = {
   getMyProfile: async (req, res) => {
     try {
       console.log(`Fetching profile for current user: ${req.user.id}`);
+      
+      // Re-fetch user to get latest premium flags
+      const user = await User.findById(req.user.id);
       const profile = await Profile.findByUserId(req.user.id);
-      console.log(`Profile found: ${!!profile}`);
-      res.json({ profile, hasProfile: !!profile });
+      
+      const isPaid = Number(user?.is_paid) === 1;
+
+      res.json({ 
+        profile, 
+        hasProfile: !!profile,
+        is_paid: isPaid,
+        is_premium: isPaid,
+        premium_end_date: user?.premium_end_date
+      });
     } catch (error) {
       console.error("Error in getMyProfile:", error);
       res.status(500).json({ message: error.message });
@@ -166,36 +178,56 @@ const profileController = {
     try {
       const { id } = req.params;
       const viewerId = req.user.id;
-      console.log(`Fetching profile for user ID: ${id}, Viewer: ${viewerId}`);
+      console.log(`[PROFILE_VIEW] Fetching profile ID: ${id}, Viewer: ${viewerId}`);
 
+      // Fetch viewer's user record to check paid status
+      const viewerUser = await User.findById(viewerId);
+      const isPaid = Number(viewerUser?.is_paid) === 1;
+
+      // Fetch the profile with bidirectional invitation_status
       const profile = await Profile.findByUserId(id, viewerId);
       if (!profile) {
         return res.status(404).json({ message: "Profile not found" });
       }
 
-      // Check visibility constraints
-      const isOwnProfile = Number(viewerId) === Number(id);
-      const isConnected = profile.invitation_status === "Connected";
-      const authUser = await User.findById(viewerId);
-      const isPaid = Number(authUser?.is_paid) === 1;
+      const isOwnProfile = String(viewerId) === String(id);
+
+      // invitation_status comes from Profile.findByUserId subquery (already bidirectional)
+      // Also handle mutual interest: if BOTH have sent pending, treat as connected
+      const rawStatus = (profile.invitation_status || "none").toLowerCase();
+      const isConnected = rawStatus === "accepted" || rawStatus === "mutual";
+
+      console.log(`[PROFILE_VIEW_LOG] ID: ${id}, Viewer: ${viewerId}, isPaid: ${isPaid}, DBStatus: ${rawStatus}, isConnected: ${isConnected}`);
 
       if (!isOwnProfile) {
-        // Requirement 8: Full profile visible only if BOTH paid AND connected
-        if (!isPaid || !isConnected) {
-          return res.status(403).json({ 
-            message: "Full profile access is restricted. Please ensure you have a premium membership and are connected with this user.",
-            isPaid,
-            isConnected
-          });
-        }
-
-        // Only allow viewing approved profiles
+        // Block unapproved profiles from non-owners
         if (profile.status !== "Approved") {
           return res.status(404).json({ message: "Profile not found" });
         }
+
+        // Strict Policy: BOTH paid AND connected (accepted interest in either direction)
+        if (!isPaid || !isConnected) {
+          return res.status(403).json({ 
+            message: !isPaid 
+              ? "Premium Membership Required. Upgrade to view full profiles." 
+              : "You need to connect to view full profile",
+            access_denied: true,
+            is_paid: isPaid,
+            is_connected: isConnected,
+            invitation_status: rawStatus
+          });
+        }
       }
 
-      res.json({ profile });
+      // Return profile with explicit flags for the frontend
+      res.json({ 
+        profile,
+        is_paid: isPaid,
+        is_premium: isPaid,
+        premium_end_date: viewerUser?.premium_end_date,
+        is_connected: isConnected,
+        invitation_status: rawStatus
+      });
     } catch (error) {
       console.error("Error in getProfileById:", error);
       res.status(500).json({ message: error.message });
@@ -207,6 +239,9 @@ const profileController = {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
+
+      // Optimization: Post-processing to shrink and orient
+      await optimizeImage(req.file.path);
 
       res.status(200).json({
         message: "Image uploaded successfully",
@@ -415,13 +450,6 @@ const profileController = {
 
   shortlistProfile: async (req, res) => {
     try {
-      console.log("\n═══════════════════════════════════");
-      console.log("[SHORTLIST_DEBUG] Request received");
-      console.log("[SHORTLIST_DEBUG] req.user:", req.user);
-      console.log("[SHORTLIST_DEBUG] req.body:", req.body);
-      console.log("[SHORTLIST_DEBUG] Full request headers:", req.headers);
-      console.log("═══════════════════════════════════\n");
-
       const senderId = req.user?.id;
       const { profileUserId } = req.body;
 
@@ -430,9 +458,6 @@ const profileController = {
       );
 
       if (!senderId) {
-        console.error(
-          "[SHORTLIST_ERROR] Sender ID is missing - req.user not properly set",
-        );
         return res
           .status(401)
           .json({ message: "Authentication failed - User ID missing" });
@@ -452,17 +477,9 @@ const profileController = {
           .json({ message: "You cannot shortlist yourself" });
       }
 
-      console.log(
-        `[SHORTLIST_DEBUG] Adding shortlist: ${senderId} -> ${profileUserId}`,
-      );
       await Shortlist.add(senderId, profileUserId);
-      console.log("[SHORTLIST_DEBUG] Shortlist added successfully");
       res.status(201).json({ message: "Profile shortlisted successfully" });
     } catch (error) {
-      console.error("[SHORTLIST_ERROR] Full error:", error);
-      console.error("[SHORTLIST_ERROR] Message:", error.message);
-      console.error("[SHORTLIST_ERROR] Code:", error.code);
-
       if (error.message === "Profile already shortlisted") {
         return res.status(409).json({ message: "Already shortlisted" });
       }
@@ -544,13 +561,12 @@ const profileController = {
         });
       }
 
+      // Optimization: Resizing and compression
+      await Promise.all(req.files.map((file) => optimizeImage(file.path)));
+
       // Store relative paths
       const photoPaths = req.files.map((file) => `uploads/${file.filename}`);
       const insertedIds = await ProfileImage.addPhotos(userId, photoPaths);
-
-      console.log(
-        `[PHOTO_UPLOAD] User ${userId} uploaded ${photoPaths.length} photos`,
-      );
 
       res.status(201).json({
         message: "Photos uploaded successfully",

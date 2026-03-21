@@ -6,28 +6,61 @@ dotenv.config();
 
 const app = express();
 const apiRoutes = require("./src/routes/api");
-
 const path = require("path");
 
-// Middleware
+// ── Gzip compression ─────────────────────────────────────────────────────
+// Shrinks JSON responses by ~60–70%, hugely faster on mobile data connections
+let compression;
+try {
+  compression = require("compression");
+  app.use(compression({ threshold: 512 })); // compress responses > 512 bytes
+  console.log("[SERVER] Compression enabled");
+} catch (e) {
+  console.warn("[SERVER] 'compression' package not installed – run: npm i compression");
+}
+
+// ── CORS ─────────────────────────────────────────────────────────────────
+app.use(cors());
+
+// ── Body parsers ─────────────────────────────────────────────────────────
+app.use(express.json({ limit: "2mb" }));
+app.use(express.urlencoded({ extended: true, limit: "2mb" }));
+
+// ── Static uploads with long-term HTTP cache headers ─────────────────────
+// Images are named with timestamps/UUIDs so they are immutable once saved.
+// Cache them on the device for 30 days to avoid re-downloading on every screen.
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"), {
+    maxAge: "30d",          // Cache-Control: max-age=2592000
+    etag: true,             // ETag for conditional requests
+    lastModified: true,     // Last-Modified header
+    immutable: false,       // Don't set immutable — we allow profile photo updates
+    fallthrough: false,     // Return 404 if file not found (don't pass to next handler)
+  }),
+);
+
+// ── Lean request logger — logs only slow requests (>300ms) and errors ────
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  const start = Date.now();
+  res.on("finish", () => {
+    const ms = Date.now() - start;
+    if (res.statusCode >= 400 || ms > 300) {
+      console.log(`[${res.statusCode}] ${req.method} ${req.url} — ${ms}ms`);
+    }
+  });
   next();
 });
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Routes
+// ── Routes ───────────────────────────────────────────────────────────────
 app.use("/api", apiRoutes);
 
-// Basic route
+// Health check
 app.get("/", (req, res) => {
-  res.json({ message: "Welcome to Matrimony App API" });
+  res.json({ message: "Welcome to Matrimony App API", status: "ok" });
 });
 
-// Port and Host
+// ── Port ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5472;
 // const HOST = "0.0.0.0"; // Bind to all interfaces so Android device on LAN can connect
 
@@ -51,6 +84,14 @@ const runAutoMigration = async () => {
     if (!colNames.includes("account_status")) {
       console.log("[DB_MIGRATION] Adding 'account_status' to users...");
       await db.execute("ALTER TABLE users ADD COLUMN account_status ENUM('active', 'deleted') DEFAULT 'active'");
+    }
+    if (!colNames.includes("premium_start_date")) {
+      console.log("[DB_MIGRATION] Adding 'premium_start_date' to users...");
+      await db.execute("ALTER TABLE users ADD COLUMN premium_start_date DATETIME NULL");
+    }
+    if (!colNames.includes("premium_end_date")) {
+      console.log("[DB_MIGRATION] Adding 'premium_end_date' to users...");
+      await db.execute("ALTER TABLE users ADD COLUMN premium_end_date DATETIME NULL");
     }
 
     // Check blocks table
@@ -79,5 +120,5 @@ const runAutoMigration = async () => {
 app.listen(PORT, async () => {
   await runAutoMigration();
   // console.log(`Server is running on http://${HOST}:${PORT}`);
-  console.log(`Access from device: http://192.168.0.176:${PORT}`);
+  console.log(`Access from device: http://192.168.0.113:${PORT}`);
 });

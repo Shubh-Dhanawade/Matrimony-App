@@ -26,11 +26,11 @@ export const FONT_SIZES = {
   xxl: 32,
 };
 
-// export const API_BASE_URL = "https://cagelike-nonpatriotic-noelia.ngrok-free.dev/api"; // Standard Android Emulator IP for localhost
-// export const IMAGE_BASE_URL = "https://cagelike-nonpatriotic-noelia.ngrok-free.dev";
+export const API_BASE_URL = "https://cagelike-nonpatriotic-noelia.ngrok-free.dev/api"; // Standard Android Emulator IP for localhost
+export const IMAGE_BASE_URL = "https://cagelike-nonpatriotic-noelia.ngrok-free.dev";
 
-export const API_BASE_URL = "http://192.168.0.113:5472/api";
-export const IMAGE_BASE_URL = "http://192.168.0.113:5472";
+// export const API_BASE_URL = "http://192.168.0.113:5472/api";
+// export const IMAGE_BASE_URL = "http://192.168.0.113:5472";
 
 
 export const MARITAL_STATUS_OPTIONS = [

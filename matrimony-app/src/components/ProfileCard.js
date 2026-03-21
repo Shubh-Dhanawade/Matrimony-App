@@ -1,9 +1,8 @@
-import React, { memo, useState, useRef, useCallback } from "react";
+import React, { memo, useState, useRef, useCallback, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  Image,
   Dimensions,
   TouchableOpacity,
   Animated,
@@ -13,6 +12,7 @@ import {
   FlatList,
   Alert,
 } from "react-native";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
@@ -70,8 +70,11 @@ const ProfileCard = ({
     }).start();
   }, [profile.user_id]);
 
-  const isConnected = profile.invitation_status === "Connected";
-  const isPending = profile.invitation_status === "Pending";
+  const isProfileSubscribed = profile.is_subscribed === 1;
+
+  const rawStatus = (profile.invitation_status || "none").toLowerCase();
+  const isConnected = rawStatus === "connected" || rawStatus === "accepted";
+  const isPending = rawStatus === "pending";
   const isPreviewUnlocked = Number(isPaid) === 1; // Payment unlocks photo clarity
   const isBlurred = !isPreviewUnlocked;
 
@@ -84,6 +87,7 @@ const ProfileCard = ({
     if (profile.photos && profile.photos.length > 0) {
       return profile.photos.map((url) => getProfileImageUri(url));
     }
+    // Fallback to avatar_url
     return [getProfileImageUri(profile.avatar_url)];
   }, [profile.photos, profile.avatar_url]);
 
@@ -181,14 +185,7 @@ const ProfileCard = ({
       return;
     }
 
-    if (!isConnected) {
-      Alert.alert(
-        "Access Denied",
-        "Full profile details are visible only to connected users. Please send an interest and wait for approval."
-      );
-      return;
-    }
-
+    // Per Requirement 3, 4 & 8: Paid users can navigate to reach the state-based locking UI on the detail screen
     if (onViewProfile) onViewProfile(profile.user_id);
   };
 
@@ -198,15 +195,40 @@ const ProfileCard = ({
     setActivePhotoIndex(index);
   }, []);
 
+  // Per-photo error recovery: track which indices failed so we can swap to fallback
+  const [failedIndices, setFailedIndices] = useState({});
+
+  // Reset indices and photo index when profile changes to avoid state "leaks" (Requirement 4)
+  useEffect(() => {
+    setFailedIndices({});
+    setActivePhotoIndex(0);
+    // Reset FlatList position if possible
+    if (flatListRef.current) {
+        flatListRef.current.scrollToOffset({ animated: false, offset: 0 });
+    }
+  }, [profile.user_id, profile.id]);
+
+  const FALLBACK_AVATAR = require('../../assets/userprofile.png');
+
   const renderPhoto = useCallback(
-    ({ item }) => (
-      <Image
-        source={{ uri: item }}
-        style={styles.galleryImage}
-        blurRadius={isBlurred ? 20 : 0}
-      />
-    ),
-    [isBlurred],
+    ({ item, index }) => {
+      const hasFailed = failedIndices[index];
+      return (
+        <Image
+          source={hasFailed ? FALLBACK_AVATAR : { uri: item }}
+          placeholder={FALLBACK_AVATAR}
+          contentFit="cover"
+          transition={300}
+          cachePolicy="disk"
+          style={styles.galleryImage}
+          blurRadius={isBlurred ? 20 : 0}
+          onError={() => {
+            setFailedIndices(prev => ({ ...prev, [index]: true }));
+          }}
+        />
+      );
+    },
+    [isBlurred, failedIndices, FALLBACK_AVATAR],
   );
 
   const keyExtractor = useCallback((_, index) => `photo-${index}`, []);
@@ -265,10 +287,12 @@ const ProfileCard = ({
                   (!isConnected || !isPreviewUnlocked) && styles.viewFullProfileTextLocked
                 ]}>
                   {!isPreviewUnlocked 
-                    ? "Unlock" 
+                    ? (t("unlock") || "Unlock")
                     : isConnected 
                       ? t("full_profile") 
-                      : "Details Locked"}
+                      : isPending 
+                        ? (t("pending") || "Pending")
+                        : (t("locked") || "Locked")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -283,7 +307,7 @@ const ProfileCard = ({
                     color="#fff"
                   />
                   <Text style={styles.lastActiveText}>
-                    {formatLastActive(profile.last_active_at)}
+                    {formatLastActive(profile.last_active_at, t)}
                   </Text>
                 </View>
               )}
@@ -396,10 +420,10 @@ const ProfileCard = ({
                     color="#fff"
                   />
                   <Text style={styles.blurText}>
-                    Please complete payment to view profiles
+                    {t("upgrade_to_view_profiles") || "Upgrade to View Profiles"}
                   </Text>
                   <View style={styles.upgradeBtn}>
-                    <Text style={styles.upgradeBtnText}>Unlock Profiles</Text>
+                    <Text style={styles.upgradeBtnText}>{t("upgrade_to_view_profiles") || "Upgrade to View Profiles"}</Text>
                   </View>
                 </TouchableOpacity>
             </BlurView>

@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  Image,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
 } from "react-native";
+import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useTranslation } from "react-i18next";
@@ -62,7 +62,11 @@ const BlockedUsersScreen = () => {
     <View style={styles.userCard}>
       <Image
         source={{ uri: getProfileImageUri(item.avatar_url) }}
+        placeholder={require("../../../assets/userprofile.png")}
         style={styles.avatar}
+        transition={300}
+        cachePolicy="disk"
+        onError={() => {}}
       />
       <View style={styles.userInfo}>
         <Text style={styles.userName}>{item.full_name}</Text>
@@ -89,7 +93,7 @@ const BlockedUsersScreen = () => {
       {blockedUsers.length > 0 ? (
         <FlatList
           data={blockedUsers}
-          keyExtractor={(item) => item.user_id.toString()}
+          keyExtractor={(item) => (item.id || item.user_id).toString()}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
         />

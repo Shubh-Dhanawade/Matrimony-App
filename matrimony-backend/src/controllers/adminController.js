@@ -135,6 +135,8 @@ const adminController = {
         u.is_blocked,
         u.is_paid,
         u.is_subscribed,
+        u.premium_start_date,
+        u.premium_end_date,
         u.created_at,
         p.full_name,
         p.address,
@@ -204,18 +206,19 @@ const adminController = {
   togglePaidStatus: async (req, res) => {
     try {
       const { id } = req.params;
-      const { is_paid } = req.body;
+      const { is_paid, days } = req.body;
 
-      const [result] = await db.execute(
-        'UPDATE users SET is_paid = ? WHERE id = ?',
-        [is_paid ? 1 : 0, id]
-      );
+      // Import User model if not already imported (wait, it's not imported at the top)
+      const User = require('../models/User');
+      const success = await User.updatePremiumStatus(id, is_paid, days || 30);
 
-      if (result.affectedRows === 0) {
+      if (!success) {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      res.json({ message: `User membership status updated to ${is_paid ? 'Paid' : 'Unpaid'}` });
+      res.json({ 
+        message: `User membership status updated to ${is_paid ? 'Paid' : 'Unpaid'} for ${days || 30} days` 
+      });
     } catch (error) {
       console.error('togglePaidStatus Error:', error);
       res.status(500).json({ message: error.message });

@@ -4,8 +4,10 @@ import { API_BASE_URL } from "../utils/constants";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 15000, // 15 seconds — prevents UI hanging on slow/unreachable server
   headers: {
     "Content-Type": "application/json",
+    "Connection": "keep-alive", // reuse TCP connection between calls
   },
 });
 
@@ -13,52 +15,35 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     try {
-      console.log(`\n[AXIOS] ═══════════════════════════════════════`);
-      console.log(
-        `[AXIOS] 📤 REQUEST: ${config.method.toUpperCase()} ${config.url}`,
-      );
       const token = await AsyncStorage.getItem("token");
-      console.log(
-        `[AXIOS] 🔐 Token: ${token ? "FOUND (" + token.substring(0, 15) + "...)" : "❌ MISSING"}`,
-      );
-
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
-        console.log(`[AXIOS] ✅ Authorization header attached`);
-      } else {
-        console.log(
-          `[AXIOS] ⚠️ No token found - request will fail if auth required`,
-        );
       }
-
-      console.log(
-        `[AXIOS] 📦 Request body:`,
-        JSON.stringify(config.data || {}),
-      );
-      console.log(`[AXIOS] ═══════════════════════════════════════\n`);
+      // Compact log — uncomment body only when debugging
+      console.log(`[API] ${config.method?.toUpperCase()} ${config.url}${token ? '' : ' [NO TOKEN]'}`);
     } catch (e) {
-      console.error("[AXIOS] ❌ Interceptor error:", e);
+      console.error("[API] Interceptor error:", e);
     }
     return config;
   },
   (error) => Promise.reject(error),
 );
 
-// Add a response interceptor for better error reporting
+// Add a response interceptor for error reporting
 api.interceptors.response.use(
-  (response) => {
-    console.log(
-      `[AXIOS] ✅ RESPONSE [${response.status}]: ${response.config.url}`,
-    );
-    return response;
-  },
-  (error) => {
+  (response) => response,
+  async (error) => {
+    const status = error.response?.status;
+    
+    if (status === 401) {
+      console.warn(`[AUTH] 🛑 Unauthorized (401) on ${error.config?.url}. Clearing token...`);
+      await AsyncStorage.removeItem("token");
+      await AsyncStorage.removeItem("user");
+      // Optional: You could trigger an event here if you use an event emitter
+    }
+
     console.error(
-      `[AXIOS] ❌ ERROR [${error.response?.status || "NO STATUS"}]: ${error.config?.url}`,
-    );
-    console.error(
-      `[AXIOS] Error message:`,
-      error.response?.data?.message || error.message,
+      `[API] ❌ ${status || 'ERR'} ${error.config?.url}: ${error.response?.data?.message || error.message}`,
     );
     return Promise.reject(error);
   },

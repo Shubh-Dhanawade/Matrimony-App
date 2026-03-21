@@ -23,18 +23,31 @@ const MembershipManagement = () => {
 
   useEffect(() => { fetchUsers(); }, []);
 
+  const [durations, setDurations] = useState({});
+
   const handleTogglePaid = async (id, currentStatus) => {
     try {
       const newStatus = !currentStatus;
-      await api.patch(`/admin/users/${id}/paid`, { is_paid: newStatus });
-      setUsers(users.map(u => u.id === id ? { ...u, is_paid: newStatus } : u));
+      const days = durations[id] || 30;
+      await api.patch(`/admin/users/${id}/paid`, { is_paid: newStatus, days });
+      fetchUsers(); // Refresh to get dates
     } catch (error) {
       console.error(error);
       alert('Failed to update membership status');
     }
   };
 
+  const handleDurationChange = (id, val) => {
+    setDurations(prev => ({ ...prev, [id]: val }));
+  };
+
   const handleRefresh = () => { setRefreshing(true); fetchUsers(); };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString();
+  };
 
   const filteredUsers = users.filter(user => {
     const fullName = (user.full_name || '').toLowerCase();
@@ -113,9 +126,31 @@ const MembershipManagement = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                       <Phone size={16} color="var(--primary)" /> <span>{user.mobile_number || 'N/A'}</span>
                     </div>
+                    {user.is_paid === 1 && user.premium_end_date && (
+                        <div style={{ fontSize: '0.8rem', color: '#d97706', marginTop: '0.5rem', fontWeight: '500' }}>
+                           Expires on: {formatDate(user.premium_end_date)}
+                        </div>
+                    )}
                   </div>
 
-                  <div style={{ display: 'flex', gap: '1rem', marginTop: 'auto' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: 'auto' }}>
+                    {!user.is_paid && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Duration:</span>
+                            <select 
+                                className="input-field" 
+                                style={{ padding: '0.25rem', fontSize: '0.85rem' }}
+                                value={durations[user.id] || 30}
+                                onChange={(e) => handleDurationChange(user.id, e.target.value)}
+                            >
+                                <option value="7">7 Days</option>
+                                <option value="30">30 Days</option>
+                                <option value="90">90 Days</option>
+                                <option value="180">180 Days</option>
+                                <option value="365">365 Days</option>
+                            </select>
+                        </div>
+                    )}
                     <button
                       onClick={() => handleTogglePaid(user.id, user.is_paid)}
                       className={btnClass}

@@ -41,13 +41,26 @@ export const AuthProvider = ({ children }) => {
     try {
       const api = (await import("../services/api")).default;
       const response = await api.get("/profiles/me");
-      const hp = response.data.hasProfile;
-      const status = response.data.profile?.status || null;
+      const { hasProfile: hp, profile, is_paid, is_premium, premium_end_date } = response.data;
+      const status = profile?.status || null;
+      
       setHasProfile(hp);
       setProfileStatus(hp ? status : null);
+
+      // Update local user state with premium info
+      if (user) {
+        const updatedUser = { ...user, is_paid, is_premium, premium_end_date };
+        setUser(updatedUser);
+        await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
+      }
+
       return { hasProfile: hp, profileStatus: status };
     } catch (error) {
       console.error("[AUTH_CONTEXT] Profile check error:", error);
+      if (error.response?.status === 401) {
+        console.warn("[AUTH_CONTEXT] 🛑 Refresh failed with 401. Logging out...");
+        await logout();
+      }
       setHasProfile(true);
       return { hasProfile: true, profileStatus: null };
     }
@@ -117,6 +130,8 @@ export const AuthProvider = ({ children }) => {
       // Get latest profile info (especially avatar_url)
       const profileRes = await api.get("/profiles/me");
 
+      let currentUserObject = { ...user };
+
       if (authRes.data.user) {
         let userData = authRes.data.user;
 
@@ -124,19 +139,33 @@ export const AuthProvider = ({ children }) => {
         if (profileRes.data.profile) {
           userData = { ...userData, ...profileRes.data.profile };
         }
-
-        setUser(userData);
-        await AsyncStorage.setItem("user", JSON.stringify(userData));
-        console.log("[AUTH_CONTEXT] User and Profile refreshed");
+        currentUserObject = userData;
       }
 
       // Also refresh status
       if (profileRes.data.hasProfile) {
         setHasProfile(true);
         setProfileStatus(profileRes.data.profile?.status || null);
+        
+        // Merge premium info into final state (Requirement 4)
+        currentUserObject = { 
+          ...currentUserObject, 
+          is_paid: profileRes.data.is_paid,
+          is_premium: profileRes.data.is_premium,
+          premium_end_date: profileRes.data.premium_end_date
+        };
       }
+
+      setUser(currentUserObject);
+      await AsyncStorage.setItem("user", JSON.stringify(currentUserObject));
+      console.log("[AUTH_CONTEXT] User and Profile refreshed");
+
     } catch (error) {
       console.error("[AUTH_CONTEXT] Refresh error:", error);
+      if (error.response?.status === 401) {
+        console.warn("[AUTH_CONTEXT] 🛑 Refresh failed with 401. Logging out...");
+        await logout();
+      }
     }
   };
 

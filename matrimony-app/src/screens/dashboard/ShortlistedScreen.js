@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
@@ -12,6 +11,7 @@ import {
   Platform,
   StatusBar,
 } from "react-native";
+import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
@@ -58,12 +58,16 @@ const ShortlistedScreen = ({ navigation }) => {
     try {
       console.log("[SHORTLIST_SCREEN] Fetching shortlisted profiles...");
       const res = await api.get("/profiles/shortlisted");
-      console.log(
-        "[SHORTLIST_SCREEN] Received:",
-        res.data.length || "no data",
-        "profiles",
-      );
-      setProfiles(Array.isArray(res.data) ? res.data : []);
+      const list = Array.isArray(res.data) ? res.data : [];
+      
+      // ✅ Requirement 1 & 7: Debug logs for FlatList data
+      console.log("[SHORTLIST_SCREEN] Count:", list.length);
+      if (list.length > 0) {
+        console.log("[SHORTLIST_SCREEN] First Item Data:", JSON.stringify(list[0], null, 2));
+        console.log("[SHORTLIST_SCREEN] First Item Avatar:", list[0].avatar_url || "NULL");
+      }
+
+      setProfiles(list);
     } catch (err) {
       console.error("[SHORTLIST_SCREEN] ❌ Fetch error:", err);
       console.error(
@@ -194,7 +198,17 @@ const ShortlistedScreen = ({ navigation }) => {
           }
           activeOpacity={0.85}
         >
-          <Image source={{ uri: avatarUri }} style={styles.avatar} blurRadius={isPaid ? 0 : 15} />
+          <Image 
+            source={{ uri: avatarUri }} 
+            placeholder={require('../../../assets/userprofile.png')}
+            style={styles.avatar} 
+            transition={350}
+            cachePolicy="disk"
+            contentFit="cover"
+            onError={(e) => {
+              console.warn(`[SHORTLIST_SCREEN] Image fail for ${item.user_id}:`, e.error);
+            }}
+          />
           {isConnected && (
             <View style={styles.connectedBadge}>
               <MaterialCommunityIcons name="check" size={10} color="#fff" />
@@ -268,11 +282,11 @@ const ShortlistedScreen = ({ navigation }) => {
             </TouchableOpacity>
           )}
 
-          {/* View Profile button - Enabled only when Connected */}
+          {/* View Profile button - Enabled for Paid Users */}
           <TouchableOpacity
             style={[
               styles.viewBtn,
-              invStatus !== "Connected" && styles.viewBtnDisabled,
+              !isPaid && styles.viewBtnDisabled,
             ]}
             onPress={() => {
               if (!isPaid) {
@@ -280,25 +294,16 @@ const ShortlistedScreen = ({ navigation }) => {
                 return;
               }
 
-              if (!isConnected) {
-                Alert.alert(
-                  "Access Denied",
-                  "Full profile details are visible only to connected users. Please send an interest and wait for approval."
-                );
-                return;
-              }
-
               navigation.navigate("ViewFullProfile", {
                 userId: item.user_id,
               });
             }}
-            disabled={!isConnected && !isPaid}
             activeOpacity={0.8}
           >
             <Text
               style={[
                 styles.viewBtnText,
-                invStatus !== "Connected" && styles.viewBtnDisabledText,
+                !isPaid && styles.viewBtnDisabledText,
               ]}
             >
               {t("full_profile")}
@@ -369,7 +374,7 @@ const ShortlistedScreen = ({ navigation }) => {
       ) : (
         <FlatList
           data={profiles}
-          keyExtractor={(item) => `shortlist-${item.user_id}`}
+          keyExtractor={(item) => (item.id || item.user_id).toString()}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           refreshControl={

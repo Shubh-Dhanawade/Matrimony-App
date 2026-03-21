@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   ActivityIndicator,
   TouchableOpacity,
   Alert,
@@ -12,6 +11,7 @@ import {
   Linking,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,10 +26,19 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
   const { userId } = route.params;
   const { t } = useTranslation();
   const { user } = useAuth();
-  const isPaid = Number(user?.is_paid) === 1 || Number(user?.is_subscribed) === 1;
+  const localIsPaid = Number(user?.is_paid) === 1 || Number(user?.is_subscribed) === 1;
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [accessDeniedData, setAccessDeniedData] = useState(null);
+  const [sendingInterest, setSendingInterest] = useState(false);
+  // Server-verified flags
+  const [isConnected, setIsConnected] = useState(false);
+  const [apiIsPaid, setApiIsPaid] = useState(false);
+  const [invitationStatus, setInvitationStatus] = useState('none');
+
+  // Use server-verified isPaid when available, fall back to local
+  const isPaid = apiIsPaid || localIsPaid;
 
   useEffect(() => {
     fetchProfile();
@@ -39,16 +48,30 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
     try {
       setLoading(true);
       setError(null);
+      setAccessDeniedData(null);
       const response = await api.get(`/profiles/${userId}`);
-      const data = response.data?.profile ?? response.data;
-      setProfile(data);
+      console.log("[PROFILE_FETCH_DEBUG] Response:", JSON.stringify(response.data));
+      
+      const { profile: pData, is_paid: paidFlag, is_connected: connectedFlag, invitation_status: invStatus } = response.data;
+      setProfile(pData);
+      setApiIsPaid(!!paidFlag);
+      setIsConnected(!!connectedFlag);
+      setInvitationStatus(invStatus || 'none');
     } catch (err) {
       console.error("[ViewFullProfile] Error fetching profile:", err);
       const status = err.response?.status;
-      const msg = err.response?.data?.message;
+      const data = err.response?.data;
       
       if (status === 403) {
-        setError(msg || "Access restricted. Please ensure you have a premium membership and are connected with this user.");
+        if (data?.access_denied) {
+          setAccessDeniedData(data);
+          setApiIsPaid(!!data.is_paid);
+          setIsConnected(!!data.is_connected);
+          setInvitationStatus(data.invitation_status || 'none');
+          setError(data.message);
+        } else {
+          setError(data?.message || "Premium Membership Required. Upgrade your account to view full profile details and photos.");
+        }
       } else if (status === 404) {
         setError("Profile not found.");
       } else {
@@ -56,6 +79,20 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSendInterest = async () => {
+    try {
+      setSendingInterest(true);
+      await api.post("/profiles/interest", { receiverId: userId });
+      Alert.alert("Success 💌", "Interest sent successfully! You can view full details once they accept.");
+      fetchProfile(); // Refresh to update connection status
+    } catch (err) {
+      const msg = err.response?.data?.message || "Failed to send interest.";
+      Alert.alert("Error", msg);
+    } finally {
+      setSendingInterest(false);
     }
   };
 
@@ -84,23 +121,47 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
         </View>
 
         <View style={styles.errorContainer}>
-          <MaterialCommunityIcons name="alert-circle-outline" size={80} color={COLORS.primary} />
+          <MaterialCommunityIcons 
+            name={isPaid && invitationStatus === 'pending' ? "clock-lock" : "lock-outline"} 
+            size={80} 
+            color={COLORS.primary} 
+          />
           <Text style={styles.errorText}>
             {error || "Profile not found or you don't have permission to view."}
           </Text>
-          {!isPaid && (
+
+          {/* Access control states based on server-verified flags */}
+          {!isPaid ? (
             <TouchableOpacity
               style={styles.retryBtn}
               onPress={() => navigation.navigate("Payment")}
             >
-              <Text style={styles.retryBtnText}>Unlock Premium</Text>
+              <Text style={styles.retryBtnText}>{t("upgrade_to_premium") || "Upgrade to Premium"}</Text>
             </TouchableOpacity>
-          )}
+          ) : invitationStatus === 'none' ? (
+            <TouchableOpacity
+              style={styles.retryBtn}
+              onPress={handleSendInterest}
+              disabled={sendingInterest}
+            >
+              {sendingInterest ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.retryBtnText}>{t("send_interest") || "Send Interest"}</Text>
+              )}
+            </TouchableOpacity>
+          ) : invitationStatus === 'pending' ? (
+            <View style={styles.pendingBadge}>
+              <MaterialCommunityIcons name="clock-outline" size={20} color={COLORS.primary} />
+              <Text style={styles.pendingText}>{t("waiting_for_acceptance") || "Waiting for Acceptance"}</Text>
+            </View>
+          ) : null}
+
           <TouchableOpacity
             style={[styles.retryBtn, { backgroundColor: '#eee', marginTop: 10 }]}
             onPress={fetchProfile}
           >
-            <Text style={[styles.retryBtnText, { color: '#333' }]}>Retry</Text>
+            <Text style={[styles.retryBtnText, { color: '#333' }]}>{t("try_again") || "Try Again"}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -131,8 +192,13 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
           <View style={styles.avatarWrapper}>
             <Image
               source={{ uri: getProfileImageUri(profile.avatar_url) }}
+              placeholder={require('../../../assets/userprofile.png')}
+              contentFit="cover"
+              transition={500}
+              cachePolicy="disk"
               style={styles.avatar}
               blurRadius={isPaid ? 0 : 20}
+              onError={() => {}}
             />
             {profile.is_verified && (
               <View style={styles.verifiedBadge}>
@@ -339,21 +405,37 @@ const ViewFullProfileScreen = ({ navigation, route }) => {
 
         {/* ─── Action Buttons ─── */}
         <View style={styles.actionsContainer}>
-          {isPaid ? (
+          {isPaid && isConnected ? (
+            // Connected — show contact info is already visible above, offer a WhatsApp link
+            <View style={[styles.connectedBadge]}>
+              <MaterialCommunityIcons name="handshake" size={20} color="#2E7D32" />
+              <Text style={styles.connectedBadgeText}>You are connected 🎉</Text>
+            </View>
+          ) : isPaid && invitationStatus === 'pending' ? (
+            // Interest sent, waiting
+            <View style={styles.pendingBadge}>
+              <MaterialCommunityIcons name="clock-outline" size={20} color={COLORS.primary} />
+              <Text style={styles.pendingText}>Interest sent — Waiting for response</Text>
+            </View>
+          ) : isPaid ? (
+            // Paid but no interest sent yet
             <TouchableOpacity
               style={styles.interestBtn}
               activeOpacity={0.85}
-              onPress={() =>
-                Alert.alert(
-                  "Interest Sent 💌",
-                  `Your interest has been sent to ${profile.full_name}.`,
-                )
-              }
+              onPress={handleSendInterest}
+              disabled={sendingInterest}
             >
-              <MaterialCommunityIcons name="heart" size={20} color="#fff" />
-              <Text style={styles.interestBtnText}>Send Interest</Text>
+              {sendingInterest ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <MaterialCommunityIcons name="heart" size={20} color="#fff" />
+                  <Text style={styles.interestBtnText}>Send Interest</Text>
+                </>
+              )}
             </TouchableOpacity>
           ) : (
+            // Not paid
             <TouchableOpacity
               style={[styles.interestBtn, { backgroundColor: COLORS.secondary || '#E91E63' }]}
               activeOpacity={0.85}
@@ -462,6 +544,37 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: FONT_SIZES.md,
+  },
+  pendingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF9C4',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginTop: 20,
+    gap: 8,
+  },
+  pendingText: {
+    color: '#856404',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  connectedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 30,
+    gap: 8,
+    elevation: 2,
+  },
+  connectedBadgeText: {
+    color: '#2E7D32',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 
   // Hero Header
