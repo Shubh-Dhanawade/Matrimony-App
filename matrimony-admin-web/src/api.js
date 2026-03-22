@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // The Backend base URL as used in the React Native app
-export const API_BASE_URL = "http://localhost:5472/api"; 
+export const API_BASE_URL =  "https://cagelike-nonpatriotic-noelia.ngrok-free.dev/api"; 
 // Using localhost assuming backend runs locally, or one can change it to the IP
 
 const api = axios.create({
